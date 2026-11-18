@@ -456,6 +456,7 @@ async fn main() {
             "/api/accounts/{address}/templates/{template_id}/deploy",
             post(api::deploy_template),
         )
+        .merge(api::writer_meter::routes())
         .layer(CorsLayer::permissive())
         .with_state(state);
 

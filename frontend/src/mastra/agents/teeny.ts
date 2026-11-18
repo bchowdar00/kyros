@@ -3,6 +3,7 @@ import { Memory } from '@mastra/memory'
 import { env } from '../../env'
 import { collectTools, partitionCapabilities } from '../capabilities'
 import { buildInstructions } from '../prompt'
+import { writerModelRouter } from '../writer-models'
 
 /** The id the chat routes look the agent up by. */
 export const TEENY_AGENT_ID = 'teeny'
@@ -28,7 +29,9 @@ export const teeny = new Agent({
   name: 'Teeny',
   description: "Tiny's conversational assistant.",
   instructions: buildInstructions(enabled, disabled),
-  model: 'openai/gpt-5.6-terra',
+  // Claude via Mastra's Anthropic route: tools stay on `auto` choice and no sampling
+  // params are set, so the request meets the Opus/Sonnet 5.5 rules. Thinking stays on.
+  model: writerModelRouter(env.WRITER_MODEL),
   tools: teenyTools,
   defaultOptions: { maxSteps: TEENY_MAX_STEPS },
   memory: new Memory({ options: { lastMessages: 30 } }),

@@ -1,9 +1,6 @@
-import type { Agent } from '@mastra/core/agent'
 import { createStep, createWorkflow } from '@mastra/core/workflows'
-import { jsonSchema } from 'ai'
 import * as z from 'zod/mini'
 import { env } from '../../env'
-import { STRATEGY_WRITER_AGENT_ID } from '../agents/strategy-writer'
 import { AuthoringStrategySchema } from '../capabilities/strategy/authoring-schema'
 import { briefSides, StrategyBriefSchema } from '../capabilities/strategy/brief'
 import { CompileSummarySchema, compileStrategy } from '../capabilities/strategy/compile-client'
@@ -23,13 +20,20 @@ import {
   selectSignals,
   signalIndex,
 } from '../capabilities/strategy/registry'
+import { RULEBOOK } from '../capabilities/strategy/rulebook'
 import { compileWithRepairs } from '../capabilities/strategy/repair-loop'
 import { checkDocumentAgainstPlan } from '../capabilities/strategy/review-check'
+import { reportWriterUsage } from '../writer-meter-client'
+import { anthropicWriterTransport, generateWriterObject } from '../writer-model'
 
 /** The id the build routes start and poll the workflow by. */
 export const COMPILE_STRATEGY_WORKFLOW_ID = 'compile-strategy'
 
-const BuildInputSchema = z.object({ brief: StrategyBriefSchema })
+const BuildInputSchema = z.object({
+  brief: StrategyBriefSchema,
+  /** The browser session this build belongs to; the writer-usage meter's `guest`. */
+  guest: z.string(),
+})
 
 const ScoutOutputSchema = z.object({
   signalIds: z.array(z.string()),
@@ -78,18 +82,35 @@ function exchangeUrl() {
 }
 
 /**
- * One structured-output call. zod/mini does not carry a JSON schema of its own, so the
- * model is handed the generated one and the answer is validated with zod afterwards.
+ * One structured-output call to the writer. The writer's persona is the rulebook (the
+ * agent's instructions) and it answers a JSON schema; zod/mini carries no JSON schema of
+ * its own, so the generated one goes to Claude's structured outputs and the answer is
+ * validated with zod afterwards. A refusal or truncation throws `WriterUnavailableError`,
+ * which fails the build with a plain message.
  */
 async function generateObject<Schema extends z.ZodMiniType>(
-  writer: Agent,
   prompt: string,
-  schema: Schema
+  schema: Schema,
+  schemaName: string,
+  guest: string
 ): Promise<z.infer<Schema>> {
-  const result = await writer.generate(prompt, {
-    structuredOutput: { schema: jsonSchema<z.infer<Schema>>(z.toJSONSchema(schema)) },
+  const object = await generateWriterObject({
+    transport: anthropicWriterTransport(),
+    model: env.WRITER_MODEL,
+    system: RULEBOOK,
+    prompt,
+    schemaName,
+    jsonSchema: z.toJSONSchema(schema) as Record<string, unknown>,
+    onUsage: usage =>
+      void reportWriterUsage({
+        exchangeUrl: exchangeUrl(),
+        guest,
+        model: usage.model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+      }),
   })
-  const parsed = z.safeParse(schema, result.object)
+  const parsed = z.safeParse(schema, object)
   if (!parsed.success) throw new Error('The writer did not answer in the requested shape.')
   return parsed.data
 }
@@ -98,16 +119,16 @@ const scout = createStep({
   id: 'scout',
   inputSchema: BuildInputSchema,
   outputSchema: ScoutOutputSchema,
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData }) => {
     const registry = createVenueRegistry(exchangeUrl())
     const catalogue = await registry.catalogue(inputData.brief.series)
     if (!catalogue.ok) throw new Error('The signal registry could not be read.')
     const index = signalIndex(catalogue.data)
-    const writer = mastra.getAgentById(STRATEGY_WRITER_AGENT_ID)
     const choice = await generateObject(
-      writer,
       scoutPrompt(inputData.brief, index),
-      z.object({ signal_ids: z.array(z.string()) })
+      z.object({ signal_ids: z.array(z.string()) }),
+      'signal_selection',
+      inputData.guest
     )
     const book = `${inputData.brief.series}.current.price.v1`
     const wanted = [...new Set([...inputData.brief.signal_ids, ...choice.signal_ids, book])]
@@ -130,17 +151,17 @@ const plan = createStep({
   id: 'plan',
   inputSchema: ScoutOutputSchema,
   outputSchema: PlanOutputSchema,
-  execute: async ({ inputData, getInitData, mastra }) => {
-    const { brief } = z.parse(BuildInputSchema, getInitData())
-    const writer = mastra.getAgentById(STRATEGY_WRITER_AGENT_ID)
+  execute: async ({ inputData, getInitData }) => {
+    const { brief, guest } = z.parse(BuildInputSchema, getInitData())
     let problems: string[] = []
     let attempts = 0
     for (;;) {
       attempts += 1
       const proposed = await generateObject(
-        writer,
         planPrompt(brief, inputData.definitions, problems),
-        StrategyPlanSchema
+        StrategyPlanSchema,
+        'strategy_plan',
+        guest
       )
       problems = checkPlan(brief, proposed)
       if (problems.length === 0 || attempts >= MAX_PLAN_ATTEMPTS)
@@ -153,13 +174,13 @@ const write = createStep({
   id: 'write',
   inputSchema: PlanOutputSchema,
   outputSchema: WriteOutputSchema,
-  execute: async ({ inputData, getInitData, mastra }) => {
-    const { brief } = z.parse(BuildInputSchema, getInitData())
-    const writer = mastra.getAgentById(STRATEGY_WRITER_AGENT_ID)
+  execute: async ({ inputData, getInitData }) => {
+    const { brief, guest } = z.parse(BuildInputSchema, getInitData())
     const authored = await generateObject(
-      writer,
       writePrompt(brief, inputData.plan, inputData.definitions),
-      AuthoringStrategySchema
+      AuthoringStrategySchema,
+      'authored_strategy',
+      guest
     )
     return { authored, plan: inputData.plan }
   },
@@ -169,8 +190,8 @@ const compile = createStep({
   id: 'compile',
   inputSchema: WriteOutputSchema,
   outputSchema: CompileOutputSchema,
-  execute: async ({ inputData, getInitData, mastra }) => {
-    const { brief } = z.parse(BuildInputSchema, getInitData())
+  execute: async ({ inputData, getInitData }) => {
+    const { brief, guest } = z.parse(BuildInputSchema, getInitData())
     // The envelope is baked into the program, so it is derived from the brief's money
     // slots here; a brief whose money does not work is a compile failure in the user's
     // words, not the compiler's.
@@ -188,13 +209,17 @@ const compile = createStep({
         problems: [derived.problem],
         mismatches: [],
       }
-    const writer = mastra.getAgentById(STRATEGY_WRITER_AGENT_ID)
     const apiUrl = exchangeUrl()
     const result = await compileWithRepairs({
       authored: inputData.authored,
       compile: strategy => compileStrategy(apiUrl, strategy, derived.envelope),
       repair: (authored, problems) =>
-        generateObject(writer, repairPrompt(authored, problems), AuthoringStrategySchema),
+        generateObject(
+          repairPrompt(authored, problems),
+          AuthoringStrategySchema,
+          'authored_strategy',
+          guest
+        ),
       // A document that compiles with the wrong shape is repaired like a diagnostic.
       check: (authored, summary) =>
         checkDocumentAgainstPlan(inputData.plan, authored, summary, briefSides(brief)),
@@ -222,17 +247,15 @@ const review = createStep({
   id: 'review',
   inputSchema: CompileOutputSchema,
   outputSchema: BuildResultSchema,
-  execute: async ({ inputData, getInitData, mastra }) => {
+  execute: async ({ inputData, getInitData }) => {
     if (inputData.status === 'failed' || inputData.summary === null)
       return { ...inputData, readback: '', assumptions: [], mismatches: [] }
     // The shape was checked mechanically; prose is written only for a document whose
     // legs, wakes and orders match the plan. Otherwise the mismatches are the review.
     if (inputData.mismatches.length > 0) return { ...inputData, readback: '', assumptions: [] }
-    const { brief } = z.parse(BuildInputSchema, getInitData())
-    const writer = mastra.getAgentById(STRATEGY_WRITER_AGENT_ID)
+    const { brief, guest } = z.parse(BuildInputSchema, getInitData())
     const derived = deriveEnvelope(brief)
     const verdict = await generateObject(
-      writer,
       reviewPrompt(
         brief,
         inputData.plan,
@@ -244,7 +267,9 @@ const review = createStep({
         readback: z.string(),
         assumptions: z.array(z.string()),
         mismatches: z.array(z.string()),
-      })
+      }),
+      'build_review',
+      guest
     )
     return { ...inputData, ...verdict }
   },

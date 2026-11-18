@@ -1,8 +1,10 @@
 import { Agent } from '@mastra/core/agent'
+import { env } from '../../env'
 import { RULEBOOK } from '../capabilities/strategy/rulebook'
+import { writerModelRouter } from '../writer-models'
 
-/** The id the compile workflow looks the writer up by. */
-export const STRATEGY_WRITER_AGENT_ID = 'strategy-writer'
+/** The id this agent registers under. */
+const STRATEGY_WRITER_AGENT_ID = 'strategy-writer'
 
 /**
  * The writer behind the compile workflow: no tools, no memory, no persona. Every call
@@ -13,5 +15,7 @@ export const strategyWriter = new Agent({
   name: 'Strategy writer',
   description: 'Turns an agreed strategy brief into a compilable strategy document.',
   instructions: RULEBOOK,
-  model: 'openai/gpt-5.6-terra',
+  // The compile workflow drives the writer through the official Anthropic SDK (see
+  // `mastra/writer-model.ts`) to control the exact request; this model is the same one.
+  model: writerModelRouter(env.WRITER_MODEL),
 })

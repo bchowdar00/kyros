@@ -24,10 +24,14 @@ interface CompileProposalCardProps {
   onDeploy?: ((build: BuildStatus, brief: StrategyBrief) => void) | undefined
 }
 
+/** The line shown when a build could not be started for an unexpected reason. */
+const COULD_NOT_START = 'The build could not be started. Try again in a moment.'
+
 type Phase =
   | { kind: 'proposed' }
   | { kind: 'starting' }
-  | { kind: 'refused' }
+  /** A refusal to show the user: the route's resting / not-switched-on line, or the fallback. */
+  | { kind: 'refused'; message: string }
   | { kind: 'building'; id: string }
 
 /**
@@ -52,8 +56,17 @@ export function CompileProposalCard({
 
   async function compile() {
     setPhase({ kind: 'starting' })
-    const id = await startStrategyBuild(brief)
-    setPhase(id ? { kind: 'building', id } : { kind: 'refused' })
+    const outcome = await startStrategyBuild(brief)
+    switch (outcome.kind) {
+      case 'started':
+        setPhase({ kind: 'building', id: outcome.id })
+        return
+      case 'notice':
+        setPhase({ kind: 'refused', message: outcome.message })
+        return
+      default:
+        setPhase({ kind: 'refused', message: COULD_NOT_START })
+    }
   }
 
   return (
@@ -65,7 +78,7 @@ export function CompileProposalCard({
       <p className="pt-xs text-label text-muted-foreground">{describeMoney(brief)}</p>
       {phase.kind === 'refused' ? (
         <p role="alert" className="pt-sm text-label text-foreground">
-          The build could not be started. Try again in a moment.
+          {phase.message}
         </p>
       ) : null}
       <div className="flex gap-sm pt-sm">

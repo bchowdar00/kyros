@@ -5,7 +5,7 @@ vi.hoisted(() => {
   // The build routes exist in local development only, like the chat routes.
   vi.stubEnv('NODE_ENV', 'development')
   vi.stubEnv('EXCHANGE_API_URL', 'https://exchange.test')
-  vi.stubEnv('OPENAI_API_KEY', 'sk-test')
+  vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
 })
 
 const session = vi.hoisted(() => ({ resource: 'alice' as string | null }))
@@ -13,6 +13,9 @@ vi.mock('@/mastra/chat-session', () => ({ chatResource: async () => session.reso
 const builds = vi.hoisted(() => ({ start: vi.fn(async () => 'run-1'), read: vi.fn() }))
 vi.mock('@/mastra', () => ({ mastra: {} }))
 vi.mock('@/mastra/strategy-builds', () => ({ startBuild: builds.start, readBuild: builds.read }))
+// The writer meter gates every build; each test sets the charge outcome in beforeEach.
+const meter = vi.hoisted(() => ({ charge: vi.fn() }))
+vi.mock('@/mastra/writer-meter-client', () => ({ chargeWriter: meter.charge }))
 
 import { POST } from '@/app/api/strategy/builds/route'
 import { GET } from '@/app/api/strategy/builds/[id]/route'
@@ -50,13 +53,18 @@ beforeEach(() => {
   session.resource = 'alice'
   builds.start.mockClear()
   builds.read.mockReset()
+  meter.charge.mockClear()
+  meter.charge.mockResolvedValue({ ok: true, remainingGuest: 7, remainingSite: 299 })
 })
 
 describe('POST /api/strategy/builds', () => {
-  it('starts a build for a well-formed brief and answers its id', async () => {
+  it('charges then starts a build for a well-formed brief and answers its id', async () => {
     const response = await post({ brief })
     expect(response.status).toBe(202)
     expect(await response.json()).toEqual({ id: 'run-1' })
+    expect(meter.charge).toHaveBeenCalledWith(
+      expect.objectContaining({ guest: 'alice', address: null, kind: 'build' })
+    )
     expect(builds.start).toHaveBeenCalledWith({}, 'alice', brief)
   })
   it('refuses a cross-origin call', async () => {
@@ -70,6 +78,43 @@ describe('POST /api/strategy/builds', () => {
   it('refuses a caller without a chat session', async () => {
     session.resource = null
     expect((await post({ brief })).status).toBe(403)
+  })
+  it('on a 429 resting charge, starts no build and returns the resting message', async () => {
+    meter.charge.mockResolvedValue({
+      ok: false,
+      reason: 'resting',
+      message: 'The strategy writer is resting until 12:00 AM UTC; templates still deploy',
+    })
+    const response = await post({ brief })
+    expect(response.status).toBe(429)
+    expect(await response.json()).toMatchObject({
+      message: 'The strategy writer is resting until 12:00 AM UTC; templates still deploy',
+    })
+    // A refused charge calls no model: the build never starts.
+    expect(builds.start).not.toHaveBeenCalled()
+  })
+  it('fails closed when the meter is unavailable, starting no build', async () => {
+    meter.charge.mockResolvedValue({
+      ok: false,
+      reason: 'unavailable',
+      message: 'The strategy writer is unavailable right now; templates still deploy.',
+    })
+    const response = await post({ brief })
+    expect(response.status).toBe(503)
+    expect(builds.start).not.toHaveBeenCalled()
+  })
+  it('surfaces the not-switched-on line (503) when the meter is unconfigured, starting no build', async () => {
+    meter.charge.mockResolvedValue({
+      ok: false,
+      reason: 'unavailable',
+      message: 'The strategy writer is not switched on here; templates still deploy.',
+    })
+    const response = await post({ brief })
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({
+      message: 'The strategy writer is not switched on here; templates still deploy.',
+    })
+    expect(builds.start).not.toHaveBeenCalled()
   })
 })
 

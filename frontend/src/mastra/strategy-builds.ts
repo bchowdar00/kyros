@@ -1,3 +1,4 @@
+import type { IMastraLogger } from '@mastra/core/logger'
 import type { Mastra } from '@mastra/core/mastra'
 import type { WorkflowState, WorkflowStateStepResult } from '@mastra/core/workflows'
 import * as z from 'zod/mini'
@@ -22,7 +23,8 @@ function workflow(mastra: Mastra) {
 
 export async function startBuild(mastra: Mastra, resourceId: string, brief: StrategyBrief) {
   const run = await workflow(mastra).createRun({ resourceId })
-  const { runId } = await run.startAsync({ inputData: { brief } })
+  // The session owns the build; it is also the writer-usage meter's `guest`.
+  const { runId } = await run.startAsync({ inputData: { brief, guest: resourceId } })
   return runId
 }
 
@@ -33,7 +35,21 @@ export async function readBuild(
 ): Promise<BuildStatus | null> {
   const state = await workflow(mastra).getWorkflowRunById(runId)
   if (!state || state.resourceId !== resourceId) return null
-  return buildStatus(state)
+  return buildStatus(state, mastra.getLogger())
+}
+
+const GENERIC_BUILD_ERROR = 'The strategy writer hit an error. Try again in a moment.'
+
+/**
+ * The user-facing error for a crashed run. A WriterUnavailableError is written for the user
+ * in plain words, so its message is shown as-is. Every other error can carry raw SDK text
+ * (an API key, request headers, a request id), so the user sees one fixed line and the
+ * original is logged server-side for debugging — the message only, never the headers.
+ */
+function publicError(error: WorkflowState['error'], logger?: Pick<IMastraLogger, 'error'>): string {
+  if (error?.name === 'WriterUnavailableError') return error.message
+  if (error) logger?.error('strategy build failed', { name: error.name, message: error.message })
+  return GENERIC_BUILD_ERROR
 }
 
 function lastResult(result: WorkflowStateStepResult | undefined) {
@@ -66,7 +82,10 @@ const CompiledSchema = z.object({
   ...BuildResultSchema.shape,
 })
 
-export function buildStatus(state: WorkflowState): BuildStatus {
+export function buildStatus(
+  state: WorkflowState,
+  logger?: Pick<IMastraLogger, 'error'>
+): BuildStatus {
   const steps = BUILD_STEP_IDS.map(id => stepStatus(state, id))
   const base = { id: state.runId, steps, result: null, error: null }
   switch (state.status) {
@@ -82,7 +101,7 @@ export function buildStatus(state: WorkflowState): BuildStatus {
     case 'tripwire':
     case 'canceled':
     case 'bailed':
-      return { ...base, status: 'error', error: state.error?.message ?? 'The build stopped early.' }
+      return { ...base, status: 'error', error: publicError(state.error, logger) }
     default:
       return { ...base, status: 'running' }
   }

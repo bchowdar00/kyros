@@ -9,7 +9,7 @@ function exchangeUrl(env: CapabilityEnv) {
 /** Designing a strategy in conversation and handing it to the compile workflow. */
 export const strategy = defineCapability({
   id: 'strategy',
-  enabled: env => exchangeUrl(env) !== undefined && env.OPENAI_API_KEY !== undefined,
+  enabled: env => exchangeUrl(env) !== undefined && env.ANTHROPIC_API_KEY !== undefined,
   instructions: STRATEGY_INSTRUCTIONS,
   unavailable: STRATEGY_UNAVAILABLE,
   create: env => createStrategyTools(exchangeUrl(env) ?? ''),

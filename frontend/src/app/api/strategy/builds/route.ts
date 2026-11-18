@@ -2,6 +2,7 @@ import * as z from 'zod/mini'
 import { env } from '@/env'
 import { chatResource } from '@/mastra/chat-session'
 import { StrategyBriefSchema } from '@/mastra/capabilities/strategy/brief'
+import { chargeWriter } from '@/mastra/writer-meter-client'
 
 export const runtime = 'nodejs'
 
@@ -19,7 +20,10 @@ export async function POST(request: Request) {
   if (request.headers.get('origin') !== new URL(request.url).origin) {
     return Response.json({ error: 'Invalid origin.' }, { status: 403 })
   }
-  if (!env.OPENAI_API_KEY || !(env.EXCHANGE_API_URL ?? env.NEXT_PUBLIC_API_URL)) {
+  // No exchange origin means static-fixture mode: refuse rather than call a model
+  // unmetered. No Claude key means the writer cannot run either.
+  const exchangeUrl = env.EXCHANGE_API_URL ?? env.NEXT_PUBLIC_API_URL
+  if (!env.ANTHROPIC_API_KEY || !exchangeUrl) {
     return Response.json({ error: 'Builds are not configured.' }, { status: 503 })
   }
   const body = await request.text()
@@ -34,6 +38,25 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: 'Invalid build request.' }, { status: 400 })
   const resource = await chatResource()
   if (!resource) return Response.json({ error: 'No chat session.' }, { status: 403 })
+
+  // Meter the build before any model call: one charge per build (repairs included). The
+  // route does not know the caller's account address, so the per-address cap is not used.
+  const charge = await chargeWriter({
+    exchangeUrl,
+    guest: resource,
+    address: null,
+    kind: 'build',
+    acceptLanguage: request.headers.get('accept-language'),
+  })
+  if (!charge.ok)
+    return Response.json(
+      {
+        error: charge.reason === 'resting' ? 'writer_resting' : 'writer_unavailable',
+        message: charge.message,
+      },
+      { status: charge.reason === 'resting' ? 429 : 503, headers: { 'Cache-Control': 'no-store' } }
+    )
+
   try {
     const { mastra } = await import('@/mastra')
     const { startBuild } = await import('@/mastra/strategy-builds')

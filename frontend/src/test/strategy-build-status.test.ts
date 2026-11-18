@@ -1,6 +1,8 @@
 import type { WorkflowState } from '@mastra/core/workflows'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { buildStatus } from '@/mastra/strategy-builds'
+
+const GENERIC_ERROR = 'The strategy writer hit an error. Try again in a moment.'
 
 const base: WorkflowState = {
   runId: 'run-1',
@@ -119,8 +121,42 @@ describe('buildStatus', () => {
     expect(status.result?.summary).toBeNull()
   })
 
-  it('reports a crashed run as an error with the message', () => {
-    const status = buildStatus({ ...base, status: 'failed', error: { message: 'boom' } as never })
-    expect(status).toMatchObject({ status: 'error', error: 'boom' })
+  it('keeps the plain message of a WriterUnavailableError', () => {
+    const status = buildStatus({
+      ...base,
+      status: 'failed',
+      error: {
+        name: 'WriterUnavailableError',
+        message: 'The strategy writer declined to answer this brief.',
+      } as never,
+    })
+    expect(status).toMatchObject({
+      status: 'error',
+      error: 'The strategy writer declined to answer this brief.',
+    })
+  })
+
+  it('sanitizes any other error and logs the original server-side', () => {
+    const logger = { error: vi.fn() }
+    const raw =
+      'Error: 400 {"type":"error"} (request id: req_011ABCdef) headers: {"x-api-key":"sk-ant-secret"}'
+    const status = buildStatus(
+      { ...base, status: 'failed', error: { name: 'Error', message: raw } as never },
+      logger
+    )
+    expect(status.status).toBe('error')
+    expect(status.error).toBe(GENERIC_ERROR)
+    // The raw SDK text never reaches the user-facing status.
+    const publicStatus = JSON.stringify(status)
+    expect(publicStatus).not.toContain('x-api-key')
+    expect(publicStatus).not.toContain('req_011ABCdef')
+    expect(publicStatus).not.toContain('sk-ant-secret')
+    // The original is still logged for debugging.
+    expect(logger.error).toHaveBeenCalledTimes(1)
+  })
+
+  it('maps a crashed run with no error object to the generic line', () => {
+    const status = buildStatus({ ...base, status: 'failed' })
+    expect(status).toMatchObject({ status: 'error', error: GENERIC_ERROR })
   })
 })

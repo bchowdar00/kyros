@@ -152,6 +152,47 @@ describe('compile proposal and build cards', () => {
     expect(screen.getByRole('button', { name: 'Compile' })).toBeEnabled()
   })
 
+  it('shows the resting line from the route on a 429, starting no build', async () => {
+    server.use(
+      http.post('*/api/strategy/builds', () =>
+        HttpResponse.json(
+          {
+            error: 'writer_resting',
+            message: 'The strategy writer is resting until 12:00 AM UTC; templates still deploy',
+          },
+          { status: 429 }
+        )
+      )
+    )
+    const user = userEvent.setup()
+    render(<CompileProposalCard brief={brief} onAsk={vi.fn()} onKeepTalking={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Compile' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The strategy writer is resting until 12:00 AM UTC; templates still deploy'
+    )
+    expect(screen.getByRole('button', { name: 'Compile' })).toBeEnabled()
+  })
+
+  it('shows the not-switched-on line from the route on a 503 with a body', async () => {
+    server.use(
+      http.post('*/api/strategy/builds', () =>
+        HttpResponse.json(
+          {
+            error: 'writer_unavailable',
+            message: 'The strategy writer is not switched on here; templates still deploy.',
+          },
+          { status: 503 }
+        )
+      )
+    )
+    const user = userEvent.setup()
+    render(<CompileProposalCard brief={brief} onAsk={vi.fn()} onKeepTalking={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Compile' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The strategy writer is not switched on here; templates still deploy.'
+    )
+  })
+
   it('renders the proposal from the tool part and dismisses it on Keep talking', async () => {
     const user = userEvent.setup()
     render(

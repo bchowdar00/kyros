@@ -1,5 +1,6 @@
 import { createEnv } from '@t3-oss/env-nextjs'
 import * as z from 'zod/mini'
+import { WRITER_MODELS } from './mastra/writer-models'
 
 declare global {
   namespace NodeJS {
@@ -14,6 +15,9 @@ declare global {
       readonly SKIP_ENV_VALIDATION?: string
       readonly CHAT_ENABLED?: string
       readonly HIDDEN_UNDERLYINGS?: string
+      readonly ANTHROPIC_API_KEY?: string
+      readonly WRITER_MODEL?: string
+      readonly WRITER_METER_TOKEN?: string
     }
   }
 }
@@ -31,10 +35,24 @@ export const env = createEnv({
     EXCHANGE_DEMO_UI_URL: z.optional(z.url()),
     EXCHANGE_DEMO_GATEWAY_URL: z.optional(z.url()),
     EXCHANGE_DEMO_FEED_URL: z.optional(z.url()),
-    OPENAI_API_KEY: z.optional(z.string()),
+    /**
+     * Server-only Claude key (from the host environment) for Teeny chat and the strategy
+     * writer. Both agents run on `WRITER_MODEL`. Unset disables the chat and build routes.
+     */
+    ANTHROPIC_API_KEY: z.optional(z.string()),
+    /**
+     * Which Claude model the writer runs. One of three; any other value fails validation
+     * at boot. Defaults to Opus 5.5.
+     */
+    WRITER_MODEL: z._default(z.enum(WRITER_MODELS), WRITER_MODELS[0]),
+    /**
+     * Shared secret sent to the exchange's writer meter as `x-writer-token`. Must match the
+     * exchange's `WRITER_METER_TOKEN`; unset on either side, the meter is closed and the writer is off.
+     */
+    WRITER_METER_TOKEN: z.optional(z.string()),
     /**
      * `1` serves the Teeny chat routes outside development. Chat identity is an anonymous
-     * browser cookie, not account authorization, so this exposes the OpenAI key's spend to
+     * browser cookie, not account authorization, so this exposes the Claude key's spend to
      * every visitor; enable it only on a demo deployment.
      */
     CHAT_ENABLED: z.optional(z.string()),

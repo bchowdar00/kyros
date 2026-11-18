@@ -51,6 +51,7 @@ pub mod strategy;
 pub mod templates;
 pub mod trades;
 pub mod user_trades;
+pub mod writer_meter;
 pub mod ws;
 
 pub use handlers::{

@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@ai-sdk/react": "catalog:",
+    "@anthropic-ai/sdk": "catalog:",
     "@mastra/ai-sdk": "catalog:",
     "@mastra/core": "catalog:",
     "@mastra/libsql": "catalog:",
