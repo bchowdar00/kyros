@@ -47,6 +47,8 @@ pub enum ExecReject {
     PostOnlyWouldCross,
     /// `reduce_only` and the order would not reduce the position.
     ReduceOnlyNoPosition,
+    /// The round had reached its close.
+    MarketClosed,
 }
 
 impl From<OrderError> for ExecReject {
@@ -59,6 +61,7 @@ impl From<OrderError> for ExecReject {
             OrderError::SeriesMismatch { .. } => ExecReject::SeriesMismatch,
             OrderError::PostOnlyWouldCross => ExecReject::PostOnlyWouldCross,
             OrderError::ReduceOnlyNoPosition => ExecReject::ReduceOnlyNoPosition,
+            OrderError::MarketClosed => ExecReject::MarketClosed,
         }
     }
 }

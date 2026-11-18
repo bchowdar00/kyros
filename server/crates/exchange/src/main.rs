@@ -316,8 +316,8 @@ async fn main() {
             let broadcast = move |engine: &exchange::engine::MarketEngine| broadcast_book(engine, &channels);
             match (&nba_world, series.is_btc()) {
                 (Some(world), false) => {
-                    let driver = NbaDriver::new(world.clone(), bus.clone()).with_feed(price.clone());
-                    scheduler::spawn_with_driver(engine.clone(), series, series.duration_secs(), driver, runtime.clone(), broadcast);
+                    let driver = NbaDriver::new(world.clone(), bus.clone(), series.duration_secs()).with_feed(price.clone());
+                    scheduler::spawn_with_driver(engine.clone(), series, driver, runtime.clone(), broadcast);
                 }
                 _ => {
                     scheduler::spawn(engine.clone(), series, price.clone(), runtime.clone(), broadcast);

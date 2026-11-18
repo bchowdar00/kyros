@@ -24,7 +24,7 @@ use crate::automation::signal_bus::SignalBus;
 use crate::engine::{Market, Outcome, RoundClose, RoundReference};
 use crate::pricing::feed::PriceFeed;
 use crate::registry::{NBA_PBP_SIGNAL, NBA_SHARP_LINE_SIGNAL};
-use crate::scheduler::{RoundDriver, RoundResolution, sleep_until_unix};
+use crate::scheduler::{RoundDriver, RoundPlan, RoundResolution, sleep_until_unix};
 
 use super::world::{MatchupState, WindowSpec, WorldHandle};
 
@@ -36,11 +36,13 @@ pub struct NbaDriver {
     /// Announces round boundaries to `/ws/price` subscribers; `None` in
     /// tests that have no feed.
     feed: Option<Arc<PriceFeed>>,
+    /// How long each round runs once it opens.
+    duration_secs: u64,
 }
 
 impl NbaDriver {
-    pub fn new(world: WorldHandle, bus: Arc<SignalBus>) -> Self {
-        Self { world, bus, feed: None }
+    pub fn new(world: WorldHandle, bus: Arc<SignalBus>, duration_secs: u64) -> Self {
+        Self { world, bus, feed: None, duration_secs }
     }
 
     /// Also announce every open on the price feed.
@@ -91,8 +93,8 @@ impl NbaDriver {
 }
 
 impl RoundDriver for NbaDriver {
-    async fn first_reference(&mut self) -> RoundReference {
-        self.reference_for_current().await
+    async fn first_plan(&mut self) -> RoundPlan {
+        RoundPlan::from_now(self.reference_for_current().await, self.duration_secs)
     }
 
     async fn await_resolution(&mut self, current: &Market) -> RoundResolution {
@@ -106,7 +108,7 @@ impl RoundDriver for NbaDriver {
         let outcome = if home_score > away_score { Outcome::Yes } else { Outcome::No };
         // The world flipped to the next matchup on its final; the sharp
         // line announces it within a poll.
-        let next = self.reference_for_current().await;
+        let next = RoundPlan::from_now(self.reference_for_current().await, self.duration_secs);
         RoundResolution { outcome, close: RoundClose::Nba { home_score, away_score }, next }
     }
 
@@ -146,8 +148,8 @@ mod tests {
         spawn_nba_publishers(world.clone(), bus.clone(), 11);
         let (runtime, _rx) = runtime_channel();
         let mut frames = bus.subscribe();
-        let driver = NbaDriver::new(world.clone(), bus.clone());
-        spawn_with_driver(exchange.clone(), SeriesId(0), 3, driver, runtime, |_| {});
+        let driver = NbaDriver::new(world.clone(), bus.clone(), 3);
+        spawn_with_driver(exchange.clone(), SeriesId(0), driver, runtime, |_| {});
 
         // The first round opens on the sharp line's matchup and prior.
         let first = loop {

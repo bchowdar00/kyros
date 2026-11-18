@@ -362,6 +362,8 @@ pub enum ApiError {
     ZeroQuantity,
     InsufficientBalance { required: Tenths, available: Tenths },
     NoLiquidity,
+    /// The round has reached its close and is waiting on its result.
+    MarketClosed,
     StrategyNotFound,
     /// No public template with that id is listed on the series.
     TemplateNotFound,
@@ -435,6 +437,12 @@ impl IntoResponse for ApiError {
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "no_liquidity",
                 "no liquidity on opposite side".into(),
+                None,
+            ),
+            ApiError::MarketClosed => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "market_closed",
+                "this round is closed to new orders; the next one opens shortly".into(),
                 None,
             ),
             ApiError::StrategyNotFound => (
@@ -527,6 +535,7 @@ impl From<OrderError> for ApiError {
                 available,
             },
             OrderError::NoLiquidity => ApiError::NoLiquidity,
+            OrderError::MarketClosed => ApiError::MarketClosed,
             OrderError::SeriesMismatch { home, requested } => {
                 ApiError::SeriesMismatch { home, requested }
             }
@@ -581,5 +590,20 @@ impl From<StrategyError> for ApiError {
             StrategyError::StrategyNotFound => ApiError::StrategyNotFound,
             StrategyError::InvalidStrategy(msg) => ApiError::InvalidStrategy(msg),
         }
+    }
+}
+
+#[cfg(test)]
+mod order_error_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn an_order_into_a_closed_round_answers_422_market_closed() {
+        let response = ApiError::from(OrderError::MarketClosed).into_response();
+        assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+        let bytes = axum::body::to_bytes(response.into_body(), 4096).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(body["error"], "market_closed");
+        assert!(body["message"].as_str().unwrap().contains("closed"));
     }
 }

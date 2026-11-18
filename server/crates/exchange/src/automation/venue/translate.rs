@@ -120,6 +120,7 @@ pub fn reject_reason_of(e: ExecReject) -> RejectReason {
         | ExecReject::PostOnlyWouldCross
         | ExecReject::ReduceOnlyNoPosition => RejectReason::InvalidOrder,
         ExecReject::UnknownAccount => RejectReason::InternalError,
+        ExecReject::MarketClosed => RejectReason::MarketClosed,
     }
 }
 
@@ -209,6 +210,7 @@ mod tests {
     #[test]
     fn engine_errors_map_onto_the_closed_set() {
         assert_eq!(reject_reason(OrderError::NoLiquidity), RejectReason::NoLiquidity);
+        assert_eq!(reject_reason(OrderError::MarketClosed), RejectReason::MarketClosed);
         assert_eq!(
             reject_reason(OrderError::InsufficientBalance { required: crate::types::Tenths(1), available: crate::types::Tenths(0) }),
             RejectReason::InsufficientFunds

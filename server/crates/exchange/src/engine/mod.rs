@@ -22,6 +22,8 @@ pub mod book;
 pub mod events;
 #[cfg(test)]
 mod events_tests;
+#[cfg(test)]
+mod lock_tests;
 pub mod ids;
 pub mod ledger;
 pub mod market;
@@ -34,7 +36,7 @@ use book::Book;
 pub use ids::IdAllocator;
 pub use ledger::Ledger;
 pub use events::{ExecKind, ExecReject, ExecutionEvent, ExecutionSink};
-pub use market::{MarketEngine, PlaceOpts};
+pub use market::{MarketEngine, PlaceOpts, RoundClock};
 use model::{Account, Fill, Order};
 
 pub use model::{
@@ -178,6 +180,9 @@ pub enum OrderError {
     PostOnlyWouldCross,
     /// A `reduce_only` order found no position to reduce on that side.
     ReduceOnlyNoPosition,
+    /// The round has reached its close and takes no more orders (only
+    /// on a series with the lock on, see `MarketEngine::set_lock_at_close`).
+    MarketClosed,
 }
 
 impl std::fmt::Display for OrderError {
@@ -202,6 +207,7 @@ impl std::fmt::Display for OrderError {
             OrderError::ReduceOnlyNoPosition => {
                 f.write_str("reduce-only order has no position to reduce")
             }
+            OrderError::MarketClosed => f.write_str("the round is closed to new orders"),
         }
     }
 }

@@ -56,8 +56,44 @@ impl PlaceOpts {
     }
 }
 
+/// Where a series reads "now" (unix seconds) when its lock is on. The
+/// system clock unless a driver that knows the venue's time replaces it.
+#[derive(Clone)]
+pub struct RoundClock(Arc<dyn Fn() -> u64 + Send + Sync>);
+
+impl RoundClock {
+    pub fn new(now: impl Fn() -> u64 + Send + Sync + 'static) -> Self {
+        Self(Arc::new(now))
+    }
+
+    pub fn system() -> Self {
+        Self::new(|| {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs())
+        })
+    }
+
+    pub fn now(&self) -> u64 {
+        (self.0)()
+    }
+}
+
+impl std::fmt::Debug for RoundClock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("RoundClock")
+    }
+}
+
 #[derive(Debug)]
 pub struct MarketEngine {
+    /// When set, an order arriving at or after the round's `closes_at`
+    /// is refused with [`OrderError::MarketClosed`]. Off by default: a
+    /// simulated series resolves at its close, so nothing can arrive
+    /// late; a series that follows an outside venue waits for that
+    /// venue's result and must not trade while it waits.
+    lock_at_close: bool,
+    clock: RoundClock,
     /// Which series this engine runs. Orders from accounts with a
     /// different home series are rejected.
     series: SeriesId,
@@ -124,6 +160,8 @@ pub struct MarketEngine {
 impl MarketEngine {
     pub fn new(series: SeriesId, ids: Arc<IdAllocator>) -> Self {
         Self {
+            lock_at_close: false,
+            clock: RoundClock::system(),
             series,
             book: Book::new(),
             open_interest: 0,
@@ -143,6 +181,23 @@ impl MarketEngine {
             settled_orders: HashMap::new(),
             positions: HashMap::new(),
         }
+    }
+
+    /// Refuse orders from the round's close until the next round opens.
+    pub fn set_lock_at_close(&mut self, on: bool) {
+        self.lock_at_close = on;
+    }
+
+    /// Replace the clock the lock reads.
+    pub fn set_clock(&mut self, clock: RoundClock) {
+        self.clock = clock;
+    }
+
+    /// Whether the open round has reached its close and is refusing
+    /// orders. Always false with the lock off.
+    pub fn is_locked(&self) -> bool {
+        self.lock_at_close
+            && self.current_market.as_ref().is_some_and(|m| self.clock.now() >= m.closes_at)
     }
 
     /// `address`'s exposure in this series. Flat/default for addresses
@@ -765,6 +820,9 @@ impl MarketEngine {
         source: TradeSource,
         opts: &PlaceOpts,
     ) -> Result<PlaceOutcome, OrderError> {
+        if self.is_locked() {
+            return Err(OrderError::MarketClosed);
+        }
         if qty.is_zero() {
             return Err(OrderError::ZeroQuantity);
         }
@@ -906,6 +964,9 @@ impl MarketEngine {
         source: TradeSource,
         opts: &PlaceOpts,
     ) -> Result<PlaceOutcome, OrderError> {
+        if self.is_locked() {
+            return Err(OrderError::MarketClosed);
+        }
         if qty.is_zero() {
             return Err(OrderError::ZeroQuantity);
         }
