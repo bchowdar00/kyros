@@ -1,0 +1,21 @@
+{
+  "name": "@kyros/chain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "hardhat build",
+    "test:contract": "hardhat test nodejs",
+    "test:recorder": "node --test --test-concurrency=1 recorder/test/recorder.test.ts",
+    "test": "npm run build && npm run test:contract && npm run test:recorder"
+  },
+  "dependencies": {
+    "viem": "2.57.19"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "5.0.7",
+    "@types/node": "24.19.2",
+    "hardhat": "3.22.0",
+    "typescript": "6.0.3"
+  }
+}
