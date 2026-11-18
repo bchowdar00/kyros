@@ -3,6 +3,7 @@ pub mod automation;
 pub mod bots;
 pub mod copy;
 pub mod engine;
+pub mod gemini;
 pub mod house;
 pub mod pricing;
 pub mod registry;
