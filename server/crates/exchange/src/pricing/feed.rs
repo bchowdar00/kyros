@@ -1,5 +1,6 @@
-//! Live BTC-USD price feed via Coinbase Advanced Trade WebSocket, plus
-//! per-market history and real-time fanout to subscribers.
+//! Live BTC-USD price feed state, per-market history and real-time fanout
+//! to subscribers. The feed is fed by the Gemini index listener
+//! (`gemini::index_feed`); this module owns the shared state it writes to.
 //!
 //! [`PriceFeed`] is the single source of truth other parts of the server
 //! consume:
@@ -17,8 +18,6 @@
 //!   window is kept: BTC's price before the open is still BTC's price.
 //! * [`PriceFeed::recent_velocity_bps`] — short-horizon BTC velocity from
 //!   a global, time-bounded buffer that no round reset ever clears.
-//!
-//! No authentication is needed for Coinbase's public market-data channels.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -26,16 +25,11 @@ use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::collections::VecDeque;
 
-use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tokio::sync::broadcast;
-use tokio_tungstenite::tungstenite::Message;
 
 use crate::series::SERIES;
 use crate::types::SeriesId;
-
-const COINBASE_WS_URL: &str = "wss://advanced-trade-ws.coinbase.com";
 
 /// Max number of ticks kept per minute of round length in a series'
 /// history window. The oldest is dropped when the window's cap is
@@ -72,8 +66,8 @@ pub fn window_cap(duration_secs: u64) -> usize {
 pub const BROADCAST_CAP: usize = 256;
 
 /// Minimum spacing between two ticks handed to chart subscribers and
-/// kept in the per-series history. Pyth Pro delivers tens of updates a
-/// second; charts want a calm ~5 Hz tape. The engine, bots and round
+/// kept in the per-series history. A fast source can deliver tens of
+/// updates a second; charts want a calm ~5 Hz tape. The engine, bots and round
 /// resolution never see this gate: [`PriceFeed::latest`] and the
 /// velocity buffer take every raw tick.
 pub const TICK_BROADCAST_INTERVAL_MS: u64 = 200;
@@ -117,15 +111,12 @@ pub enum FeedMessage {
 }
 
 /// Shared price-feed state. Construct one with [`PriceFeed::new`], hand
-/// `Arc<Self>` to the Coinbase task (via [`spawn_coinbase_feed`]) and to
+/// `Arc<Self>` to the Gemini index listener that records ticks and to
 /// every handler that reads from it.
 #[derive(Debug)]
 pub struct PriceFeed {
     /// Bit pattern of an `f64`; `0` means "no price yet".
     latest: AtomicU64,
-    /// Bit pattern of the latest confidence interval (Pyth only); `0`
-    /// means none reported. Read by the spot signal publisher.
-    latest_conf: AtomicU64,
     /// One current-round tick window per series, indexed by `SeriesId.0`.
     windows: Vec<Mutex<VecDeque<Tick>>>,
     /// Global, time-bounded ([`VELOCITY_WINDOW_SECS`]) tick buffer that
@@ -141,7 +132,6 @@ impl PriceFeed {
         let (tx, _) = broadcast::channel(BROADCAST_CAP);
         Arc::new(Self {
             latest: AtomicU64::new(0),
-            latest_conf: AtomicU64::new(0),
             windows: SERIES
                 .iter()
                 .map(|s| Mutex::new(VecDeque::with_capacity(window_cap(s.duration_secs).min(4096))))
@@ -154,20 +144,6 @@ impl PriceFeed {
 
     fn window(&self, series: SeriesId) -> &Mutex<VecDeque<Tick>> {
         &self.windows[series.0 as usize]
-    }
-
-    /// The latest confidence interval the source reported, in dollars.
-    /// `None` for sources without one (Coinbase).
-    pub fn latest_confidence(&self) -> Option<f64> {
-        match self.latest_conf.load(Ordering::Relaxed) {
-            0 => None,
-            b => Some(f64::from_bits(b)),
-        }
-    }
-
-    /// Record the source's confidence interval alongside its price.
-    pub fn record_confidence(&self, conf: f64) {
-        self.latest_conf.store(conf.to_bits(), Ordering::Relaxed);
     }
 
     /// Most recent observed BTC-USD price, or `None` if the feed has not
@@ -394,132 +370,10 @@ pub(crate) fn unix_now_ms() -> u64 {
         .as_millis() as u64
 }
 
-/// Spawn a background task that maintains a Coinbase WS connection and
-/// keeps `feed` updated with the latest BTC-USD ticker. On any error or
-/// disconnect, the task waits 2 seconds and reconnects indefinitely.
-pub fn spawn_coinbase_feed(feed: Arc<PriceFeed>) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(async move {
-        loop {
-            match run_coinbase(&feed).await {
-                Ok(()) => tracing::warn!("coinbase feed exited cleanly; reconnecting"),
-                Err(e) => tracing::warn!(error = %e, "coinbase feed errored; reconnecting in 2s"),
-            }
-            tokio::time::sleep(Duration::from_secs(2)).await;
-        }
-    })
-}
-
-type DynError = Box<dyn std::error::Error + Send + Sync>;
-
-async fn run_coinbase(feed: &PriceFeed) -> Result<(), DynError> {
-    let (mut ws, _) = tokio_tungstenite::connect_async(COINBASE_WS_URL).await?;
-
-    // Coinbase requires the first subscribe within 5s of connect.
-    let sub_ticker = serde_json::json!({
-        "type": "subscribe",
-        "product_ids": ["BTC-USD"],
-        "channel": "ticker",
-    });
-    ws.send(Message::Text(sub_ticker.to_string().into())).await?;
-
-    // Heartbeats keep the connection alive on quiet markets and let us
-    // notice silent stalls.
-    let sub_heartbeats = serde_json::json!({
-        "type": "subscribe",
-        "product_ids": ["BTC-USD"],
-        "channel": "heartbeats",
-    });
-    ws.send(Message::Text(sub_heartbeats.to_string().into())).await?;
-
-    while let Some(msg) = ws.next().await {
-        match msg? {
-            Message::Text(text) => {
-                if let Some(p) = parse_ticker_price(text.as_str()) {
-                    feed.record(p);
-                }
-            }
-            Message::Ping(payload) => {
-                ws.send(Message::Pong(payload)).await?;
-            }
-            Message::Close(_) => return Ok(()),
-            _ => {}
-        }
-    }
-    Ok(())
-}
-
-/// Parse a Coinbase Advanced Trade `ticker` message envelope and return
-/// the first BTC-USD ticker's `price` as an `f64`. Returns `None` for any
-/// other channel, malformed payload, or missing fields.
-fn parse_ticker_price(text: &str) -> Option<f64> {
-    let v: Value = serde_json::from_str(text).ok()?;
-    if v.get("channel")?.as_str()? != "ticker" {
-        return None;
-    }
-    let tickers = v
-        .get("events")?
-        .as_array()?
-        .first()?
-        .get("tickers")?
-        .as_array()?;
-    let t = tickers.first()?;
-    if t.get("product_id")?.as_str()? != "BTC-USD" {
-        return None;
-    }
-    t.get("price")?.as_str()?.parse::<f64>().ok()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::types::DEFAULT_SERIES;
-
-    #[test]
-    fn parses_real_ticker_shape() {
-        let msg = r#"{
-            "channel": "ticker",
-            "client_id": "",
-            "timestamp": "2025-01-01T00:00:00Z",
-            "sequence_num": 1,
-            "events": [{
-                "type": "update",
-                "tickers": [{
-                    "product_id": "BTC-USD",
-                    "price": "98765.43",
-                    "best_bid": "98760.00",
-                    "best_ask": "98770.00"
-                }]
-            }]
-        }"#;
-        assert_eq!(parse_ticker_price(msg), Some(98765.43));
-    }
-
-    #[test]
-    fn ignores_heartbeat() {
-        let msg = r#"{"channel":"heartbeats","timestamp":"2025-01-01T00:00:00Z","events":[]}"#;
-        assert_eq!(parse_ticker_price(msg), None);
-    }
-
-    #[test]
-    fn ignores_subscription_ack() {
-        let msg = r#"{"channel":"subscriptions","events":[]}"#;
-        assert_eq!(parse_ticker_price(msg), None);
-    }
-
-    #[test]
-    fn ignores_malformed_json() {
-        assert_eq!(parse_ticker_price("not json"), None);
-        assert_eq!(parse_ticker_price(""), None);
-    }
-
-    #[test]
-    fn ignores_other_products() {
-        let msg = r#"{
-            "channel":"ticker",
-            "events":[{"tickers":[{"product_id":"ETH-USD","price":"3500.00"}]}]
-        }"#;
-        assert_eq!(parse_ticker_price(msg), None);
-    }
 
     #[test]
     fn latest_starts_empty_then_holds() {

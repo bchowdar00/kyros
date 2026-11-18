@@ -45,7 +45,7 @@ impl Rig {
     /// `ask` (up-side tenths) for `qty` lots so takers can fill.
     fn new(series: SeriesId, bid: u16, ask: u16, qty: u32) -> Rig {
         let registry = registry_with_spot_lane();
-        let catalogue = TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"));
+        let catalogue = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
         let (state, _platform) = app_state_with(registry);
         {
             let mut e = state.exchange.lock().unwrap();
@@ -861,108 +861,3 @@ async fn polymarket_momentum_follows_the_odds_and_the_inverse_fades_them() {
     assert_eq!(fade.wait_for_leg(&id, "holding").await, "holding");
 }
 
-/// The NBA template: the model's home win probability against the home
-/// book. A cheap home ask is bought; once the bid reaches the model the
-/// position is sold out and the deployment hunts again.
-#[tokio::test]
-async fn model_vs_crowd_buys_home_under_the_model_and_sells_out_at_it() {
-    let nba = SERIES.iter().find(|s| s.underlying == "nba").expect("an NBA series in the table").id;
-    let rig = Rig::new(nba, 300, 400, 500);
-    let (child, id) = rig.deploy("model-vs-crowd", Side::Primary).await;
-    assert_eq!(rig.status(&id).await.current_leg, "hunting");
-
-    rig.publish_window(60_000);
-    let price_id = format!("{}.current.price.v1", rig.slug());
-    rig.publish(
-        &price_id,
-        &[("home", json!("0.35")), ("away", json!("0.65")), ("bid", json!("0.3")), ("ask", json!("0.4")), ("last", json!("0"))],
-    );
-    // The model says 0.70 while the ask is 0.40: buy home.
-    rig.publish("nba.sim.winprob.v1", &[("home", json!("0.700000"))]);
-    let pos = rig.wait_for_position(child, |p| p > 0).await;
-    let s = rig.status(&id).await;
-    assert_eq!(pos, 50, "$20 at the 0.40 ask is fifty lots of home: {:#?}", s.log);
-    assert_eq!(rig.wait_for_leg(&id, "holding_home").await, "holding_home");
-
-    // The model collapses under the 0.30 bid: sell out.
-    rig.publish("nba.sim.winprob.v1", &[("home", json!("0.200000"))]);
-    assert_eq!(rig.wait_for_position(child, |p| p == 0).await, 0);
-    assert_eq!(rig.wait_for_leg(&id, "hunting").await, "hunting");
-}
-
-// ───────────────────────────── lead-change (NBA) ─────────────────────────────
-
-impl Rig {
-    /// The NBA series' book frame: outcome fields are `home` / `away`.
-    fn publish_home_book(&self, bid: &str, ask: &str) {
-        let home = (Decimal::from_str(bid).unwrap() + Decimal::from_str(ask).unwrap()) / Decimal::from(2);
-        let id = format!("{}.current.price.v1", self.slug());
-        self.publish(
-            &id,
-            &[
-                ("home", json!(home.normalize().to_string())),
-                ("away", json!((Decimal::ONE - home).normalize().to_string())),
-                ("bid", json!(bid)),
-                ("ask", json!(ask)),
-                ("last", json!("0")),
-            ],
-        );
-    }
-
-    /// One in-play play with the given scores, then the margin it implies.
-    fn publish_play(&self, seq: u32, quarter: u8, home_score: u32, away_score: u32) {
-        self.publish(
-            crate::registry::NBA_PBP_SIGNAL,
-            &[
-                ("seq", json!(seq)),
-                ("action", json!("two_pointer")),
-                ("result", json!("made")),
-                ("team", json!("BOS")),
-                ("player", json!(1)),
-                ("phase", json!("in_play")),
-                ("home_team", json!("BOS")),
-                ("away_team", json!("LAL")),
-                ("quarter", json!(quarter)),
-                ("home_score_before", json!(home_score)),
-                ("away_score_before", json!(away_score)),
-                ("home_score", json!(home_score)),
-                ("away_score", json!(away_score)),
-                ("clock_remaining", json!("600.0")),
-            ],
-        );
-        self.publish(crate::registry::NBA_MARGIN_SIGNAL, &[("value", json!((i64::from(home_score) - i64::from(away_score)).to_string()))]);
-    }
-}
-
-/// On the NBA book (quoted side `home`), Back the Leader buys Home when
-/// Home leads and flips the whole position to Away when Away takes the
-/// lead: the flip closes the Home lots and adds the stake on Away. In
-/// the fourth quarter the next lead change is the last flip.
-#[tokio::test]
-async fn lead_change_backs_the_leader_and_flips_on_the_nba_book() {
-    let rig = Rig::new(SERIES[2].id, 450, 550, 500);
-    let (child, id) = rig.deploy("lead-change", Side::Primary).await;
-    assert_eq!(rig.status(&id).await.current_leg, "hunting");
-
-    rig.publish_home_book("0.45", "0.55");
-    rig.publish_play(1, 1, 2, 0);
-    let pos = rig.wait_for_position(child, |p| p > 0).await;
-    assert_eq!(pos, 9, "$5 at the 0.55 Home ask is nine lots of Home");
-    assert_eq!(rig.wait_for_leg(&id, "holding_home").await, "holding_home");
-
-    // Away takes the lead before the fourth: close the nine Home lots and
-    // buy the stake on Away as one Away buy (a sale of Home into the 0.45
-    // bid): 9 + $5 / 0.55 = 18 lots, leaving nine lots of Away.
-    tokio::time::sleep(Duration::from_millis(1_100)).await;
-    rig.publish_play(2, 2, 2, 5);
-    let pos = rig.wait_for_position(child, |p| p < 0).await;
-    assert_eq!(pos, -9);
-    assert_eq!(rig.wait_for_leg(&id, "holding_away").await, "holding_away");
-
-    // In the fourth quarter Home retakes the lead: one last flip, then locked.
-    tokio::time::sleep(Duration::from_millis(1_100)).await;
-    rig.publish_play(3, 4, 9, 5);
-    let pos = rig.wait_for_position(child, |p| p > 0).await;
-    assert_eq!(pos, 9);
-    assert_eq!(rig.wait_for_leg(&id, "locked").await, "locked");
-}

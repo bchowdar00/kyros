@@ -21,8 +21,8 @@
 //!   write to add a signal is its registry entry. Each is tagged with the
 //!   lane that publishes it and whether that lane is running in this
 //!   process.
-//! * The live BTC price feed (Pyth Pro, or the Coinbase fallback) is the
-//!   one external signal.
+//! * The live BTC price feed (the index Gemini settles on) is the one
+//!   external signal.
 //!
 //! # Scope
 //!
@@ -76,8 +76,6 @@ const QUOTE_RANGE: [&str; 2] = ["0.001", "0.999"];
 /// Which live BTC price source the exchange is running on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PriceSource {
-    PythPro,
-    Coinbase,
     /// The index Gemini settles its BTC contracts on (Lukka
     /// LS-LRRR-XBTUSD), as Gemini's public socket reports it.
     GeminiIndex,
@@ -179,9 +177,6 @@ pub fn write(registry: &Registry, path: &Path) -> Result<()> {
 pub fn build(inputs: &Inputs<'_>) -> Result<Registry> {
     let mut signals: Vec<Value> = Vec::new();
     signals.push(price_feed_signal(inputs.price_source));
-    // Scoped to the `nba` underlying: they reach a series only once one
-    // with that underlying is in the table.
-    signals.extend(nba_signals());
     for spec in SERIES {
         signals.extend(series_signals(spec));
     }
@@ -290,14 +285,9 @@ pub fn cadence(duration_secs: u64) -> String {
 /// The authoring description of a series, by underlying.
 fn series_description(spec: &SeriesSpec) -> String {
     let c = cadence(spec.duration_secs);
-    match spec.underlying {
-        "nba" => format!(
-            "{c} NBA head-to-head. Every window is one simulated game between two of the league's teams; the matchup and the sharp pregame line are captured when the window opens, and at close the final score decides home or away. The book quotes the home side; away is its complement."
-        ),
-        _ => format!(
-            "{c} BTC up/down. The strike is the BTC price when the round opens; at close the price decides up (at or above the strike) or down. The book quotes the up side; down is its complement."
-        ),
-    }
+    format!(
+        "{c} BTC up/down. The strike is the BTC price when the round opens; at close the price decides up (at or above the strike) or down. The book quotes the up side; down is its complement."
+    )
 }
 
 fn series_entry(spec: &SeriesSpec) -> Value {
@@ -338,98 +328,9 @@ pub fn stats_signal_id(slug: &str) -> String {
     format!("{slug}.current.stats.v1")
 }
 
-/// The underlying of the simulated NBA series.
-pub const NBA_UNDERLYING: &str = "nba";
-
-/// Signal ids of the NBA world's feeds and derived signals.
-pub const NBA_PBP_SIGNAL: &str = "nba.sim.pbp.v1";
-pub const NBA_SHARP_LINE_SIGNAL: &str = "nba.sim.sharp_line.v1";
-pub const NBA_MARGIN_SIGNAL: &str = "nba.sim.margin.v1";
-pub const NBA_WINPROB_SIGNAL: &str = "nba.sim.winprob.v1";
-
-/// Signal id of a series' matchup internal (NBA series only).
-pub fn matchup_signal_id(slug: &str) -> String {
-    format!("{slug}.current.matchup.v1")
-}
-
-/// The `enum` field declaration over the league's team codes.
-fn team_field(name: &str, label: &str) -> Value {
-    json!({"name": name, "label": label, "type": "enum", "variants": crate::sim::nba::league::team_codes()})
-}
-
-/// The four signals the NBA world publishes, scoped to every series with
-/// the `nba` underlying: the two feeds (play-by-play and the sharp line)
-/// and the two derived from them (margin and model win probability). The
-/// play-by-play metadata mirrors the roster table so the ids the events
-/// carry resolve to names. Each is marked `live`: the catalogue only
-/// assumes that for series-scoped internals, and these are published by
-/// this process whenever an NBA series is in the table.
-pub fn nba_signals() -> Vec<Value> {
-    use crate::sim::nba::league::{ROSTERS, team_codes};
-    let scope = json!(Scope::Underlying { underlying: NBA_UNDERLYING.to_string() });
-    let players: BTreeMap<String, Value> = ROSTERS
-        .iter()
-        .map(|p| (p.id.to_string(), json!({"name": p.name, "team": p.team})))
-        .collect();
-    vec![
-        json!({
-            "signal_id": NBA_PBP_SIGNAL, "version": "1", "location": "internal",
-            "name": "Play-by-play",
-            "description": "Every play of the active simulated NBA game with full game context: action, result, team, player, quarter, clock and the scores before and after. Game-scoped: the final stays as recorded state until the next tipoff. clock_remaining is published last.",
-            "fields": [
-                {"name": "seq", "label": "Play", "type": "u32"},
-                {"name": "action", "label": "Action", "type": "enum", "variants": ["tipoff", "two_pointer", "three_pointer", "free_throw", "turnover", "rebound", "foul", "final"]},
-                {"name": "result", "label": "Result", "type": "enum", "variants": ["made", "missed", "none"]},
-                team_field("team", "Team"),
-                {"name": "player", "label": "Player", "type": "string"},
-                {"name": "phase", "label": "Phase", "type": "enum", "variants": ["in_play", "final"]},
-                team_field("home_team", "Home"),
-                team_field("away_team", "Away"),
-                {"name": "quarter", "label": "Quarter", "type": "u8"},
-                {"name": "home_score_before", "label": "Home Before", "type": "u32"},
-                {"name": "away_score_before", "label": "Away Before", "type": "u32"},
-                {"name": "home_score", "label": "Home Score", "type": "u32"},
-                {"name": "away_score", "label": "Away Score", "type": "u32"},
-                {"name": "clock_remaining", "label": "Clock", "type": "decimal"}
-            ],
-            "metadata": {
-                "scope": scope, "producer": "nba_world", "live": true, "approximate_interval_ms": 0,
-                "team_semantics": "offense for shots, turnovers and free throws; defense for fouls and rebounds",
-                "teams": team_codes(), "players": players
-            }
-        }),
-        json!({
-            "signal_id": NBA_SHARP_LINE_SIGNAL, "version": "1", "location": "internal",
-            "name": "Sharp line",
-            "description": "A sharp book's de-vigged fair win probabilities for the game in play or the upcoming one. Publishes on a line move of at least half a point and on a matchup change; the matchup change is how the next game is announced before its window opens.",
-            "fields": [
-                team_field("home_team", "Home"),
-                team_field("away_team", "Away"),
-                {"name": "home_prob", "label": "Home Win", "type": "decimal"},
-                {"name": "away_prob", "label": "Away Win", "type": "decimal"}
-            ],
-            "metadata": { "scope": scope, "producer": "sharp_line", "venue": "pinnacle_like", "live": true, "approximate_interval_ms": 500 }
-        }),
-        json!({
-            "signal_id": NBA_MARGIN_SIGNAL, "version": "1", "location": "internal",
-            "name": "Score margin",
-            "description": "Home score minus away score for the game in play, republished on every play and reset to zero at tipoff.",
-            "fields": [ {"name": "value", "label": "Margin", "type": "decimal"} ],
-            "metadata": { "scope": scope, "producer": "score_margin", "inputs": [NBA_PBP_SIGNAL], "live": true, "approximate_interval_ms": 0 }
-        }),
-        json!({
-            "signal_id": NBA_WINPROB_SIGNAL, "version": "1", "location": "internal",
-            "name": "Model win probability",
-            "description": "P(home): the sharp prior before tipoff, then the margin and clock diffusion model in play with the pregame prior frozen as drift. The same formula the bots' fair value uses.",
-            "fields": [ {"name": "home", "label": "Home Win", "type": "decimal"} ],
-            "metadata": { "scope": scope, "producer": "pbp_winprob", "inputs": [NBA_PBP_SIGNAL, NBA_SHARP_LINE_SIGNAL], "live": true, "approximate_interval_ms": 0 }
-        }),
-    ]
-}
-
 /// The internals the exchange publishes for every series: four shared
-/// (price, window, trades, stats) plus the underlying's own reference
-/// signals (BTC: strike and delta; NBA: matchup).
+/// (price, window, trades, stats) plus the BTC reference signals (strike
+/// and delta).
 fn series_signals(spec: &SeriesSpec) -> Vec<Value> {
     let s = spec.slug;
     let sid = |kind: &str| format!("{s}.current.{kind}.v1");
@@ -437,20 +338,7 @@ fn series_signals(spec: &SeriesSpec) -> Vec<Value> {
     let [pos, neg] = spec.outcomes;
     let (pos_label, neg_label) = (field_label(pos), field_label(neg));
     let mut out = Vec::new();
-    if spec.underlying == NBA_UNDERLYING {
-        out.push(json!({
-            "signal_id": matchup_signal_id(s), "version": "1", "location": "internal",
-            "name": "Round Matchup",
-            "description": format!("The game the current {s} round trades: the home and away teams and the sharp pregame home win probability, captured when the round opened, with the world's game number."),
-            "fields": [
-                team_field("home_team", "Home"),
-                team_field("away_team", "Away"),
-                {"name": "pregame_home_prob", "label": "Pregame Home Win", "type": "decimal"},
-                {"name": "game_seq", "label": "Game", "type": "u64"}
-            ],
-            "metadata": { "series_id": s, "scope": scope }
-        }));
-    } else {
+    {
         out.push(json!({
             "signal_id": sid("strike"), "version": "1", "location": "internal",
             "name": "Round Strike",
@@ -521,8 +409,6 @@ fn series_signals(spec: &SeriesSpec) -> Vec<Value> {
 /// The registry id of the live price feed signal for `source`.
 pub fn price_feed_signal_id(source: PriceSource) -> String {
     match source {
-        PriceSource::PythPro => "pyth.btc_usd.spot.v1".to_string(),
-        PriceSource::Coinbase => "coinbase.btc_usd.spot.v1".to_string(),
         PriceSource::GeminiIndex => "gemini.btc_usd.spot.v1".to_string(),
     }
 }
@@ -530,20 +416,6 @@ pub fn price_feed_signal_id(source: PriceSource) -> String {
 fn price_feed_signal(source: PriceSource) -> Value {
     let scope = json!(Scope::Underlying { underlying: PRICE_FEED_UNDERLYING.to_string() });
     match source {
-        PriceSource::PythPro => json!({
-            "signal_id": price_feed_signal_id(source), "version": "1", "location": "external",
-            "name": "BTC/USD Spot",
-            "description": "Pyth Pro BTC/USD aggregate (feed id 1), real-time channel: price and confidence interval in dollars. The price every round's strike and settlement are read from.",
-            "fields": [ {"name": "last", "label": "BTC/USD Spot", "type": "decimal"}, {"name": "conf", "label": "Confidence", "type": "decimal"} ],
-            "metadata": { "venue": "pyth", "pair": "btc_usd", "scope": scope }
-        }),
-        PriceSource::Coinbase => json!({
-            "signal_id": price_feed_signal_id(source), "version": "1", "location": "external",
-            "name": "BTC/USD Spot",
-            "description": "Coinbase BTC-USD public ticker (keyless fallback when no Pyth key is set). The price every round's strike and settlement are read from.",
-            "fields": [ {"name": "last", "label": "BTC/USD Spot", "type": "decimal"} ],
-            "metadata": { "venue": "coinbase", "pair": "btc_usd", "scope": scope }
-        }),
         PriceSource::GeminiIndex => json!({
             "signal_id": price_feed_signal_id(source), "version": "1", "location": "external",
             "name": "BTC/USD Index",
@@ -691,22 +563,16 @@ fn definition_signals(root: &Path, live_lanes: &[&str]) -> Result<(Vec<Value>, u
     Ok((out, count))
 }
 
-/// The internals an NBA series would get, typed, for tests that run
-/// before an NBA row is in the table.
-pub fn nba_series_internals_for_tests(spec: &SeriesSpec) -> Vec<strategy_compiler::ir::SignalDef> {
-    series_signals(spec).into_iter().map(|v| serde_json::from_value(v).expect("NBA internals type")).collect()
-}
-
 /// A registry for hand-built test states: exchange signals only, no
-/// definition files, Coinbase as the price source. Not `cfg(test)` so the
-/// crate's integration tests and `engine::strategies::test_support` can
-/// compile fixtures against it.
+/// definition files, the Gemini index as the price source. Not `cfg(test)`
+/// so the crate's integration tests and `engine::strategies::test_support`
+/// can compile fixtures against it.
 pub fn for_tests() -> std::sync::Arc<Registry> {
     let empty = std::env::temp_dir().join("tiny-registry-no-definitions");
     let _ = std::fs::create_dir_all(&empty);
     std::sync::Arc::new(
         build(&Inputs {
-            price_source: PriceSource::Coinbase,
+            price_source: PriceSource::GeminiIndex,
             live_lanes: &[],
             definitions_dir: Some(empty.clone()),
             copy_dir: Some(empty),
@@ -722,7 +588,7 @@ mod tests {
 
     fn inputs<'a>(live: &'a [&'a str]) -> Inputs<'a> {
         Inputs {
-            price_source: PriceSource::PythPro,
+            price_source: PriceSource::GeminiIndex,
             live_lanes: live,
             definitions_dir: Some(PathBuf::from(DEFINITIONS_IN_CHECKOUT)),
             copy_dir: None,
@@ -737,29 +603,15 @@ mod tests {
         // One copy file covers every venue's variant of an indicator, and the
         // variants differ a little (the blend has `combined_imbalance`, the
         // venues `imbalance`), so a copy field must exist in at least one.
-        // The series internals of every underlying count, whether or not a
-        // series with that underlying is in the table yet.
-        let nba_spec = SeriesSpec {
-            id: crate::types::SeriesId(0),
-            slug: "nba-h2h",
-            duration_secs: 300,
-            underlying: NBA_UNDERLYING,
-            outcomes: crate::series::NBA_OUTCOMES,
-        };
-        let extra: Vec<strategy_compiler::ir::SignalDef> = series_signals(&nba_spec)
-            .into_iter()
-            .map(|v| serde_json::from_value(v).expect("NBA internals type"))
-            .collect();
         let mut fields_by_indicator: std::collections::BTreeMap<&str, std::collections::BTreeSet<&str>> = Default::default();
-        for sig in r.signals.iter().chain(extra.iter()) {
+        for sig in r.signals.iter() {
             let entry = fields_by_indicator.entry(crate::copy::indicator_of(&sig.signal_id)).or_default();
             entry.extend(sig.fields.iter().map(|f| f.name.as_str()));
         }
         for key in book.indicators() {
-            // A per-underlying file (`nba.price`) is keyed by the shared indicator.
             let (underlying, indicator) = crate::copy::split_key(key);
             if let Some(u) = underlying {
-                assert!(SERIES.iter().any(|s| s.underlying == u) || u == NBA_UNDERLYING, "copy file `{key}` names an unknown underlying");
+                assert!(SERIES.iter().any(|s| s.underlying == u), "copy file `{key}` names an unknown underlying");
             }
             let known = fields_by_indicator.get(indicator).unwrap_or_else(|| panic!("copy file `{key}` matches no signal"));
             for name in book.get(key).unwrap().fields.keys() {
@@ -849,78 +701,6 @@ mod tests {
         }
     }
 
-    /// The NBA entries type through the compiler's `Registry`, every
-    /// field is a real compiler type, the roster metadata mirrors the
-    /// league table, and each has a copy file. Built as a registry of
-    /// their own so the test holds before an NBA series row exists.
-    #[test]
-    fn nba_signals_type_and_mirror_the_roster() {
-        use crate::sim::nba::league::{ROSTERS, TEAMS};
-        let nba_spec = SeriesSpec {
-            id: crate::types::SeriesId(0),
-            slug: "nba-h2h",
-            duration_secs: 300,
-            underlying: NBA_UNDERLYING,
-            outcomes: crate::series::NBA_OUTCOMES,
-        };
-        let mut signals = nba_signals();
-        signals.extend(series_signals(&nba_spec));
-        let book = CopyBook::load(&copy_dir(None).expect("copy directory in the checkout")).unwrap();
-        for signal in &mut signals {
-            assert!(apply_copy(signal, &book), "{} has no copy file", signal["signal_id"]);
-        }
-        let doc = json!({ "markets": [], "series": [series_entry(&nba_spec)], "signals": signals });
-        let r: Registry = serde_json::from_value(doc).expect("NBA entries match the compiler's Registry type");
-        assert_eq!(r.series[0].outcomes.as_deref(), Some(&["home".to_string(), "away".to_string()][..]));
-        let ids: Vec<&str> = r.signals.iter().map(|s| s.signal_id.as_str()).collect();
-        for id in [NBA_PBP_SIGNAL, NBA_SHARP_LINE_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL] {
-            assert!(ids.contains(&id), "{id}");
-            let def = r.signals.iter().find(|s| s.signal_id == id).unwrap();
-            assert_eq!(Scope::of(def), Some(Scope::Underlying { underlying: "nba".into() }));
-            assert!(Scope::of(def).unwrap().applies_to(&nba_spec));
-            assert!(!Scope::of(def).unwrap().applies_to(&SERIES[0]), "not a BTC signal");
-            assert_eq!(def.metadata.as_ref().unwrap()["live"], true, "{id} is catalogued live");
-        }
-        let expected_internals: Vec<String> =
-            ["matchup", "price", "window", "trades", "stats"].iter().map(|k| format!("nba-h2h.current.{k}.v1")).collect();
-        for id in &expected_internals {
-            assert!(ids.contains(&id.as_str()), "{id}");
-        }
-        assert!(!ids.iter().any(|id| id.contains(".strike.") || id.contains(".delta.")), "no BTC internals on an NBA series");
-        let price = r.signals.iter().find(|s| s.signal_id == "nba-h2h.current.price.v1").unwrap();
-        assert_eq!(price.fields[0].name.as_str(), "home");
-        assert_eq!(price.fields[1].name.as_str(), "away");
-        assert_eq!(price.metadata.as_ref().unwrap()["quotes_outcome"], "home");
-        // The NBA series' price and clock carry their own copy: home and
-        // away are headline fields and nothing speaks of Up or the strike.
-        assert_eq!(price.fields[0].headline, Some(true), "home is a headline field");
-        assert_eq!(price.fields[1].headline, Some(true), "away is a headline field");
-        assert!(!price.description.contains("Up"), "{}", price.description);
-        let window = r.signals.iter().find(|s| s.signal_id == "nba-h2h.current.window.v1").unwrap();
-        assert!(!window.description.contains("BTC"), "{}", window.description);
-        let btc_price = r.signals.iter().find(|s| s.signal_id == "btc-5m.current.price.v1");
-        assert!(btc_price.is_none(), "this registry is NBA-only");
-        let pbp = r.signals.iter().find(|s| s.signal_id == NBA_PBP_SIGNAL).unwrap();
-        assert_eq!(pbp.fields.last().unwrap().name.as_str(), "clock_remaining", "published last");
-        let ty = |n: &str| pbp.fields.iter().find(|f| f.name.as_str() == n).map(|f| f.field_type.clone());
-        assert!(matches!(ty("team"), Some(FieldType::Enum { variants }) if variants.len() == TEAMS.len()));
-        assert_eq!(ty("clock_remaining"), Some(FieldType::Decimal));
-        assert_eq!(ty("quarter"), Some(FieldType::U8));
-        // The player travels as a name, so a document compares it to a string literal.
-        assert_eq!(ty("player"), Some(FieldType::String));
-        let players = &pbp.metadata.as_ref().unwrap()["players"];
-        assert_eq!(players.as_object().unwrap().len(), ROSTERS.len());
-        for p in ROSTERS {
-            assert_eq!(players[p.id.to_string()]["name"], p.name);
-            assert_eq!(players[p.id.to_string()]["team"], p.team);
-        }
-        assert_eq!(pbp.name.as_deref(), Some("Play-by-play"));
-        assert!(pbp.fields.iter().find(|f| f.name.as_str() == "clock_remaining").unwrap().headline == Some(true));
-        // The catalogue ingests each one whole.
-        let store = crate::automation::signals::SignalStore::from_registry(&r);
-        assert!(store.contains(NBA_WINPROB_SIGNAL));
-    }
-
     #[test]
     fn every_definition_file_translates_and_types_resolve() {
         let dir = PathBuf::from(DEFINITIONS_IN_CHECKOUT).join("btc").join(SIGNALS_SUBDIR);
@@ -965,7 +745,7 @@ mod tests {
         let feeds = |v: &[String]| -> Vec<String> { v.iter().filter(|s| !s.contains(".current.")).cloned().collect() };
         assert_eq!(feeds(&a), feeds(&b));
         assert!(feeds(&a).iter().any(|s| s == "btc.coinbase.rsi.v1"));
-        assert!(feeds(&a).iter().any(|s| s == "pyth.btc_usd.spot.v1"));
+        assert!(feeds(&a).iter().any(|s| s == "gemini.btc_usd.spot.v1"));
         // The prototype's `scope_kind: global` stays BTC-scoped.
         let disp = r.signals.iter().find(|s| s.signal_id == "btc.multi.oracle_dispersion.v1").unwrap();
         assert_eq!(Scope::of(disp), Some(Scope::Underlying { underlying: "btc".into() }));
@@ -1017,14 +797,6 @@ mod tests {
         assert_eq!(out["metadata"]["scope"], json!({"kind": "underlying", "underlying": "eth"}));
         let bad = json!({"signal_id": "x.w", "version": "1.0.0", "fields": [], "scope": {"kind": "planet"}});
         assert!(translate_definition(&bad, "eth", live).is_err());
-    }
-
-    #[test]
-    fn price_source_is_the_one_external_signal() {
-        let r = build(&Inputs { price_source: PriceSource::Coinbase, live_lanes: &[], definitions_dir: Some(PathBuf::from(DEFINITIONS_IN_CHECKOUT)), copy_dir: None }).unwrap();
-        let ext: Vec<_> = r.signals.iter().filter(|s| s.location == SignalLocation::External).collect();
-        assert_eq!(ext.len(), 1);
-        assert_eq!(ext[0].signal_id, "coinbase.btc_usd.spot.v1");
     }
 
     #[test]

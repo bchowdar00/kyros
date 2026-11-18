@@ -5,7 +5,7 @@
 //! message and may send another at any time to replace the set:
 //!
 //! ```json
-//! {"kind": "subscribe", "ids": ["btc-5m.current.stats.v1", "pyth.btc_usd.spot.v1"]}
+//! {"kind": "subscribe", "ids": ["btc-5m.current.stats.v1", "gemini.btc_usd.spot.v1"]}
 //! {"kind": "subscribe", "set": "series"}
 //! {"kind": "subscribe", "ids": ["btc.coinbase.rsi.v1"], "history_ms": 240000, "max_points": 500}
 //! ```
@@ -244,7 +244,7 @@ mod tests {
         assert!(refused.is_empty());
         assert!(all.contains(&mine));
         assert!(!all.contains(&theirs));
-        assert!(all.contains("coinbase.btc_usd.spot.v1"));
+        assert!(all.contains("gemini.btc_usd.spot.v1"));
 
         assert!(sub.snapshot(&bus).is_empty(), "nothing published yet");
         bus.publish(SignalFrame { signal_id: mine.clone(), ts_ms: 5, quality: Quality::ready(), values: [("trades".to_string(), json!(1))].into_iter().collect() });
@@ -258,7 +258,7 @@ mod tests {
         let bus = SignalBus::new(registry::for_tests(), None);
         let series = SERIES[0].id;
         let stats = stats_signal_id(series.slug());
-        let spot = "coinbase.btc_usd.spot.v1".to_string();
+        let spot = "gemini.btc_usd.spot.v1".to_string();
         for ts in [10, 20, 30, 40] {
             bus.publish(SignalFrame { signal_id: stats.clone(), ts_ms: ts, quality: Quality::ready(), values: [("trades".to_string(), json!(ts))].into_iter().collect() });
         }

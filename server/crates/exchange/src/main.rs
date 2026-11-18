@@ -11,7 +11,6 @@ use tower_http::cors::CorsLayer;
 
 use exchange::api::{self, AppState, SeriesChannels, broadcast_book};
 use exchange::automation::lane_bridge::spawn_lane_bridge;
-use exchange::automation::nba_signals::spawn_nba_publishers;
 use exchange::automation::runtime::{runtime_channel, spawn_manager};
 use exchange::automation::series_signals::spawn_series_publisher;
 use exchange::automation::signal_bus::SignalBus;
@@ -21,7 +20,6 @@ use exchange::automation::delta_signal::spawn_delta_publisher;
 use exchange::automation::spot_signal::spawn_spot_publisher;
 use exchange::automation::stats_signal::spawn_stats_publisher;
 use exchange::automation::venue::{EngineClock, EngineVenue, SeriesMap};
-use exchange::bots::{market_maker, traders};
 use exchange::engine::{Exchange, RoundClock};
 use exchange::gemini::audit::{RoundAudit, spawn_audit};
 use exchange::gemini::driver::{DriverParts, GeminiUpDriver, RestSource, SeriesLink};
@@ -29,67 +27,19 @@ use exchange::gemini::index_feed::spawn_gemini_index_feed;
 use exchange::gemini::mirror_task::spawn_mirror;
 use exchange::gemini::strikes::{GeminiClock, IndexTape, StrikeBook, spawn_reference_listener};
 use exchange::gemini::{BTC_INDEX_ID, BTC_INDEX_STREAM, CONTRACT_STATUS_STREAM, GeminiEnv, GeminiState, PublicSocket, gemini_series_for};
-use exchange::house;
 use exchange::record::{self, RecordBook};
 use exchange::pricing::feed::{PriceFeed, spawn_tick_flusher};
-use exchange::pricing::mark::{BtcMark, SharedMark};
 use exchange::registry::{self, PriceSource};
 use exchange::scheduler;
 use exchange::series::SERIES;
 use exchange::{signals, signals_retention};
-use exchange::sim::nba::{NbaDriver, NbaMark, Pacing, spawn_world};
 use exchange::templates::TemplateCatalogue;
 use exchange::types::Tenths;
 
 const STARTING_BALANCE: Tenths = Tenths(1_000_000); // $1000
 
-/// Default trader-cohort size per series (table order), used when
-/// `TRADER_BOT_COUNT_<SLUG>` (slug upper-cased, `-` → `_`, e.g.
-/// `TRADER_BOT_COUNT_BTC_15M`) isn't set. The cohorts together are capped
-/// at the number of names in `crates/exchange/info/names.txt` (703);
-/// later series shrink first.
-const DEFAULT_TRADER_BOT_COUNTS: &[usize] = &[350, 250, 100];
-
-/// Seed of the simulated NBA season (matchups and every game), so the
-/// schedule is reproducible across restarts. Override with `NBA_SEED`.
-const NBA_SEASON_SEED: u64 = 0x005E_A50A_B0B0;
-
-/// Fixed seed for the bot population so personalities (archetype, anchor,
-/// size, bankroll) are reproducible across server restarts.
-const TRADER_BOT_POPULATION_SEED: u64 = 0xB075_EED5_F00D;
-
 async fn health() -> &'static str {
     "ok"
-}
-
-/// Trader-cohort size per series in table order: the per-slug env
-/// override or the default, then trimmed (later series first) so the
-/// total never exceeds the number of unique names available.
-fn cohort_sizes(available_names: usize) -> Vec<usize> {
-    let mut counts: Vec<usize> = SERIES
-        .iter()
-        .enumerate()
-        .map(|(i, spec)| {
-            let key = format!(
-                "TRADER_BOT_COUNT_{}",
-                spec.slug.to_ascii_uppercase().replace('-', "_")
-            );
-            std::env::var(key)
-                .ok()
-                .and_then(|v| v.parse::<usize>().ok())
-                .unwrap_or_else(|| DEFAULT_TRADER_BOT_COUNTS.get(i).copied().unwrap_or(0))
-        })
-        .collect();
-    let mut total: usize = counts.iter().sum();
-    for c in counts.iter_mut().rev() {
-        if total <= available_names {
-            break;
-        }
-        let trim = (total - available_names).min(*c);
-        *c -= trim;
-        total -= trim;
-    }
-    counts
 }
 
 async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
@@ -180,9 +130,8 @@ async fn main() {
         }
     };
 
-    // Every series in the table gets an engine, a scheduler, a market
-    // maker, a trader cohort and a trades batcher; they all share one
-    // ledger of balances.
+    // Every series in the table gets an engine, a scheduler and a trades
+    // batcher; they all share one ledger of balances.
     let engine = Arc::new(Mutex::new(Exchange::new(STARTING_BALANCE, SERIES)));
     // The strategy runtime's inbox, and the engine's execution sink that
     // reports order fates into it. Installed before anything can place a
@@ -197,48 +146,6 @@ async fn main() {
     // Charts get one tick per interval; this emits a burst's trailing price.
     spawn_tick_flusher(price.clone());
     let channels = SeriesChannels::for_all_series();
-
-    // Seed every series' trader cohort *before* anything else has a chance
-    // to touch the engine. Each bot gets its own funded account (bound to
-    // its series), archetype, anchor distance, size band and bankroll. The
-    // async tasks below pick them up and start trading once their series'
-    // first market opens. One shuffle of the name list, sliced into
-    // disjoint runs, keeps handles unique across cohorts.
-    // The house account: registered as a user under the templates' creator
-    // name and credited for one deployment of every template side, which
-    // it makes once the runtime is up (below).
-    let seed_house = house::seeding_enabled();
-    if seed_house {
-        let mut engine_guard = engine.lock().expect("engine mutex poisoned");
-        house::seed_house_account(&mut engine_guard, &templates);
-    }
-
-    let bot_population = {
-        // Embedded at compile time so the binary runs from any working
-        // directory (cargo run from the workspace root, the deploy image, …).
-        let mut names = traders::parse_names(include_str!("../info/names.txt"));
-        let counts = cohort_sizes(names.len());
-        let mut rng = traders::seeded_rng(TRADER_BOT_POPULATION_SEED);
-        traders::shuffle_names(&mut names, &mut rng);
-        let mut population = Vec::new();
-        let mut offset = 0;
-        let mut engine_guard = engine.lock().expect("engine mutex poisoned");
-        for (spec, &count) in SERIES.iter().zip(counts.iter()) {
-            let slice = &names[offset..offset + count];
-            offset += count;
-            // Per-series population seed so cohorts don't mirror each other.
-            let seed = TRADER_BOT_POPULATION_SEED ^ ((spec.id.0 as u64) << 48);
-            let cohort = traders::build_population(&mut engine_guard, slice, count, seed, spec.id);
-            tracing::info!(
-                series = %spec.id,
-                count = cohort.len(),
-                available_names = names.len(),
-                "trader-bot cohort seeded",
-            );
-            population.extend(cohort);
-        }
-        population
-    };
 
     // Gemini's public socket, keyless: every contract's strike and status,
     // and the index price once a second. The listener keeps the strike
@@ -289,28 +196,6 @@ async fn main() {
     // The live BTC price → the registry's one external signal.
     spawn_spot_publisher(price.clone(), price_source, bus.clone());
 
-    // The simulated NBA season, if an NBA series is in the table: the
-    // world plays one game per round and its feeds go on the bus. Started
-    // before the schedulers so the sharp line has quoted the first
-    // matchup by the time the NBA driver opens its first round.
-    let nba_world = SERIES.iter().find(|s| s.underlying == exchange::registry::NBA_UNDERLYING).map(|spec| {
-        let seed = std::env::var("NBA_SEED").ok().and_then(|v| v.parse::<u64>().ok()).unwrap_or(NBA_SEASON_SEED);
-        let pacing = Pacing::for_duration(spec.duration_secs);
-        let world = spawn_world(seed, pacing);
-        spawn_nba_publishers(world.clone(), bus.clone(), seed);
-        tracing::info!(series = spec.slug, seed, ?pacing, "nba world started");
-        world
-    });
-
-    // The bots' view of each series' round: one mark source per series.
-    let btc_mark: SharedMark = BtcMark::new(price.clone());
-    // The crowd's mark wobbles on the season seed, so a restart replays it.
-    let nba_seed = std::env::var("NBA_SEED").ok().and_then(|v| v.parse::<u64>().ok()).unwrap_or(NBA_SEASON_SEED);
-    let nba_mark: SharedMark = NbaMark::seeded(bus.clone(), nba_seed);
-    let mark_for = |series: exchange::types::SeriesId| -> SharedMark {
-        if series.is_btc() { btc_mark.clone() } else { nba_mark.clone() }
-    };
-
     for ch in channels.iter() {
         let series = ch.series;
         // Round statistics → `<slug>.current.stats.v1` on the bus, and the
@@ -357,42 +242,13 @@ async fn main() {
                 spawn_mirror(engine.clone(), series, gemini_socket.clone(), link, move |engine| {
                     broadcast_book(engine, &channels)
                 });
-            } else if let Some(world) = &nba_world {
-                let driver = NbaDriver::new(world.clone(), bus.clone(), series.duration_secs()).with_feed(price.clone());
-                scheduler::spawn_with_driver(engine.clone(), series, driver, runtime.clone(), broadcast);
             } else {
                 tracing::error!(series = %series, "no round driver for this series; it will never open a round");
             }
         }
-        // A series whose book is Gemini's has no market maker of ours.
-        if gemini_series_for(series.slug()).is_none() {
-            let channels = ch.clone();
-            market_maker::spawn(engine.clone(), series, mark_for(series), move |engine| {
-                broadcast_book(engine, &channels);
-            });
-        }
         // Trades batcher: polls this series' engine for new fills and
         // pushes an enriched batch (with identities) onto its channel.
         api::spawn_trades_batcher(engine.clone(), series, ch.trades_tx.clone());
-    }
-
-    // Spawn one tokio task per trader bot. Each derives its own RNG seed
-    // from the population seed + index so behavior is reproducible, and
-    // broadcasts on its own series' book channel.
-    for (idx, bot) in bot_population.into_iter().enumerate() {
-        // Nor simulated traders: the only orders there are Gemini's and users'.
-        if gemini_series_for(bot.series.slug()).is_some() {
-            continue;
-        }
-        let bot_channels = channels[bot.series.0 as usize].clone();
-        let task_seed = TRADER_BOT_POPULATION_SEED ^ (idx as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
-        traders::spawn_bot(
-            engine.clone(),
-            mark_for(bot.series),
-            bot,
-            task_seed,
-            move |engine| broadcast_book(engine, &bot_channels),
-        );
     }
 
     let state = AppState {
@@ -404,21 +260,8 @@ async fn main() {
         bus,
         templates,
         deploys: api::DeployKeys::default(),
-        crowd: api::templates::Crowd::enabled_by_env(),
         gemini: Some(gemini),
     };
-
-    // Seed the cards: the house runs both sides of every template on every
-    // series it lists. A side that fails to start is logged, never fatal.
-    if seed_house {
-        let report = house::deploy_house_templates(&state).await;
-        for (template, series, side, error) in &report.failed {
-            tracing::error!(template, series, ?side, error, "house seeding: template side did not start");
-        }
-        tracing::info!(deployed = report.deployed, failed = report.failed.len(), house = %house::HOUSE_ADDRESS, "house seeding done");
-    } else {
-        tracing::info!("house seeding disabled ({}=0)", house::HOUSE_SEED_ENV);
-    }
 
     let app = Router::new()
         .route("/health", get(health))
@@ -440,8 +283,6 @@ async fn main() {
         .route("/api/book", get(api::get_book))
         .route("/api/book/mid-history", get(api::get_mid_history))
         .route("/api/trades", get(api::get_trades))
-        .route("/api/holders", get(api::list_holders))
-        .route("/api/leaderboard", get(api::get_leaderboard))
         .route("/api/market/stats", get(api::get_market_stats))
         .route("/api/series", get(api::list_series))
         .route("/api/rounds/audit", get(api::get_rounds_audit))

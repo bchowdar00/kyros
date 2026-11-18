@@ -17,7 +17,7 @@
 //! above the strike; the close becomes the next strike, and each round
 //! opens when the last resolves and runs the series' length. After each open
 //! it resets the feed's window for the series so tick #1 belongs to the
-//! new round. The NBA driver lives in `sim::nba`.
+//! new round.
 //!
 //! After every transition the scheduler tells the strategy runtime, in
 //! this order: `window_settled` for the round that just closed, then

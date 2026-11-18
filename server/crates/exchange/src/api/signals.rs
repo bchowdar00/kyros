@@ -254,7 +254,7 @@ mod tests {
         let ids: Vec<&str> = cat.signals.iter().map(|s| s.signal_id.as_str()).collect();
         assert!(ids.contains(&stats_a.as_str()));
         assert!(!ids.contains(&stats_signal_id(b.slug()).as_str()), "other series' internals excluded");
-        assert!(ids.contains(&"coinbase.btc_usd.spot.v1"), "underlying-scoped feed included");
+        assert!(ids.contains(&"gemini.btc_usd.spot.v1"), "underlying-scoped feed included");
 
         let stats = cat.signals.iter().find(|s| s.signal_id == stats_a).unwrap();
         assert_eq!(stats.name, "Round Stats");
@@ -304,7 +304,7 @@ mod tests {
                 values: [("trades".to_string(), json!(ts))].into_iter().collect(),
             });
         }
-        let query = SignalsHistoryQuery { ids: Some(format!("{stats}, coinbase.btc_usd.spot.v1")), history_ms: Some(1_500), ..Default::default() };
+        let query = SignalsHistoryQuery { ids: Some(format!("{stats}, gemini.btc_usd.spot.v1")), history_ms: Some(1_500), ..Default::default() };
         let out = signals_history(&bus, a, &query, 3_000).unwrap();
         assert_eq!(out.series, a.slug());
         assert_eq!(out.since_ms, 1_500);

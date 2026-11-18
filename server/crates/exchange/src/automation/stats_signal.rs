@@ -146,7 +146,7 @@ mod tests {
     fn snapshot_ingests_against_the_generated_registry() {
         let empty = std::env::temp_dir().join("tiny-stats-signal-no-defs");
         let _ = std::fs::create_dir_all(&empty);
-        let reg = registry::build(&Inputs { price_source: PriceSource::Coinbase, live_lanes: &[], definitions_dir: Some(empty), copy_dir: None }).unwrap();
+        let reg = registry::build(&Inputs { price_source: PriceSource::GeminiIndex, live_lanes: &[], definitions_dir: Some(empty), copy_dir: None }).unwrap();
         let mut store = SignalStore::from_registry(&reg);
         for spec in SERIES {
             let id = stats_signal_id(spec.slug);

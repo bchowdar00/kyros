@@ -504,7 +504,6 @@ mod tests {
             bus: crate::automation::signal_bus::SignalBus::new(crate::registry::for_tests(), None),
             templates: Arc::new(crate::templates::TemplateCatalogue::default()),
             deploys: crate::api::DeployKeys::default(),
-            crowd: false,
             gemini: None,
         };
         let Json(snapshot) = get_positions(

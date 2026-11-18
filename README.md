@@ -1,6 +1,6 @@
 # Tiny — one-minute BTC prediction market demo
 
-A live, self-contained prediction-market venue that runs on real Bitcoin prices. Every 60 seconds a new market opens: the strike is BTC's price at open, and at close the real price decides whether **YES (BTC went up)** or **NO (BTC went down)** pays out $1 per contract. A Rust matching engine, a market-maker bot, and a population of a few hundred trader bots supply a real order book; a React frontend lets a human trade against it with a starting balance of $1,000.
+A live, self-contained prediction-market venue that runs on real Bitcoin prices. Every 60 seconds a new market opens: the strike is BTC's price at open, and at close the real price decides whether **YES (BTC went up)** or **NO (BTC went down)** pays out $1 per contract. A Rust matching engine supplies the order book; a React frontend lets a human trade against it with a starting balance of $1,000.
 
 There is no database, no auth, and no on-chain component. Everything lives in the memory of a single server process. That is deliberate: this is a demo of the product experience and the market microstructure, not a production exchange.
 
@@ -33,9 +33,8 @@ There is no database, no auth, and no on-chain component. Everything lives in th
 │   ├── railway.toml        # Railway/Nixpacks deploy config
 │   ├── crates/strategy-compiler/  # library: IR → validate → lower → emit (+ tests/corpus, tests/schemas)
 │   └── crates/exchange/    # the server binary (axum + tokio)
-│       ├── info/names.txt  # 703 bot display names (embedded at compile time)
 │       └── src/
-│           ├── main.rs         # wiring: engine, feed, scheduler, bots, router
+│           ├── main.rs         # wiring: engine, feed, scheduler, router
 │           ├── lib.rs          # module re-exports so tests/bins share code
 │           ├── types.rs        # Tenths, Qty, Position, Address, Side newtypes
 │           ├── ticks.rs        # the fixed 153-tick price grid
@@ -47,12 +46,8 @@ There is no database, no auth, and no on-chain component. Everything lives in th
 │           │   ├── model.rs    # Order, Fill, FillKind, Account, TradeSource
 │           │   └── strategies.rs # strategy data model + validation
 │           ├── pricing/
-│           │   ├── feed.rs     # PriceFeed store + Coinbase fallback connector
-│           │   ├── pyth.rs     # Pyth Pro BTC/USD websocket → PriceFeed (primary)
+│           │   ├── feed.rs     # PriceFeed store
 │           │   └── fair_value.rs # digital-call fair value (Φ(d))
-│           ├── bots/
-│           │   ├── market_maker.rs # single top-of-book quoter
-│           │   └── traders/    # heterogeneous bot population
 │           ├── automation/     # strategy executor (runs deployed strategies)
 │           └── api/            # HTTP + WebSocket handlers
 │               ├── mod.rs      # AppState, ApiError, broadcast wire types
@@ -62,7 +57,7 @@ There is no database, no auth, and no on-chain component. Everything lives in th
 │               ├── accounts.rs  # AccountRow: shared main/strategy row
 │               ├── accounts_ws.rs # /ws/accounts
 │               ├── trades.rs   # trade batcher task
-│               ├── user_trades.rs, holders.rs, leaderboard.rs, stats.rs
+│               ├── user_trades.rs, stats.rs
 │               └── strategy/   # parse (OpenAI) + store (CRUD)
 └── frontend/               # Vite + React 18 + TypeScript + Tailwind
     ├── package.json        # pnpm project (pnpm-lock.yaml)
@@ -96,7 +91,7 @@ The server runs several market *series* at once, each a family of back-to-back r
 | default | `btc-2m` | 120 s |
 | long | `btc-15m` | 900 s |
 
-Every series has its own order book, open interest, positions, market maker, trader cohort and scheduler. They all share **one ledger of balances**: a human's main account has a single USDC balance and can hold a position in every series at once. Every bot, market maker and strategy sub-account is bound to exactly one *home series* and the engine rejects its orders anywhere else (`wrong_series`). Adding a series is one line in the table.
+Every series has its own order book, open interest, positions and scheduler. They all share **one ledger of balances**: a human's main account has a single USDC balance and can hold a position in every series at once. Every bot and strategy sub-account is bound to exactly one *home series* and the engine rejects its orders anywhere else (`wrong_series`). Adding a series is one line in the table.
 
 Every series-scoped request takes an optional `series` slug (query parameter or JSON field) that defaults to `btc-2m`, so a client that knows nothing about series keeps working. `GET /api/series` lists the series and where each one's current round stands.
 
@@ -159,25 +154,6 @@ Every fill carries its kind on the wire so clients can render it.
 
 The engine keeps the last 60 resolved markets and the last 1,000 fills in rolling buffers.
 
-### Fair value and the bots
-
-Both bot families price the YES contract with the same model (`pricing/fair_value.rs`): a digital call on BTC, `p = Φ((btc − strike) / (strike · σ · √t))` with an annualized volatility of 0.40. At open the fair value is ~50¢; as BTC drifts and time runs out it pins toward 0.1¢ or 99.9¢.
-
-**Market maker** (`bots/market_maker.rs`): one per series, username `sorcery` / `sorcery-15m`, address `0xbb01<series byte>…`. Every 100 ms it recomputes fair value and quotes a five-level ladder around it with inventory skew. It guarantees there is always a two-sided book in every series. Bankroll via `MM_BANKROLL_USD`, or per series with `MM_BANKROLL_USD_BTC_15M`.
-
-**Trader population** (`bots/traders/`, address `0xb007<series byte>…`): one cohort per series — by default 350 on `btc-2m` and 300 on `btc-15m` (`TRADER_BOT_COUNT_BTC_2M` / `TRADER_BOT_COUNT_BTC_15M`, together capped at the 703 names in `info/names.txt`), seeded deterministically so personalities survive restarts. Names are unique across cohorts. Taker thresholds are scaled by √(round length / 60 s) so a 15-minute bot does not fire on every tick of drift. Six archetypes with weighted mix:
-
-| Archetype | Weight | Behavior |
-|---|---|---|
-| PassiveNear | 30% | rests both sides 0.3–1.2¢ off fair value, sub-second reprice |
-| PassiveMid | 18% | rests 2–8¢ off fair value, slower |
-| PassiveDeep | 15% | parks size at the extremes |
-| MomentumTaker | 20% | crosses the spread on strong BTC moves |
-| Contrarian | 10% | fades strong moves with smaller size |
-| Noise | 7% | tiny random orders to keep the tape moving |
-
-Each bot is its own tokio task with a jittered cadence drawn from its archetype. In the last 5 seconds of a round every bot is clamped to a sub-second loop so the closing rush looks real. Bankrolls are log-uniform between $1k and $20k. Bots call the same engine methods as humans; nothing is special-cased.
-
 ### Strategies (the "Automate" feature)
 
 Every deployed strategy runs on its own **sub-account**: an ordinary engine account with a random address, funded by a cash transfer from the user's main account (minimum $10) and linked back to it. Each strategy therefore has an isolated position, collateral and PnL, and one user can run many strategies at once. Manual trading stays on the parent account. Public surfaces roll children up to the parent: the activity feed and holders table show the parent's name and avatar, the leaderboard ranks the parent by the combined cash of parent + children, and the trade log lists child orders under the parent with the strategy's name. Deleting a strategy cancels its orders, market-closes its position and sweeps its cash back; if there is no liquidity to close, the child is left flat-at-resolution and swept then.
@@ -196,8 +172,6 @@ Deploying stores the blocks on the strategy's sub-account (one strategy per sub-
 
 - HTTP handlers and WebSocket snapshot builders
 - one scheduler per series (once per round)
-- one market-maker task per series (every 100 ms)
-- each trader-bot task (on its home series)
 - each strategy-executor task (on the sub-account's home series)
 - one trades batcher per series (every 100 ms)
 
@@ -207,7 +181,7 @@ Fan-out to clients goes through tokio `broadcast` channels, one pair per series 
 
 | Channel | Producer | Consumers |
 |---|---|---|
-| `PriceFeed` broadcast | price feed task (Pyth or Coinbase) | `/ws/price` (resets filtered to the subscriber's series) |
+| `PriceFeed` broadcast | price feed task | `/ws/price` (resets filtered to the subscriber's series) |
 | `book_tx` (per series) | anyone who mutates that series' book, under the lock | `/ws/book`, `/ws/positions`, `/ws/accounts` |
 | `trades_tx` (per series) | that series' trades batcher | `/ws/trades`, `/ws/positions`, `/ws/accounts` |
 
@@ -221,13 +195,12 @@ Note that the root `CLAUDE.md` describes a single-writer task fed by `mpsc` comm
 
 1. Load `.env` (via `dotenvy`), init tracing.
 2. Create the exchange (one engine per series) with a $1,000 starting balance.
-3. Shuffle the embedded `info/names.txt` once and seed one trader cohort per series from disjoint slices.
-4. Generate the venue registry (`registry.rs`): every series from the series table and every signal from `definitions/<underlying>/signals/`, each scoped to its series, its underlying or globally, in the strategy compiler's `Registry` format, written to `REGISTRY_PATH` (default `server/registry.json`, gitignored) and served at `GET /api/registry`. Nothing in it is hand-maintained: a new series row or a new definition file appears on the next start. Then start the signals platform (the automation runtime's matching engine, catalogued from that registry) and one round-statistics publisher per series (`automation/stats_signal.rs`), which republishes `<slug>.current.stats.v1` (volume, open interest, collateral, trades, traders, largest trade) on every change, at round open, and on a 5 s heartbeat. Then start the BTC signal producers (`signals.rs`: the spot, Polymarket, and, with credentials or opt-in, Kalshi, Binance, Bybit, oracle and cross lanes from the signals prototype), each on its own thread and runtime, writing file generations under `signals-data/<lane>/`. Then spawn the price feed (Pyth Pro if `PYTH_PRO_API_KEY` is set, else Coinbase), then per series a scheduler, a market maker and a trades batcher; one task per trader bot; and the executor manager.
-5. Bind `0.0.0.0:$PORT` (default 8080) with permissive CORS.
+3. Generate the venue registry (`registry.rs`): every series from the series table and every signal from `definitions/<underlying>/signals/`, each scoped to its series, its underlying or globally, in the strategy compiler's `Registry` format, written to `REGISTRY_PATH` (default `server/registry.json`, gitignored) and served at `GET /api/registry`. Nothing in it is hand-maintained: a new series row or a new definition file appears on the next start. Then start the signals platform (the automation runtime's matching engine, catalogued from that registry) and one round-statistics publisher per series (`automation/stats_signal.rs`), which republishes `<slug>.current.stats.v1` (volume, open interest, collateral, trades, traders, largest trade) on every change, at round open, and on a 5 s heartbeat. Then start the BTC signal producers (`signals.rs`: the spot, Polymarket, and, with credentials or opt-in, Kalshi, Binance, Bybit, oracle and cross lanes from the signals prototype), each on its own thread and runtime, writing file generations under `signals-data/<lane>/`. Then spawn the price feed, then per series a scheduler and a trades batcher; and the executor manager.
+4. Bind `0.0.0.0:$PORT` (default 8080) with permissive CORS.
 
 ### Price feed
 
-`pricing/pyth.rs` is the primary source: the official `pyth-lazer-client` holds three redundant websockets to `pyth-lazer-{0,1,2}.dourolabs.app`, dedupes across them and reconnects with backoff. It subscribes to `Crypto.BTC/USD` (feed id 1) on the `real_time` channel with `price`, `exponent`, `confidence` and `feedUpdateTimestamp`, JSON `parsed` delivery, `LeUnsigned` format only; if the plan rejects `real_time` it falls back to `fixed_rate@50ms` automatically. Prices stay as mantissa + exponent until the final `f64` conversion. Every 30 s it logs price, latency against Pyth's timestamp, carry-forward gap and ticks per second. It needs `PYTH_PRO_API_KEY` (see `.env.example`); without it `pricing/feed.rs`'s Coinbase connector takes over: a websocket to `wss://advanced-trade-ws.coinbase.com` on the public `ticker` and `heartbeats` channels, no key, reconnecting after 2 seconds forever. Both write into the same `PriceFeed`, which keeps the latest price in an atomic, one current-round tick window per series (2,000 ticks per minute of round length, cleared when that series rolls), a global 30-second buffer for the bots' velocity signal that no reset clears, and a broadcast channel of `tick` / `market_reset` messages (resets are tagged with their series). The server cannot open its first market until the first tick arrives, so the process needs outbound internet access.
+The BTC/USD feed connector writes into `pricing/feed.rs`'s `PriceFeed`, which keeps the latest price in an atomic, one current-round tick window per series (2,000 ticks per minute of round length, cleared when that series rolls), a global 30-second velocity buffer that no reset clears, and a broadcast channel of `tick` / `market_reset` messages (resets are tagged with their series). The server cannot open its first market until the first tick arrives, so the process needs outbound internet access.
 
 ---
 
@@ -258,8 +231,6 @@ Every route marked *series* below takes an optional `series` slug (`btc-2m` | `b
 | `POST` | `/api/positions/flip` *series* | `{address, series?}` → close and reopen the other side |
 | `GET` | `/api/book?depth=20` *series* | bids/asks levels (max depth 153) |
 | `GET` | `/api/trades?limit=50` *series* | recent raw fills (max 1000) |
-| `GET` | `/api/holders` *series* | top 100 non-flat positions by marked USD size |
-| `GET` | `/api/leaderboard?offset=0&limit=25` | registered users by cumulative settled PnL across every series; `as_of_markets` gives the last resolved round per series |
 | `GET` | `/api/market/stats` *series* | `series`, `duration_secs`, volume, open interest, locked, trade count, unique traders, largest trade |
 | `GET` | `/api/markets/history?limit=15` *series* | resolved rounds newest-first (max 60), each tagged with `series` and `duration_secs` |
 | `POST` | `/api/strategy` | `{input, current?}` → OpenAI-parsed `{text, blocks}`; needs `OPENAI_API_KEY` |
@@ -348,9 +319,8 @@ All visual values are CSS custom properties in `src/styles/globals.css`, surface
 
 - Rust via `rustup`. The toolchain file pins 1.93.0 and rustup will install it on first build.
 - Node 20+ and `pnpm` (the lockfile is `pnpm-lock.yaml`; `npm` works for running scripts once dependencies are installed).
-- Outbound internet access for the price feed websocket (Pyth Lazer nodes, or Coinbase as fallback). Without it the server starts but never opens a market.
-- `PYTH_PRO_API_KEY` in `server/.env` for the Pyth Pro feed. Copy `server/.env.example`.
-- Optional: an OpenAI API key for the Automate modal.
+- Outbound internet access for the price feed websocket. Without it the server starts but never opens a market.
+- Optional: an OpenAI API key for the Automate modal. Copy `server/.env.example` to `server/.env`.
 
 ### 1. Server
 
@@ -360,13 +330,12 @@ cargo run            # dev build of crates/exchange, listens on :8080
 RUST_LOG=info cargo run   # recommended: shows market open/resolve logs
 ```
 
-`cargo run` from `server/` builds the `exchange` crate (the workspace default member). Bot names are embedded at compile time, so the binary runs from any directory.
+`cargo run` from `server/` builds the `exchange` crate (the workspace default member). The binary runs from any directory.
 
 Optional `server/.env`:
 
 ```
 OPENAI_API_KEY=sk-...
-TRADER_BOT_COUNT=400
 PORT=8080
 ```
 
@@ -445,7 +414,6 @@ pnpm build           # tsc -b && vite build → dist/
 | Variable | Default | Used for |
 |---|---|---|
 | `PORT` | `8080` | listen port; Railway sets this |
-| `TRADER_BOT_COUNT` | `400` | number of trader bots, capped at 703 |
 | `OPENAI_API_KEY` | unset | `POST /api/strategy` returns `config_error` without it |
 | `RUST_LOG` | unset | `info` shows lifecycle; `debug` is noisy |
 
@@ -458,8 +426,6 @@ pnpm build           # tsc -b && vite build → dist/
 | `STARTING_BALANCE` | `main.rs` | $1,000 |
 | `MARKET_DURATION_SECS` | `scheduler.rs` | 60 |
 | `BTC_VOL_ANNUAL` | `pricing/fair_value.rs` | 0.40 (lower = sharper moves) |
-| `QUOTE_QTY`, `LOOP_INTERVAL` | `bots/market_maker.rs` | 10 contracts, 500 ms |
-| `TRADER_BOT_POPULATION_SEED` | `main.rs` | fixed seed for reproducible bots |
 | `RESOLVED_MARKETS_CAP` / `RECENT_FILLS_CAP` | `engine/mod.rs` | 60 markets / 1,000 fills |
 | `BOOK_WS_DEPTH` | `api/mod.rs` | 20 levels |
 | `TRADES_BATCH_INTERVAL_MS` | `api/trades.rs` | 100 ms |
@@ -489,11 +455,11 @@ Two deployables: a stateless-looking but actually stateful Rust process, and a s
 Setup:
 
 1. Create a Railway service from this repo and set the **root directory to `server`**. That makes Nixpacks see the workspace `Cargo.toml`.
-2. Set variables: `OPENAI_API_KEY` (if you want Automate), optionally `TRADER_BOT_COUNT` and `RUST_LOG=info`. Railway injects `PORT`.
+2. Set variables: `OPENAI_API_KEY` (if you want Automate) and optionally `RUST_LOG=info`. Railway injects `PORT`.
 3. Generate a public domain. Railway terminates TLS, so the frontend should use `https://` and `wss://` against it.
 4. Run **exactly one replica**. State is in-process memory; two instances would be two different markets.
 
-Any other host works the same way: build with `cargo build --release -p exchange`, run the `exchange` binary from anywhere, expose `$PORT`, and make sure the box can reach `pyth-lazer-{0,1,2}.dourolabs.app` (or `advanced-trade-ws.coinbase.com` for the fallback) and `api.openai.com`.
+Any other host works the same way: build with `cargo build --release -p exchange`, run the `exchange` binary from anywhere, expose `$PORT`, and make sure the box can reach the BTC price feed and `api.openai.com`.
 
 ### Frontend as a static site
 
@@ -517,9 +483,9 @@ If you prefer to leave the frontend env vars empty, put a reverse proxy (nginx, 
 
 ### Operational expectations
 
-- **Restarts wipe everything**: accounts, balances, leaderboard, deployed strategies, market history. Users see the name gate again. Bot identities are reproducible; nothing else is.
-- **Memory** grows with accounts and is otherwise bounded by the rolling buffers. Hundreds of bot tasks plus a few hundred users is fine on a small instance.
-- **CPU** is dominated by bot ticks and websocket fan-out. Every book change broadcasts a full 20-level snapshot to every `/ws/book` and `/ws/positions` subscriber, so cost scales with subscribers × book churn.
+- **Restarts wipe everything**: accounts, balances, leaderboard, deployed strategies, market history. Users see the name gate again.
+- **Memory** grows with accounts and is otherwise bounded by the rolling buffers. A few hundred users is fine on a small instance.
+- **CPU** is dominated by websocket fan-out. Every book change broadcasts a full 20-level snapshot to every `/ws/book` and `/ws/positions` subscriber, so cost scales with subscribers × book churn.
 - **Logs** go to stdout via `tracing`. `RUST_LOG=info` gives one line per market open and resolve, plus feed reconnects and lagging subscribers.
 
 ---
@@ -527,10 +493,10 @@ If you prefer to leave the frontend env vars empty, put a reverse proxy (nginx, 
 ## Known gaps and gotchas
 
 - **No authentication.** Anyone can place or cancel orders for any address by passing it in the request body. The handler carries a TODO for wallet signatures. Do not expose this to untrusted users with anything at stake.
-- **`CLAUDE.md` at the root is stale in three places**: it says money is in integer cents (it is tenths of a cent), prices are 1–99 (they are a 153-tick grid in tenths), and the engine is a single-writer task fed by `mpsc` (it is behind a `Mutex`). The bot count also says a thousand; the default is 400.
+- **`CLAUDE.md` at the root is stale in three places**: it says money is in integer cents (it is tenths of a cent), prices are 1–99 (they are a 153-tick grid in tenths), and the engine is a single-writer task fed by `mpsc` (it is behind a `Mutex`).
 - **No Vite proxy.** The proxy was removed when the frontend was rebuilt, but `CLAUDE.md` and the comment in `dev.sh` still mention it. Set `frontend/.env.local`.
 - **Rounds are not wall-clock aligned.** Every series' first round opens when the first price tick arrives and free-runs from there, so a 15-minute round can close at 10:07:23. Alignment to :00/:15/:30/:45 is a scheduler-only change.
 - **Cosmetic data**: the "Watching" counter is a random walk, and the stat strip's volume/liquidity/trader figures are scaled by fixed display multipliers. The Related Markets cards are the *other* series (live countdown and mark).
 - **Server `Cargo.toml` release profile** has `lto = false` despite the comment in `CLAUDE.md`. Turn it on if you want a smaller, faster binary at the cost of build time.
 - **`agent_docs/` and `ignore-old-frontend/`** are referenced in comments but are gitignored and not in the repo.
-- **Price feed dependency.** If Pyth (or the Coinbase fallback) is down the server serves stale prices; the scheduler defers round transitions while the feed has never delivered a tick but will still resolve on the last known price if the feed later stalls.
+- **Price feed dependency.** If the price feed is down the server serves stale prices; the scheduler defers round transitions while the feed has never delivered a tick but will still resolve on the last known price if the feed later stalls.

@@ -39,13 +39,6 @@ const TEMPLATE_FILES: &[(&str, &str)] = &[
     ("polymarket-discount", include_str!("../templates/polymarket-discount.json")),
     ("polymarket-momentum", include_str!("../templates/polymarket-momentum.json")),
     ("trend-rider", include_str!("../templates/trend-rider.json")),
-    ("model-vs-crowd", include_str!("../templates/model-vs-crowd.json")),
-    ("lead-change", include_str!("../templates/lead-change.json")),
-    ("sharp-money", include_str!("../templates/sharp-money.json")),
-    ("fourth-quarter", include_str!("../templates/fourth-quarter.json")),
-    ("pregame-pick", include_str!("../templates/pregame-pick.json")),
-    ("team-loyalty", include_str!("../templates/team-loyalty.json")),
-    ("shooting-streak", include_str!("../templates/shooting-streak.json")),
 ];
 
 // ───────────────────────────── File shape ─────────────────────────────
@@ -379,13 +372,13 @@ mod tests {
     /// A registry with the checkout's signal definitions, so the external
     /// signals the templates read are present.
     fn full_registry() -> Registry {
-        registry::build(&Inputs { price_source: PriceSource::Coinbase, live_lanes: &[], definitions_dir: None, copy_dir: None }).expect("registry builds")
+        registry::build(&Inputs { price_source: PriceSource::GeminiIndex, live_lanes: &[], definitions_dir: None, copy_dir: None }).expect("registry builds")
     }
 
     #[test]
     fn every_embedded_template_compiles_clean_on_every_listed_series() {
         let registry = full_registry();
-        let catalogue = TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"));
+        let catalogue = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(catalogue.len(), TEMPLATE_FILES.len());
         let listings: usize = catalogue.iter().map(|t| t.series.len()).sum();
         assert_eq!(catalogue.document_count(), listings * 2, "two documents per listing");
@@ -405,14 +398,12 @@ mod tests {
         let two = catalogue.for_series(SERIES[0].id).count();
         let fifteen = catalogue.for_series(SERIES[1].id).count();
         assert_eq!((two, fifteen), (8, 9));
-        // Six from the automation set plus model-vs-crowd from the NBA world.
-        assert_eq!(catalogue.for_series(SERIES[2].id).count(), 7, "the NBA set");
     }
 
     #[test]
     fn spot_placeholder_follows_the_price_source() {
-        let registry = registry::build(&Inputs { price_source: PriceSource::PythPro, live_lanes: &[], definitions_dir: None, copy_dir: None }).unwrap();
-        let catalogue = TemplateCatalogue::load(&registry, PriceSource::PythPro).unwrap_or_else(|e| panic!("{e}"));
+        let registry = registry::build(&Inputs { price_source: PriceSource::GeminiIndex, live_lanes: &[], definitions_dir: None, copy_dir: None }).unwrap();
+        let catalogue = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
         let fair = catalogue.get("fair-value-discount").unwrap();
         let c = fair.compiled(SERIES[0].id, Side::Primary).unwrap();
         assert!(c.program.subscriptions.iter().any(|s| s == "btc-5m.current.delta.v1"), "{:?}", c.program.subscriptions);
@@ -420,9 +411,9 @@ mod tests {
         // The spot built-in stamps the source's feed id even though no
         // shipped template reads it today.
         let values = BTreeMap::new();
-        let pyth = price_feed_signal_id(PriceSource::PythPro);
-        let builtins = [("series", "btc-5m"), ("spot", pyth.as_str()), ("stake", "0.3")];
-        assert_eq!(stamp("{{spot}}", &builtins, &values).unwrap(), "pyth.btc_usd.spot.v1");
+        let id = price_feed_signal_id(PriceSource::GeminiIndex);
+        let builtins = [("series", "btc-5m"), ("spot", id.as_str()), ("stake", "0.3")];
+        assert_eq!(stamp("{{spot}}", &builtins, &values).unwrap(), "gemini.btc_usd.spot.v1");
     }
 
     #[test]
@@ -461,7 +452,7 @@ mod tests {
         let mut doc: serde_json::Value = serde_json::from_str(TEMPLATE_FILES[0].1).unwrap();
         doc["primary"]["legs"][0]["arm"] = serde_json::json!(["missing"]);
         let text = doc.to_string();
-        let err = TemplateCatalogue::load_files(&[("fair-value-discount", &text)], &registry, PriceSource::Coinbase).unwrap_err();
+        let err = TemplateCatalogue::load_files(&[("fair-value-discount", &text)], &registry, PriceSource::GeminiIndex).unwrap_err();
         match err {
             LoadError::Compile { at, diagnostics } => {
                 assert_eq!(at.template, "fair-value-discount");
@@ -474,10 +465,10 @@ mod tests {
         let mut doc: serde_json::Value = serde_json::from_str(TEMPLATE_FILES[0].1).unwrap();
         doc["substitutions"]["btc-5m"] = serde_json::json!({});
         let text = doc.to_string();
-        let err = TemplateCatalogue::load_files(&[("fair-value-discount", &text)], &registry, PriceSource::Coinbase).unwrap_err();
+        let err = TemplateCatalogue::load_files(&[("fair-value-discount", &text)], &registry, PriceSource::GeminiIndex).unwrap_err();
         assert!(matches!(&err, LoadError::UnresolvedPlaceholder { at, placeholder } if at.series == "btc-5m" && !placeholder.is_empty()), "{err}");
 
-        let err = TemplateCatalogue::load_files(&[("other-id", TEMPLATE_FILES[0].1)], &registry, PriceSource::Coinbase).unwrap_err();
+        let err = TemplateCatalogue::load_files(&[("other-id", TEMPLATE_FILES[0].1)], &registry, PriceSource::GeminiIndex).unwrap_err();
         assert!(matches!(err, LoadError::IdMismatch { .. }), "{err}");
     }
 }

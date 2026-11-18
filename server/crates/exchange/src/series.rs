@@ -1,11 +1,10 @@
 //! The fixed table of market series.
 //!
 //! A *series* is a family of back-to-back rounds with one duration. Every
-//! series runs its own scheduler, order book, market maker and trader
-//! cohort; all of them share one ledger of account balances. The table is
-//! compile-time: adding a series is one line here, and every consumer
-//! (`SeriesId::all`, the price feed's per-series windows, the bot cohorts)
-//! sizes itself from it.
+//! series runs its own scheduler and order book; all of them share one
+//! ledger of account balances. The table is compile-time: adding a series
+//! is one line here, and every consumer (`SeriesId::all`, the price feed's
+//! per-series windows) sizes itself from it.
 
 use std::fmt;
 use std::str::FromStr;
@@ -33,8 +32,6 @@ pub struct SeriesSpec {
 
 /// The outcome labels of a BTC up/down series.
 pub const BTC_OUTCOMES: [&str; 2] = ["up", "down"];
-/// The outcome labels of an NBA head-to-head series.
-pub const NBA_OUTCOMES: [&str; 2] = ["home", "away"];
 
 /// Every series the server runs, indexed by `SeriesId.0`.
 ///
@@ -43,7 +40,6 @@ pub const NBA_OUTCOMES: [&str; 2] = ["home", "away"];
 pub const SERIES: &[SeriesSpec] = &[
     SeriesSpec { id: SeriesId(0), slug: "btc-5m", duration_secs: 300, underlying: "btc", outcomes: BTC_OUTCOMES },
     SeriesSpec { id: SeriesId(1), slug: "btc-15m", duration_secs: 900, underlying: "btc", outcomes: BTC_OUTCOMES },
-    SeriesSpec { id: SeriesId(2), slug: "nba-h2h", duration_secs: 300, underlying: "nba", outcomes: NBA_OUTCOMES },
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -196,15 +192,15 @@ mod tests {
     fn durations() {
         assert_eq!(DEFAULT_SERIES.duration_secs(), 300);
         assert_eq!(SeriesId(1).duration_secs(), 900);
-        assert_eq!(SeriesId(2).duration_secs(), 300);
     }
 
     #[test]
-    fn nba_series_is_home_away_and_not_btc() {
-        let nba = SeriesId::from_slug("nba-h2h").unwrap();
-        assert_eq!(nba.underlying(), "nba");
-        assert_eq!(nba.outcomes(), NBA_OUTCOMES);
-        assert!(!nba.is_btc());
+    fn every_series_is_btc() {
         assert!(DEFAULT_SERIES.is_btc());
+        for s in SeriesId::all() {
+            assert_eq!(s.underlying(), "btc");
+            assert_eq!(s.outcomes(), BTC_OUTCOMES);
+        }
+        assert!(SeriesId::from_slug("nba-h2h").is_err());
     }
 }

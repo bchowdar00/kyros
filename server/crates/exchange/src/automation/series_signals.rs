@@ -347,39 +347,6 @@ mod tests {
     }
 
     #[test]
-    fn nba_round_opens_with_a_matchup_frame_keyed_home_away() {
-        use crate::series::{NBA_OUTCOMES, SeriesSpec};
-        let spec = SeriesSpec { id: crate::types::SeriesId(0), slug: "nba-h2h", duration_secs: 300, underlying: "nba", outcomes: NBA_OUTCOMES };
-        let mut x = crate::engine::Exchange::new(Tenths(1_000_000), std::slice::from_ref(&spec));
-        x.open_first_market_with(
-            spec.id,
-            crate::engine::RoundReference::Nba { home_team: "BOS", away_team: "SAS", pregame_home_prob: 0.6142, game_seq: 3 },
-            100,
-            300,
-        );
-        let mut t = Tracker::default();
-        let frames = t.step(spec.slug, spec.outcomes, 100_000, sample(x.engine(spec.id), 0));
-        let kinds: Vec<_> = frames.iter().map(|f| f.signal_id.as_str()).collect();
-        assert_eq!(kinds, ["nba-h2h.current.matchup.v1", "nba-h2h.current.window.v1"]);
-        assert_eq!(frames[0].values["home_team"], "BOS");
-        assert_eq!(frames[0].values["pregame_home_prob"], "0.614200");
-        assert_eq!(frames[0].values["game_seq"], 3);
-        let p = PriceSnapshot { up: 620, bid: Some(610), ask: Some(630), last: None };
-        let f = price_frame(spec.slug, spec.outcomes, 1, &p);
-        assert_eq!(f.values["home"], "0.620");
-        assert_eq!(f.values["away"], "0.380");
-        assert!(!f.values.contains_key("up"));
-        // Every frame types against the NBA internals the registry would generate.
-        let reg = crate::registry::for_tests();
-        let internals: Vec<strategy_compiler::ir::SignalDef> = crate::registry::nba_series_internals_for_tests(&spec);
-        for fr in frames.iter().chain(std::iter::once(&f)) {
-            let def = internals.iter().find(|d| d.signal_id == fr.signal_id).unwrap_or_else(|| panic!("{}", fr.signal_id));
-            to_signal_event(fr, &field_types(def)).unwrap_or_else(|e| panic!("{}: {e}", fr.signal_id));
-        }
-        let _ = reg;
-    }
-
-    #[test]
     fn tracker_publishes_rollover_and_fills_in_order() {
         let mut e = Engine::new(Tenths(1_000_000));
         let slug = "s";

@@ -157,7 +157,7 @@ pub(crate) mod tests {
     pub(crate) fn registry_with_spot_lane() -> Arc<Registry> {
         let defs = PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/../../definitions"));
         Arc::new(
-            registry::build(&Inputs { price_source: PriceSource::Coinbase, live_lanes: &["spot"], definitions_dir: Some(defs), copy_dir: None })
+            registry::build(&Inputs { price_source: PriceSource::GeminiIndex, live_lanes: &["spot"], definitions_dir: Some(defs), copy_dir: None })
                 .expect("registry with definitions builds"),
         )
     }

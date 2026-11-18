@@ -21,8 +21,7 @@
 //! and `waiting_on` lists the ones that are not. A deployment made while a
 //! signal is missing never fires and never errors (a row reading an
 //! unpublished field is false), so the card says so up front instead of
-//! letting a user fund a sub-account that sits idle. The house still runs
-//! every side, so the counts are there the moment a signal comes ready.
+//! letting a user fund a sub-account that sits idle.
 
 use std::collections::{BTreeSet, HashMap};
 
@@ -35,8 +34,6 @@ use serde::Serialize;
 use crate::api::{ApiError, AppState, SeriesQuery};
 use crate::automation::signal_bus::SignalBus;
 use crate::engine::{Exchange, StrategyStatus};
-use crate::house::{HOUSE_ALLOCATION_MAX, HOUSE_ALLOCATION_MIN, house_allocation, stable_hash};
-use crate::pricing::feed::unix_now_ms;
 use crate::templates::{Creator, EnvelopeRatios, Side, Template, TemplateCatalogue};
 use crate::types::SeriesId;
 
@@ -99,71 +96,6 @@ impl Readiness {
     }
 }
 
-/// The fewest display runners a card carries, at the smallest house allocation.
-pub const CROWD_MIN: u32 = 50;
-/// The most, at the largest house allocation.
-pub const CROWD_MAX: u32 = 280;
-/// How far a side's display count drifts from its baseline.
-const CROWD_WOBBLE: i64 = 3;
-/// How often the drift takes a new value.
-const CROWD_BUCKET_MS: u64 = 60_000;
-/// `HOUSE_CROWD_ENABLED=0` serves the real tallies only.
-pub const CROWD_ENV: &str = "HOUSE_CROWD_ENABLED";
-
-/// The display crowd: runners added to each side's real tally on the
-/// wire so a card reads as widely deployed. A demo setting, on in the
-/// binary and off in tests: the count is a pure function of the
-/// template, series, side and the current minute, so every request in a
-/// minute agrees, a restart changes nothing, and a real deploy still
-/// moves the number by exactly one. The dollars shown stay real.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Crowd {
-    Off,
-    /// On, evaluated at this moment (unix milliseconds).
-    At(u64),
-}
-
-impl Crowd {
-    /// Whether the binary serves the crowd (the default).
-    pub fn enabled_by_env() -> bool {
-        !matches!(std::env::var(CROWD_ENV).as_deref(), Ok("0") | Ok("false") | Ok("off"))
-    }
-
-    /// The runners to add for one side.
-    pub fn runners(self, template_id: &str, series: SeriesId, side: Side) -> u32 {
-        match self {
-            Crowd::Off => 0,
-            Crowd::At(now_ms) => crowd_runners(template_id, series, side, now_ms),
-        }
-    }
-}
-
-/// The card's baseline crowd: [`CROWD_MIN`] at the smallest house
-/// allocation, [`CROWD_MAX`] at the largest, linear between.
-fn crowd_baseline(template_id: &str) -> u32 {
-    let allocation = house_allocation(template_id).0 - HOUSE_ALLOCATION_MIN.0;
-    let range = HOUSE_ALLOCATION_MAX.0 - HOUSE_ALLOCATION_MIN.0;
-    let span = i64::from(CROWD_MAX - CROWD_MIN);
-    (i64::from(CROWD_MIN) + allocation * span / range) as u32
-}
-
-/// One side's crowd: its share of the baseline (the primary takes 40 to
-/// 60 percent, fixed per template and series) plus this minute's drift.
-fn crowd_runners(template_id: &str, series: SeriesId, side: Side, now_ms: u64) -> u32 {
-    let baseline = i64::from(crowd_baseline(template_id));
-    let split = stable_hash(&format!("{template_id}:{}", series.slug()));
-    let primary_pct = 40 + (split % 21) as i64;
-    let primary = baseline * primary_pct / 100;
-    let share = match side {
-        Side::Primary => primary,
-        Side::Inverse => baseline - primary,
-    };
-    let bucket = now_ms / CROWD_BUCKET_MS;
-    let drift = stable_hash(&format!("{template_id}:{}:{side:?}:{bucket}", series.slug()));
-    let wobble = (drift % (2 * CROWD_WOBBLE + 1) as u64) as i64 - CROWD_WOBBLE;
-    (share + wobble).max(0) as u32
-}
-
 /// One side of a template: what Run or Inverse deploys.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct TemplateSideView {
@@ -171,8 +103,7 @@ pub struct TemplateSideView {
     pub name: String,
     /// The card prose for this side.
     pub logic: String,
-    /// Active deployments of this side on the series, plus the display
-    /// crowd when it is on ([`Crowd`]).
+    /// Active deployments of this side on the series.
     pub running: u32,
     /// Σ `net_contributed` over the real deployments, tenths of a cent.
     pub deployed_tenths: i64,
@@ -267,7 +198,7 @@ impl TemplateTally {
     }
 }
 
-fn side_view(t: &Template, series: SeriesId, side: Side, tally: &TemplateTally, readiness: &Readiness, crowd: Crowd) -> TemplateSideView {
+fn side_view(t: &Template, series: SeriesId, side: Side, tally: &TemplateTally, readiness: &Readiness) -> TemplateSideView {
     let compiled = t.compiled(series, side);
     let name = compiled.map(|c| c.program.name.clone()).unwrap_or_default();
     let waiting_on = readiness.waiting_on(compiled.map(|c| c.program.subscriptions.iter()).into_iter().flatten());
@@ -275,7 +206,7 @@ fn side_view(t: &Template, series: SeriesId, side: Side, tally: &TemplateTally, 
     TemplateSideView {
         name,
         logic: t.prose(side).to_string(),
-        running: counts.running + crowd.runners(&t.id, series, side),
+        running: counts.running,
         deployed_tenths: counts.deployed_tenths,
         ready: waiting_on.is_empty(),
         waiting_on,
@@ -283,9 +214,9 @@ fn side_view(t: &Template, series: SeriesId, side: Side, tally: &TemplateTally, 
 }
 
 /// The view of `t` on `series`. The caller has checked the listing.
-pub fn template_view(t: &Template, series: SeriesId, tally: &TemplateTally, readiness: &Readiness, crowd: Crowd) -> TemplateView {
-    let primary = side_view(t, series, Side::Primary, tally, readiness, crowd);
-    let inverse = side_view(t, series, Side::Inverse, tally, readiness, crowd);
+pub fn template_view(t: &Template, series: SeriesId, tally: &TemplateTally, readiness: &Readiness) -> TemplateView {
+    let primary = side_view(t, series, Side::Primary, tally, readiness);
+    let inverse = side_view(t, series, Side::Inverse, tally, readiness);
     let mut waiting_on: Vec<WaitingSignal> = primary.waiting_on.iter().chain(&inverse.waiting_on).cloned().collect();
     waiting_on.sort();
     waiting_on.dedup();
@@ -306,10 +237,10 @@ pub fn template_view(t: &Template, series: SeriesId, tally: &TemplateTally, read
 }
 
 /// Every template listed on `series`, catalogue order.
-pub fn catalogue(templates: &TemplateCatalogue, series: SeriesId, tally: &TemplateTally, readiness: &Readiness, crowd: Crowd) -> TemplateCatalogueResponse {
+pub fn catalogue(templates: &TemplateCatalogue, series: SeriesId, tally: &TemplateTally, readiness: &Readiness) -> TemplateCatalogueResponse {
     TemplateCatalogueResponse {
         series: series.slug().to_string(),
-        templates: templates.for_series(series).map(|t| template_view(t, series, tally, readiness, crowd)).collect(),
+        templates: templates.for_series(series).map(|t| template_view(t, series, tally, readiness)).collect(),
     }
 }
 
@@ -319,17 +250,12 @@ fn tally_for(state: &AppState, series: SeriesId) -> TemplateTally {
     TemplateTally::collect(&engine, series)
 }
 
-/// The crowd for this request: now, when the state serves it.
-fn crowd_for(state: &AppState) -> Crowd {
-    if state.crowd { Crowd::At(unix_now_ms()) } else { Crowd::Off }
-}
-
 /// `GET /api/strategies/templates?series=`
 pub async fn list_templates(State(state): State<AppState>, Query(q): Query<SeriesQuery>) -> Json<TemplateCatalogueResponse> {
     let series = state.series_or_default(q.series);
     let tally = tally_for(&state, series);
     let readiness = Readiness::from_bus(&state.bus);
-    Json(catalogue(&state.templates, series, &tally, &readiness, crowd_for(&state)))
+    Json(catalogue(&state.templates, series, &tally, &readiness))
 }
 
 /// `GET /api/strategies/templates/{id}?series=` — 404 unless the template
@@ -343,7 +269,7 @@ pub async fn get_template(
     let t = state.templates.get(&id).filter(|t| t.lists(series)).ok_or(ApiError::TemplateNotFound)?;
     let tally = tally_for(&state, series);
     let readiness = Readiness::from_bus(&state.bus);
-    Ok(Json(template_view(t, series, &tally, &readiness, crowd_for(&state))))
+    Ok(Json(template_view(t, series, &tally, &readiness)))
 }
 
 #[cfg(test)]
@@ -359,8 +285,8 @@ mod tests {
     use std::sync::Arc;
 
     fn full_catalogue() -> TemplateCatalogue {
-        let registry = registry::build(&Inputs { price_source: PriceSource::Coinbase, live_lanes: &[], definitions_dir: None, copy_dir: None }).unwrap();
-        TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"))
+        let registry = registry::build(&Inputs { price_source: PriceSource::GeminiIndex, live_lanes: &[], definitions_dir: None, copy_dir: None }).unwrap();
+        TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"))
     }
 
     fn empty() -> TemplateTally {
@@ -374,8 +300,8 @@ mod tests {
     #[test]
     fn list_is_per_series_and_carries_both_sides() {
         let templates = full_catalogue();
-        let two = catalogue(&templates, SERIES[0].id, &empty(), &all_ready(), Crowd::Off);
-        let fifteen = catalogue(&templates, SERIES[1].id, &empty(), &all_ready(), Crowd::Off);
+        let two = catalogue(&templates, SERIES[0].id, &empty(), &all_ready());
+        let fifteen = catalogue(&templates, SERIES[1].id, &empty(), &all_ready());
         assert_eq!(two.series, "btc-5m");
         assert_eq!((two.templates.len(), fifteen.templates.len()), (8, 9));
         let ids: Vec<&str> = two.templates.iter().map(|t| t.id.as_str()).collect();
@@ -403,7 +329,7 @@ mod tests {
     #[test]
     fn json_has_the_wire_keys() {
         let templates = full_catalogue();
-        let view = template_view(templates.get("late-closer").unwrap(), SERIES[1].id, &empty(), &all_ready(), Crowd::Off);
+        let view = template_view(templates.get("late-closer").unwrap(), SERIES[1].id, &empty(), &all_ready());
         let json = serde_json::to_value(&view).unwrap();
         for key in ["id", "title", "series", "creator", "envelope", "primary", "inverse", "running", "deployed_tenths", "runners", "ready", "waiting_on"] {
             assert!(json.get(key).is_some(), "missing {key}");
@@ -473,13 +399,13 @@ mod tests {
     #[test]
     fn readiness_is_per_side_and_the_card_needs_both() {
         let registry = crate::automation::lane_bridge::tests::registry_with_spot_lane();
-        let templates = TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"));
+        let templates = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
         let bus = SignalBus::new(registry, None);
         let fifteen = SERIES[1].id;
         let late = templates.get("late-closer").unwrap();
 
         // Nothing has published: every side waits on everything it reads.
-        let view = template_view(late, fifteen, &empty(), &Readiness::from_bus(&bus), Crowd::Off);
+        let view = template_view(late, fifteen, &empty(), &Readiness::from_bus(&bus));
         assert!(!view.ready && !view.primary.ready && !view.inverse.ready);
         assert_eq!(waiting_ids(&view.primary), ["btc-15m.current.delta.v1", "btc-15m.current.price.v1", "btc-15m.current.window.v1"]);
         assert_eq!(waiting_ids(&view.inverse), ["btc-15m.current.price.v1", "btc-15m.current.window.v1"]);
@@ -489,24 +415,24 @@ mod tests {
         // The inverse reads no delta, so it is ready before the primary.
         bus.publish(typed_frame(&bus, "btc-15m.current.price.v1", 1));
         bus.publish(typed_frame(&bus, "btc-15m.current.window.v1", 2));
-        let view = template_view(late, fifteen, &empty(), &Readiness::from_bus(&bus), Crowd::Off);
+        let view = template_view(late, fifteen, &empty(), &Readiness::from_bus(&bus));
         assert!(view.inverse.ready && view.inverse.waiting_on.is_empty());
         assert_eq!(waiting_ids(&view.primary), ["btc-15m.current.delta.v1"]);
         assert!(!view.ready, "one side waiting keeps the card waiting");
 
         bus.publish(typed_frame(&bus, "btc-15m.current.delta.v1", 3));
         let readiness = Readiness::from_bus(&bus);
-        let view = template_view(late, fifteen, &empty(), &readiness, Crowd::Off);
+        let view = template_view(late, fifteen, &empty(), &readiness);
         assert!(view.ready && view.primary.ready && view.waiting_on.is_empty());
 
         // The 2-minute internals never published, so the same template on
         // the other series still waits: readiness is per stamped document.
-        let two = template_view(late, SERIES[0].id, &empty(), &readiness, Crowd::Off);
+        let two = template_view(late, SERIES[0].id, &empty(), &readiness);
         assert!(!two.ready);
         assert_eq!(waiting_ids(&two.inverse), ["btc-5m.current.price.v1", "btc-5m.current.window.v1"]);
 
         // The list carries the same readiness as the single route.
-        let list = catalogue(&templates, fifteen, &empty(), &readiness, Crowd::Off);
+        let list = catalogue(&templates, fifteen, &empty(), &readiness);
         let trend = list.templates.iter().find(|t| t.id == "trend-rider").unwrap();
         assert!(!trend.ready);
         assert_eq!(
@@ -524,7 +450,7 @@ mod tests {
     #[test]
     fn readiness_needs_a_typed_frame_and_follows_quality() {
         let registry = crate::automation::lane_bridge::tests::registry_with_spot_lane();
-        let templates = TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"));
+        let templates = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
         let bus = SignalBus::new(registry, None);
         let fifteen = SERIES[1].id;
         let trend = templates.get("trend-rider").unwrap();
@@ -539,22 +465,22 @@ mod tests {
         bus.publish(bad);
         assert!(bus.ready_since(horizon).is_some(), "the bus calls it ready");
         assert_eq!(bus.ingest_stats(horizon).published, 0);
-        let view = template_view(trend, fifteen, &empty(), &Readiness::from_bus(&bus), Crowd::Off);
+        let view = template_view(trend, fifteen, &empty(), &Readiness::from_bus(&bus));
         assert!(!view.ready);
         assert_eq!(waiting_ids(&view.primary), [horizon]);
 
         bus.publish(typed_frame(&bus, horizon, 3));
-        let view = template_view(trend, fifteen, &empty(), &Readiness::from_bus(&bus), Crowd::Off);
+        let view = template_view(trend, fifteen, &empty(), &Readiness::from_bus(&bus));
         assert!(view.ready, "{:?}", view.waiting_on);
 
         // The lane reports it warming up: not usable until it is ready again.
         bus.set_quality(horizon, 4, Quality { state: "warming_up".into(), reasons: vec!["insufficient_history".into()] });
-        let view = template_view(trend, fifteen, &empty(), &Readiness::from_bus(&bus), Crowd::Off);
+        let view = template_view(trend, fifteen, &empty(), &Readiness::from_bus(&bus));
         assert!(!view.ready && !view.inverse.ready);
         assert_eq!(waiting_ids(&view.inverse), [horizon]);
 
         bus.publish(typed_frame(&bus, horizon, 5));
-        assert!(template_view(trend, fifteen, &empty(), &Readiness::from_bus(&bus), Crowd::Off).ready);
+        assert!(template_view(trend, fifteen, &empty(), &Readiness::from_bus(&bus)).ready);
 
         assert!(Readiness::all_ready().is_usable("anything.v1"));
         assert!(Readiness::from_bus(&bus).waiting_on(&[]).is_empty());
@@ -564,7 +490,7 @@ mod tests {
     #[tokio::test]
     async fn routes_report_readiness_from_the_bus() {
         let registry = crate::automation::lane_bridge::tests::registry_with_spot_lane();
-        let templates = TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"));
+        let templates = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
         let (mut state, _) = crate::api::strategy::store::tests::app_state_with(registry);
         state.templates = Arc::new(templates);
         let series = SERIES[0].id;
@@ -582,75 +508,6 @@ mod tests {
         assert!(!by_id("momentum-rider").ready, "external signals have not published");
     }
 
-    /// The crowd is a pure function of template, series, side and minute:
-    /// inside the range and scaled by the house allocation, split unevenly
-    /// between the sides, steady within a minute and drifting a little
-    /// across minutes, and zero when off.
-    #[test]
-    fn crowd_scales_with_the_allocation_and_drifts_by_the_minute() {
-        let templates = full_catalogue();
-        let two = SERIES[0].id;
-        let at = |ms: u64| Crowd::At(ms);
-        let card = |t: &Template, crowd: Crowd| crowd.runners(&t.id, two, Side::Primary) + crowd.runners(&t.id, two, Side::Inverse);
-        let mut by_allocation: Vec<(i64, u32)> = Vec::new();
-        for t in templates.for_series(two) {
-            let total = card(t, at(0));
-            let wobble = 2 * CROWD_WOBBLE as u32;
-            assert!(total + wobble >= CROWD_MIN && total <= CROWD_MAX + wobble, "{}: {total}", t.id);
-            let primary = at(0).runners(&t.id, two, Side::Primary);
-            let inverse = at(0).runners(&t.id, two, Side::Inverse);
-            assert!(primary > 0 && inverse > 0, "{}: both sides carry a crowd", t.id);
-            assert_eq!(at(0).runners(&t.id, two, Side::Primary), at(CROWD_BUCKET_MS - 1).runners(&t.id, two, Side::Primary), "steady within a minute");
-            assert_eq!(Crowd::Off.runners(&t.id, two, Side::Primary), 0);
-            by_allocation.push((house_allocation(&t.id).0, total));
-        }
-        by_allocation.sort();
-        let first = by_allocation.first().unwrap();
-        let last = by_allocation.last().unwrap();
-        assert!(last.1 > first.1 + 50, "a bigger allocation draws a bigger crowd: {by_allocation:?}");
-        // The two extremes of the range pin the baseline.
-        assert_eq!(crowd_baseline("x"), CROWD_MIN + ((house_allocation("x").0 - HOUSE_ALLOCATION_MIN.0) * i64::from(CROWD_MAX - CROWD_MIN) / (HOUSE_ALLOCATION_MAX.0 - HOUSE_ALLOCATION_MIN.0)) as u32);
-
-        // Across minutes the count moves, and never further than the wobble.
-        let t = templates.get("late-closer").unwrap();
-        let base = crowd_baseline(&t.id);
-        let counts: BTreeSet<u32> = (0..30).map(|m| card(t, at(m * CROWD_BUCKET_MS))).collect();
-        assert!(counts.len() > 1, "the count drifts: {counts:?}");
-        for c in &counts {
-            assert!((i64::from(*c) - i64::from(base)).abs() <= 2 * CROWD_WOBBLE, "{c} vs {base}");
-        }
-    }
-
-    /// With the crowd on, the routes add it to the real tally, so a real
-    /// deploy still moves the card by exactly one and the dollars stay real.
-    #[tokio::test]
-    async fn crowd_sits_on_top_of_the_real_tally() {
-        let registry = crate::automation::lane_bridge::tests::registry_with_spot_lane();
-        let templates = TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"));
-        let (mut state, _) = crate::api::strategy::store::tests::app_state_with(registry);
-        state.templates = Arc::new(templates);
-        state.crowd = true;
-        let series = SERIES[0].id;
-        let parent: Address = PARENT.parse().unwrap();
-
-        let Json(before) = get_template(State(state.clone()), Path("late-closer".into()), Query(SeriesQuery { series: Some(series) })).await.unwrap();
-        assert!(before.running >= CROWD_MIN - 2 * CROWD_WOBBLE as u32, "{}", before.running);
-        assert_eq!(before.deployed_tenths, 0, "no real money yet");
-
-        deploy_template_side(&state, parent, "late-closer", series, Side::Primary, Tenths(50_000)).await.unwrap();
-        let Json(after) = get_template(State(state.clone()), Path("late-closer".into()), Query(SeriesQuery { series: Some(series) })).await.unwrap();
-        // Both reads land in the same minute in practice; allow a bucket
-        // boundary between them and still require the real one.
-        let moved = i64::from(after.primary.running) - i64::from(before.primary.running);
-        assert!((1..=1 + 2 * CROWD_WOBBLE).contains(&moved), "moved by {moved}");
-        assert_eq!(after.deployed_tenths, 50_000);
-        assert_eq!(after.primary.deployed_tenths, 50_000);
-
-        state.crowd = false;
-        let Json(real) = get_template(State(state), Path("late-closer".into()), Query(SeriesQuery { series: Some(series) })).await.unwrap();
-        assert_eq!((real.primary.running, real.inverse.running, real.running), (1, 0, 1));
-    }
-
     /// Deployments through the template route show up on the cards: per
     /// side, per series, active ones only, with the parent's cash summed,
     /// and the creator's portrait once the creator's account runs it.
@@ -658,7 +515,7 @@ mod tests {
     async fn counts_follow_the_deployments_on_each_series() {
         // The platform must know the lane signals the templates subscribe to.
         let registry = crate::automation::lane_bridge::tests::registry_with_spot_lane();
-        let templates = TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"));
+        let templates = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
         let (mut state, _) = crate::api::strategy::store::tests::app_state_with(registry);
         state.templates = Arc::new(templates);
         let parent: Address = PARENT.parse().unwrap();

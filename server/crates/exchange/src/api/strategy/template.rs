@@ -63,9 +63,8 @@ pub async fn deploy_template_side(
     deploy_template_side_with(state, parent, template_id, series, side, allocation, envelope).await
 }
 
-/// [`deploy_template_side`] under a caller-supplied envelope: what the
-/// house seeder uses to run a template with a tighter loss budget than
-/// the file's ratios give a user.
+/// [`deploy_template_side`] under a caller-supplied envelope, for a
+/// caller that wants a tighter loss budget than the file's ratios give.
 pub async fn deploy_template_side_with(
     state: &AppState,
     parent: Address,
@@ -145,7 +144,7 @@ mod tests {
     /// The store rig with every template compiled into the catalogue.
     fn state_with_templates() -> AppState {
         let registry = registry_with_spot_lane();
-        let catalogue = TemplateCatalogue::load(&registry, PriceSource::Coinbase).unwrap_or_else(|e| panic!("{e}"));
+        let catalogue = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
         let (mut state, _) = crate::api::strategy::store::tests::app_state_with(registry);
         state.templates = Arc::new(catalogue);
         state

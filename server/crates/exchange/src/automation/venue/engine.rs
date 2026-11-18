@@ -258,40 +258,6 @@ mod tests {
         assert_eq!(venue.account_view(SeriesId(0), STRAT).cash, Decimal::from(1000) - "1.2".parse::<Decimal>().unwrap());
     }
 
-    /// The NBA book quotes `home`: a `home` buy is a bid at face value and
-    /// an `away` sell is a bid at the complement, exactly as `up`/`down`
-    /// on the BTC book. Before the frame was per series, `home` was
-    /// treated as the complement and landed on the wrong side.
-    #[test]
-    fn nba_outcomes_translate_in_the_home_frame() {
-        let (exchange, _btc_venue, mut rx) = rig();
-        let nba = SeriesId(2);
-        let venue = EngineVenue::new(exchange.clone(), SeriesMap::new([("n", nba)]));
-        let order = |outcome: &str, side: IrSide, size: &str, price: &str| VenueOrder { instrument_id: "n.current".into(), ..order(outcome, side, OrderType::Limit, size, Some(price)) };
-        {
-            let mut x = exchange.lock().unwrap();
-            x.open_first_market_with(nba, crate::engine::RoundReference::Nba { home_team: "BOS", away_team: "LAL", pregame_home_prob: 0.6, game_seq: 1 }, 0, 300);
-            x.place_limit(nba, BOT, Side::Ask, PriceTick::from_tenths(600).unwrap(), Qty(10), TradeSource::Bot).unwrap();
-        }
-        // Buy home at 0.62: crosses the 0.60 ask on the home book.
-        venue.submit(nba, STRAT, &order("home", IrSide::Buy, "2", "0.62")).unwrap();
-        let evs = events(&mut rx);
-        assert_eq!(evs[0].kind, ExecutionKind::Fill);
-        assert_eq!(evs[0].price, Some("0.6".parse().unwrap()));
-        assert_eq!(venue.account_view(nba, STRAT).position_size, Decimal::from(2), "long home");
-        // Sell away at 0.38 = buy home at 0.62: crosses again.
-        venue.submit(nba, STRAT, &order("away", IrSide::Sell, "3", "0.38")).unwrap();
-        let evs = events(&mut rx);
-        assert_eq!(evs[0].kind, ExecutionKind::Fill);
-        assert_eq!(evs[0].price, Some("0.6".parse().unwrap()), "quoted frame");
-        assert_eq!(venue.account_view(nba, STRAT).position_size, Decimal::from(5));
-        // Buy away at 0.5 = sell home at 0.5: rests as an ask, position unchanged.
-        venue.submit(nba, STRAT, &order("away", IrSide::Buy, "1", "0.5")).unwrap();
-        assert!(events(&mut rx).is_empty());
-        assert_eq!(venue.account_view(nba, STRAT).position_size, Decimal::from(5));
-        assert_eq!(exchange.lock().unwrap().engine(nba).book().best_ask().map(|p| p.tenths()), Some(500));
-    }
-
     #[test]
     fn closed_or_foreign_markets_reject_locally() {
         let (_exchange, venue, mut rx) = rig();

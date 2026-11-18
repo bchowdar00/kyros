@@ -38,8 +38,6 @@ use mid_history::{MidHistory, MidPoint};
 pub mod accounts;
 pub mod accounts_ws;
 pub mod handlers;
-pub mod holders;
-pub mod leaderboard;
 pub mod mid_history;
 pub mod positions;
 pub mod rounds;
@@ -58,8 +56,6 @@ pub use handlers::{
     cancel_order, create_account, get_account, get_book, get_markets_history, get_registry,
     get_trades, place_order,
 };
-pub use holders::list_holders;
-pub use leaderboard::get_leaderboard;
 pub use mid_history::get_mid_history;
 pub use stats::get_market_stats;
 pub use positions::{close_position, flip_position, get_positions, positions_ws};
@@ -134,9 +130,6 @@ pub struct AppState {
     pub templates: Arc<crate::templates::TemplateCatalogue>,
     /// Idempotency keys the template deploy route has honoured.
     pub deploys: DeployKeys,
-    /// Whether the cards route adds the display crowd to its runner
-    /// counts (`templates::Crowd`); off in tests.
-    pub crowd: bool,
     /// The Gemini link, when the rounds follow Gemini's windows; `None`
     /// in tests that run rounds on their own clock.
     pub gemini: Option<crate::gemini::GeminiState>,

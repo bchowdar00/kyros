@@ -8,6 +8,14 @@ fills the placeholders, compiles every document against the generated registry
 at boot, and refuses to start on a diagnostic or a warning. `GET
 /api/strategies/templates?series=` serves the cards.
 
+The `parked/` subfolder holds templates that are not embedded or loaded. They
+target an `nba-h2h` series that the server no longer runs, so they cannot
+compile against the generated registry. Bringing them back takes more than
+moving the files: the series row and its `home`/`away` outcomes, the NBA
+signals in the registry, their copy files and a round driver all went with
+the simulator, and so did the tests of the home/away frame. Commit `e5b269f`
+has every one of them.
+
 ## File shape
 
 | key | meaning |

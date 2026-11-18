@@ -37,7 +37,6 @@
 
 pub mod eval;
 pub mod lane_bridge;
-pub mod nba_signals;
 pub mod runtime;
 pub mod series_signals;
 pub mod signal_bus;

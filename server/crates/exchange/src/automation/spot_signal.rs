@@ -2,13 +2,11 @@
 //!
 //! The registry declares one external signal for the price source the
 //! exchange is running on (`crate::registry::price_feed_signal`):
-//! `pyth.btc_usd.spot.v1` with `last` and `conf`,
-//! `coinbase.btc_usd.spot.v1` with `last`, or `gemini.btc_usd.spot.v1`
-//! with `last` (the index Gemini settles on). This task subscribes to the
-//! feed's tick broadcast, which is already rate-gated to one tick per
-//! [`TICK_BROADCAST_INTERVAL_MS`], and republishes each tick as a frame.
-//! Pyth's confidence interval rides along from the feed's latest value.
-//! A lagging subscriber skips ahead; only the newest price matters.
+//! `gemini.btc_usd.spot.v1` with `last` (the index Gemini settles on).
+//! This task subscribes to the feed's tick broadcast, which is already
+//! rate-gated to one tick per [`TICK_BROADCAST_INTERVAL_MS`], and
+//! republishes each tick as a frame. A lagging subscriber skips ahead;
+//! only the newest price matters.
 
 use std::sync::Arc;
 
@@ -24,16 +22,11 @@ fn usd(price: f64) -> String {
     format!("{price:.2}")
 }
 
-/// The frame for one tick. `conf` is included only for a source that
-/// declares it; the registry rejects a field set that differs from the
-/// declaration, so a Pyth tick without a confidence yet is skipped.
-pub fn spot_frame(source: PriceSource, ts_ms: u64, price: f64, conf: Option<f64>) -> Option<SignalFrame> {
+/// The frame for one tick: the source's spot signal with `last`.
+pub fn spot_frame(source: PriceSource, ts_ms: u64, price: f64) -> SignalFrame {
     let mut values = std::collections::BTreeMap::new();
     values.insert("last".to_string(), json!(usd(price)));
-    if source == PriceSource::PythPro {
-        values.insert("conf".to_string(), json!(usd(conf?)));
-    }
-    Some(SignalFrame { signal_id: price_feed_signal_id(source), ts_ms, quality: Quality::ready(), values })
+    SignalFrame { signal_id: price_feed_signal_id(source), ts_ms, quality: Quality::ready(), values }
 }
 
 /// Spawn the publisher. Runs for the life of the process.
@@ -48,16 +41,14 @@ pub fn spawn_spot_publisher(
         loop {
             match rx.recv().await {
                 Ok(FeedMessage::Tick { ts_ms, price }) => {
-                    if let Some(frame) = spot_frame(source, ts_ms, price, feed.latest_confidence()) {
-                        bus.publish(frame);
-                        published += 1;
-                        if published == 1 {
-                            tracing::info!(
-                                signal = price_feed_signal_id(source),
-                                interval_ms = TICK_BROADCAST_INTERVAL_MS,
-                                "spot signal: first tick published"
-                            );
-                        }
+                    bus.publish(spot_frame(source, ts_ms, price));
+                    published += 1;
+                    if published == 1 {
+                        tracing::info!(
+                            signal = price_feed_signal_id(source),
+                            interval_ms = TICK_BROADCAST_INTERVAL_MS,
+                            "spot signal: first tick published"
+                        );
                     }
                 }
                 Ok(FeedMessage::MarketReset { .. }) => {}
@@ -87,33 +78,26 @@ mod tests {
     }
 
     #[test]
-    fn frames_ingest_against_every_price_source() {
-        for (source, conf) in [(PriceSource::Coinbase, None), (PriceSource::PythPro, Some(12.5)), (PriceSource::GeminiIndex, None)] {
-            let (reg, mut store) = store_for(source);
-            let frame = spot_frame(source, 7, 79_845.735, conf).unwrap();
-            assert!(store.enable(&frame.signal_id));
-            let def = reg.signals.iter().find(|s| s.signal_id == frame.signal_id).unwrap();
-            let event = to_signal_event(&frame, &field_types(def)).expect("frame types against the registry");
-            let typed = store.ingest(&event).expect("field set matches");
-            assert_eq!(typed["last"], Value::Decimal(Decimal::from_str("79845.74").unwrap()));
-            assert_eq!(typed.len(), def.fields.len());
-        }
-    }
-
-    #[test]
-    fn pyth_without_a_confidence_yet_is_skipped() {
-        assert!(spot_frame(PriceSource::PythPro, 1, 1.0, None).is_none());
-        assert!(spot_frame(PriceSource::Coinbase, 1, 1.0, None).is_some());
+    fn frames_ingest_against_the_price_source() {
+        let source = PriceSource::GeminiIndex;
+        let (reg, mut store) = store_for(source);
+        let frame = spot_frame(source, 7, 79_845.735);
+        assert!(store.enable(&frame.signal_id));
+        let def = reg.signals.iter().find(|s| s.signal_id == frame.signal_id).unwrap();
+        let event = to_signal_event(&frame, &field_types(def)).expect("frame types against the registry");
+        let typed = store.ingest(&event).expect("field set matches");
+        assert_eq!(typed["last"], Value::Decimal(Decimal::from_str("79845.74").unwrap()));
+        assert_eq!(typed.len(), def.fields.len());
     }
 
     #[tokio::test]
     async fn ticks_reach_the_bus() {
         let bus = SignalBus::new(registry::for_tests(), None);
         let feed = PriceFeed::new();
-        let task = spawn_spot_publisher(feed.clone(), PriceSource::Coinbase, bus.clone());
+        let task = spawn_spot_publisher(feed.clone(), PriceSource::GeminiIndex, bus.clone());
         tokio::task::yield_now().await;
         feed.record(50_000.0);
-        let id = price_feed_signal_id(PriceSource::Coinbase);
+        let id = price_feed_signal_id(PriceSource::GeminiIndex);
         for _ in 0..50 {
             if bus.latest(&id).is_some() {
                 break;

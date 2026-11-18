@@ -1,13 +1,17 @@
-//! Two series, one ledger: bots, a human main account and one strategy
-//! sub-account per series churn through thousands of random steps while
-//! every cross-series invariant is checked after each one. Then the
-//! series settle one at a time and the books are reconciled.
+//! Two series, one ledger: seeded liquidity accounts, a human main account
+//! and one strategy sub-account per series churn through thousands of
+//! random steps while every cross-series invariant is checked after each
+//! one. Then the series settle one at a time and the books are reconciled.
+//!
+//! The liquidity here is placed explicitly: book-mirror accounts seeded
+//! with [`Exchange::seed_bot_account_in`] rest limit orders on their home
+//! series, standing in for the trader-bot population the server runs in
+//! production. They are home-pinned like any bot account, so the engine
+//! still rejects a cross-series order and still resets their bankroll at
+//! their series' settlement.
 
-use exchange::bots::traders::decision::decide_and_act;
-use exchange::bots::traders::{BotState, build_population};
 use exchange::engine::strategies::test_support::idle_record;
 use exchange::engine::{Exchange, OrderError, PAYOUT_PER_CONTRACT, TradeSource};
-use exchange::pricing::mark::SpotMark;
 use exchange::series::SERIES;
 use exchange::ticks::PriceTick;
 use exchange::types::{Address, OrderId, Qty, SeriesId, Side, Tenths};
@@ -18,6 +22,8 @@ use rand::rngs::StdRng;
 const START: Tenths = Tenths(1_000_000);
 const S0: SeriesId = SeriesId(0);
 const S1: SeriesId = SeriesId(1);
+/// The bankroll each book-mirror account is seeded with ($5,000).
+const MAKER_BANKROLL: Tenths = Tenths(5_000_000);
 
 /// Σ (balance + locked) over every account plus Σ open interest × $1.
 fn total_value(x: &Exchange) -> i64 {
@@ -58,17 +64,45 @@ fn family_round_pnl_if_settled(x: &Exchange, root: Address, series: SeriesId, ye
         .sum()
 }
 
+/// A book-mirror maker: its address, seeded bankroll and home series.
+struct Maker {
+    address: Address,
+    bankroll: Tenths,
+    series: SeriesId,
+}
+
+/// Seed `count` home-pinned maker accounts on `series`, numbered from
+/// `first`, and return them.
+fn seed_makers(x: &mut Exchange, first: u8, count: u8, series: SeriesId) -> Vec<Maker> {
+    (0..count)
+        .map(|i| {
+            let n = first + i;
+            let address = Address([n; 20]);
+            x.seed_bot_account_in(address, MAKER_BANKROLL, format!("maker{n:02}"), None, None, series);
+            Maker { address, bankroll: MAKER_BANKROLL, series }
+        })
+        .collect()
+}
+
+/// Rest a bid and an ask around the midpoint for a maker, ignoring the
+/// orders a maker can no longer afford.
+fn warm_at(x: &mut Exchange, address: Address, series: SeriesId) {
+    for (side, tenths) in [(Side::Bid, 480), (Side::Ask, 520)] {
+        let tick = PriceTick::from_tenths(tenths).unwrap();
+        let _ = x.place_limit(series, address, side, tick, Qty(50), TradeSource::Bot);
+    }
+}
+
 #[test]
 fn two_series_conservation() {
     let mut rng = StdRng::seed_from_u64(0x5EED_2025);
     let mut x = Exchange::new(START, SERIES);
 
-    // 40 bots: 25 on the 2m series, 15 on the 15m series.
-    let names: Vec<String> = (0..40).map(|i| format!("bot{i:02}")).collect();
-    let mut bots: Vec<BotState> = build_population(&mut x, &names[..25], 25, 11, S0);
-    bots.extend(build_population(&mut x, &names[25..], 15, 11 ^ (1 << 48), S1));
-    let bot_bankrolls: Vec<(Address, Tenths, SeriesId)> =
-        bots.iter().map(|b| (b.address, b.bankroll, b.series)).collect();
+    // 40 book-mirror makers: 25 on the 2m series, 15 on the 15m series.
+    let mut makers: Vec<Maker> = seed_makers(&mut x, 0, 25, S0);
+    makers.extend(seed_makers(&mut x, 25, 15, S1));
+    let maker_bankrolls: Vec<(Address, Tenths, SeriesId)> =
+        makers.iter().map(|m| (m.address, m.bankroll, m.series)).collect();
 
     // One human with a strategy sub-account per series.
     let human = Address([0xA0; 20]);
@@ -94,10 +128,9 @@ fn two_series_conservation() {
     x.debug_assert_invariants();
 
     // Warm both books so the strategies' market buys have something to hit.
-    for series in [S0, S1] {
-        for bot in bots.iter_mut().filter(|b| b.series == series) {
-            decide_and_act(&mut x.ctx(series), bot, &SpotMark(100_000.0, 0), &mut rng);
-        }
+    let seeded: Vec<(Address, SeriesId)> = makers.iter().map(|m| (m.address, m.series)).collect();
+    for &(address, series) in &seeded {
+        warm_at(&mut x, address, series);
     }
     let _ = x.place_market(S0, child0, Side::Bid, Qty(3), TradeSource::Strategy);
     let _ = x.place_market(S1, child1, Side::Bid, Qty(3), TradeSource::Strategy);
@@ -111,12 +144,17 @@ fn two_series_conservation() {
 
     for step in 0..2000 {
         btc += rng.random_range(-40.0..40.0);
-        let velocity = rng.random_range(-60..=60);
 
-        // A random bot acts on its own series.
-        let i = rng.random_range(0..bots.len());
-        let series = bots[i].series;
-        decide_and_act(&mut x.ctx(series), &mut bots[i], &SpotMark(btc, velocity), &mut rng);
+        // A random maker refreshes liquidity on its own series with a new
+        // resting order; a cross or an unaffordable order is harmless.
+        let i = rng.random_range(0..makers.len());
+        let maker = &makers[i];
+        let side = if rng.random_bool(0.5) { Side::Bid } else { Side::Ask };
+        let tick = PriceTick::from_tenths(rng.random_range(30..=97) * 10).unwrap();
+        match x.place_limit(maker.series, maker.address, side, tick, Qty(rng.random_range(1..=20)), TradeSource::Bot) {
+            Ok(_) | Err(OrderError::InsufficientBalance { .. }) | Err(OrderError::NoLiquidity) => {}
+            Err(e) => panic!("unexpected maker order error {e:?}"),
+        }
 
         // The human trades a random series, sometimes far beyond budget.
         let series = if rng.random_bool(0.5) { S0 } else { S1 };
@@ -140,17 +178,17 @@ fn two_series_conservation() {
             Err(e) => panic!("unexpected order error {e:?}"),
         }
 
-        // A bot must never be able to trade the other series.
+        // A maker must never be able to trade the other series.
         if step % 100 == 0 {
-            let bot = &bots[i];
-            let other = if bot.series == S0 { S1 } else { S0 };
+            let maker = &makers[i];
+            let other = if maker.series == S0 { S1 } else { S0 };
             let tick = PriceTick::from_tenths(500).unwrap();
-            match x.place_limit(other, bot.address, Side::Bid, tick, Qty(1), TradeSource::Bot) {
+            match x.place_limit(other, maker.address, Side::Bid, tick, Qty(1), TradeSource::Bot) {
                 Err(OrderError::SeriesMismatch { home, requested }) => {
-                    assert_eq!((home, requested), (bot.series, other));
+                    assert_eq!((home, requested), (maker.series, other));
                     mismatch_rejections += 1;
                 }
-                other_result => panic!("cross-series bot order accepted: {other_result:?}"),
+                other_result => panic!("cross-series maker order accepted: {other_result:?}"),
             }
         }
 
@@ -209,30 +247,30 @@ fn two_series_conservation() {
     // its winning 2m contracts × $1.
     let family_after = family_cash(&x, human);
     assert_eq!(family_after - family_before, expected_settlement_cash);
-    // 2m bots are back on their bankrolls; 15m bots are not.
-    for (a, bankroll, s) in &bot_bankrolls {
+    // 2m makers are back on their bankrolls; 15m makers are not.
+    for (a, bankroll, s) in &maker_bankrolls {
         let acct = x.account(a).unwrap();
         if *s == S0 {
-            assert_eq!(acct.usdc_balance, *bankroll, "2m bot {a} not reset");
+            assert_eq!(acct.usdc_balance, *bankroll, "2m maker {a} not reset");
             assert_eq!(acct.locked, Tenths::ZERO);
         }
     }
     assert!(
-        bot_bankrolls
+        maker_bankrolls
             .iter()
             .filter(|(_, _, s)| *s == S1)
             .any(|(a, bankroll, _)| x.account(a).unwrap().usdc_balance != *bankroll
                 || !x.position(S1, a).is_flat()),
-        "some 15m bot should still be mid-round"
+        "some 15m maker should still be mid-round"
     );
 
     // ── Resolve the 15m series ──
     let expected_round1 = family_round_pnl_if_settled(&x, human, S1, yes);
     x.resolve_and_open_next(S1, close, close, now + 900, 900);
     x.debug_assert_invariants();
-    for (a, bankroll, _) in &bot_bankrolls {
+    for (a, bankroll, _) in &maker_bankrolls {
         let acct = x.account(a).unwrap();
-        assert_eq!(acct.usdc_balance, *bankroll, "bot {a} not on bankroll");
+        assert_eq!(acct.usdc_balance, *bankroll, "maker {a} not on bankroll");
         assert_eq!(acct.locked, Tenths::ZERO);
     }
     let standing = x

@@ -202,7 +202,6 @@ mod tests {
             bus: crate::automation::signal_bus::SignalBus::new(crate::registry::for_tests(), None),
             templates: std::sync::Arc::new(crate::templates::TemplateCatalogue::default()),
             deploys: crate::api::DeployKeys::default(),
-            crowd: false,
             gemini: None,
         };
         let mut rx = state.channels_for(S).book_tx.subscribe();

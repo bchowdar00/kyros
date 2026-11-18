@@ -295,7 +295,7 @@ pub fn spawn_signal_producers() -> Option<SignalProducers> {
         return None;
     }
     // The lanes' TLS stack is rustls with the ring provider, and so is the
-    // exchange's own (tokio-tungstenite, the Pyth client). Install the
+    // exchange's own (tokio-tungstenite). Install the
     // process default once here so no lane races another for it.
     let _ = rustls::crypto::ring::default_provider().install_default();
 
