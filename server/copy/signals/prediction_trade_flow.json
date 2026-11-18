@@ -1,0 +1,18 @@
+{
+  "title": "Venue flow",
+  "description": "Who is hitting this venue's book, buyers or sellers of Up. Each trade is signed by who crossed the spread.",
+  "fields": {
+    "signed_notional_10s": {
+      "label": "Net flow 10s",
+      "description": "Dollars spent buying Up minus dollars spent selling it over the last ten seconds. Positive means buyers of Up are in a hurry."
+    },
+    "signed_notional_60s": {
+      "label": "Net flow 60s",
+      "description": "The same net dollars over the last minute. Slower, but a run of one sign is a real lean."
+    },
+    "flow_direction_10s": {
+      "label": "Flow direction 10s",
+      "description": "The sign of the ten-second flow once it clears a small threshold. Neutral when buyers and sellers are balanced."
+    }
+  }
+}

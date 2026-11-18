@@ -1,0 +1,79 @@
+---
+source: crates/strategy-compiler/tests/emit_manifest.rs
+expression: manifest
+---
+{
+  "schema_version": 2,
+  "strategy_id": "Strategy_98bbe0477099",
+  "name": "Late Momentum",
+  "description": "On the 2-minute BTC up/down market: at 10 seconds before window close, check how far spot has moved from the window open. If it is up more than 0.08% (0.0008 as a fraction, the window_delta signal's units), buy up; if it is down more than 0.08%, buy down. Runs every window.",
+  "dsl_version": "0.3",
+  "source_hash": "98bbe0477099f01449925628e8548a9b976dadaaed5682c632daf8e0785e677f",
+  "signals": [
+    {
+      "signal_id": "platform.btc_usd.window_delta.v1",
+      "staleness_policy": "proceed"
+    }
+  ],
+  "watch_fields": [
+    {
+      "signal_id": "platform.btc_usd.window_delta.v1",
+      "field": "pct"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "last_10s",
+      "timer": {
+        "kind": "window_clock",
+        "window_clock": {
+          "instrument_id": "btc_usd.updown_2m.current",
+          "remaining_ms": 10000
+        }
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "lifecycle_stages": [
+    {
+      "name": "sniping",
+      "resident": true,
+      "arm": [
+        "last_10s"
+      ]
+    }
+  ],
+  "intent_index": {
+    "sniping.buy_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "sniping.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  }
+}

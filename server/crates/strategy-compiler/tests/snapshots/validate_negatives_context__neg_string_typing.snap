@@ -1,0 +1,28 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[type-mismatch] at legs[0].body[1].if: strings compare with == or != only
+  signal.bets.bettor > param.target
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[type-mismatch] at legs[0].body[2].if: arithmetic needs numbers
+  signal.bets.bettor + 1 > 2
+  ^^^^^^^^^^^^^^^^^^
+
+error[type-mismatch] at legs[0].body[3].if: the two sides of this comparison are different kinds of value
+  signal.bets.bettor == signal.bets.stake
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[guard-not-boolean] at legs[0].body[4].if: a guard is a boolean condition — this expression is a value
+  param.target
+  ^^^^^^^^^^^^
+  = help: compare the value against a threshold, or drop the guard
+
+error[set-rhs-type-mismatch] at legs[0].body[5].do[0]: this value does not fit the slot's declared type
+  set state.n = param.target
+                ^^^^^^^^^^^^
+
+error[set-rhs-type-mismatch] at legs[0].body[5].do[1]: this value does not fit the slot's declared type
+  set state.who = signal.bets.stake
+                  ^^^^^^^^^^^^^^^^^

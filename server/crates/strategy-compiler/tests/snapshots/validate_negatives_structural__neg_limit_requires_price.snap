@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[limit-requires-price] at legs[0].body[0].do[0].place: a limit order requires `price` and `price_band`
+  = help: limit orders carry a clamp-wrapped price expression and a [lo, hi] price band

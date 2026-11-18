@@ -1,0 +1,41 @@
+/reference/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build and tool output
+.next/
+dist/
+out/
+coverage/
+storybook-static/
+*.tsbuildinfo
+.vercel/
+*.pem
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Logs and operating-system files
+*.log
+.DS_Store
+
+# Next.js regenerates this on dev/build/typegen; the docs say do not track it.
+/next-env.d.ts
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# Claude Code worktrees
+/.claude/worktrees/
+
+# Local Mastra runtime and conversation data
+.mastra/
+.mastra-data/
+/src/mastra/public/
+/workspace/

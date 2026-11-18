@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.coinbase.bollinger",
+  "version": "1.0.0",
+  "name": "Coinbase BTC/USD one-minute Bollinger band position (20, 2 sigma)",
+  "description": "A causal reading over the fresh Coinbase displayed best-quote midpoint, sampled once per second on the lane decision clock. The middle band is the arithmetic mean of the last twenty one-minute bar closes and the outer bands sit two population standard deviations of those same twenty closes above and below it. percent_b is (latest close minus lower band) divided by (upper band minus lower band); with a zero-width band \u2014 twenty identical closes \u2014 percent_b is defined as 0.5. bandwidth_bps is (upper band minus lower band) divided by the middle band, times ten thousand. state is above when the latest close is strictly above the upper band, below when it is strictly below the lower band, and inside otherwise. The twenty-bar window and the two-standard-deviation width are initial research defaults that require empirical calibration; the mean and standard-deviation formulas are not heuristic thresholds. One-minute bars are closed on the lane decision clock at minute boundaries from the one-second sample series: open is the first sample of the minute, high and low its extrema, close its last sample. A bar that is missing any one-second sample is invalid; the missing sample breaks continuity, every retained bar and every smoothed state derived from them is discarded, and the bar warm-up restarts from the next whole bar. Nothing is bridged across a gap. Ready once twenty contiguous one-minute bars have closed. Decimal outputs are rounded to eight places using round-half-to-even. Every reading is causal: it reads only samples at or before the decision it is published on. Adopted in the C3a TA pack (ruling E51, 2026-09-04): the seven technical-analysis identities are published on every price venue we carry, computed from the venue's own one-second sample ring by the shared `crates/btc-signals/src/ta.rs` helper, so every scope runs byte-identical arithmetic and only the sample series differs.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "coinbase.exchange.btc-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "percent_b",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "bandwidth_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "below",
+        "inside",
+        "above"
+      ]
+    },
+    {
+      "name": "bar_count",
+      "type": "u16",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

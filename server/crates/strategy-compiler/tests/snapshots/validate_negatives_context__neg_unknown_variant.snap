@@ -1,0 +1,7 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[unknown-variant] at legs[0].body[0].if: 'dunk' is not a variant of the compared enum (variants: foul, free_throw, rebound, substitution, three_pointer, timeout, turnover, two_pointer)
+  signal.pbp.action == 'dunk'
+                       ^^^^^^

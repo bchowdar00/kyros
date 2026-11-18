@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[triggered-arg-not-bare-name]: `triggered` takes a single bare trigger name
+  triggered(signal.book)
+                  ^
+  = help: write triggered(<trigger name>) — the name is declared in the triggers section; namespaced references are not trigger names

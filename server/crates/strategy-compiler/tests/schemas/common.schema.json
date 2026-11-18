@@ -1,0 +1,340 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/common.schema.json",
+  "title": "Common definitions",
+  "$comment": "Shared building blocks referenced by other wire types.",
+  "$defs": {
+    "SchemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Additive-only. Bump when adding optional fields; consumers must tolerate unknown fields."
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339. Hot-path binary codecs may substitute an int64 epoch-nanos; the model stays this."
+    },
+    "SignalValue": {
+      "description": "A signal or field value. Decimals SHOULD be strings to avoid float drift; categorical values are strings; flags are booleans.",
+      "type": ["string", "number", "integer", "boolean"]
+    },
+    "TypeName": {
+      "type": "string",
+      "enum": ["decimal", "u8", "u16", "u32", "u64", "i64", "bool", "timestamp", "enum", "duration_ms", "string"],
+      "description": "The closed type vocabulary for signal fields, state slots, and expression operands -- one definition, referenced everywhere anything is type-checked. decimal: arbitrary-precision numeric, serialized as a STRING on every wire (never a JSON float -- float drift is a determinism leak; this codifies the existing SignalValue guidance). u8/u32: unsigned integers for counters and keys. timestamp: availability-time, epoch-nanos semantics per common.Timestamp. enum: closed categorical -- a field/slot declaring type 'enum' MUST also declare 'variants' (enforced structurally where fields are defined). duration_ms: integer milliseconds. Deliberately absent: string -- no string manipulation exists in the strategy language by design; every legitimately categorical field (player_status, event_type, result) is 'enum', which is checkable (a typo'd variant is a compile error instead of a silent never-matches filter). A free-text field on a signal is a schema smell, not a missing type; if a real string-shaped need appears, adding an enum value is additive and cheap."
+    },
+    "EnumVariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Required alongside type='enum'. The closed set of legal values, e.g. ['active','questionable','out']. Comparators on enum fields are == / != / set-membership only; ordering comparators are a type error."
+    },
+    "StructType": {
+      "$comment": "Layer 2 of the state type algebra (primitives -> structs -> containers). Structs contain PRIMITIVES ONLY -- no structs of structs, made structural here: field types are TypeName, not a recursive ref. A window of trades needs entries holding (price, size) together; that is what this is for.",
+      "type": "object",
+      "required": ["fields"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "$ref": "#/$defs/TypeName" },
+              "variants": { "$ref": "#/$defs/EnumVariants" }
+            },
+            "additionalProperties": false,
+            "if": { "properties": { "type": { "const": "enum" } } },
+            "then": { "required": ["variants"] },
+            "else": { "not": { "required": ["variants"] } }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Comparator": {
+      "$comment": "AMENDED (compiler pin): 'always' added -- the bare condition leaf's lowering, true whenever the signal publishes; an 'always' leaf carries no field/expr/value (enforced on TriggerCondition).",
+      "type": "string",
+      "enum": [">=", "<=", ">", "<", "==", "!=", "always"]
+    },
+    "TriggerCondition": {
+      "$comment": "AMENDED (compiler pin): 'value' is now required only on comparing leaves ('always' leaves carry none); 'expr' added for arithmetic-over-own-fields leaves, mutually exclusive with 'field'.",
+      "type": "object",
+      "required": ["signal_id", "comparator"],
+      "properties": {
+        "signal_id": { "type": "string" },
+        "field": {
+          "type": "string",
+          "description": "Optional; defaults to the signal's primary field. Mutually exclusive with 'expr'."
+        },
+        "expr": {
+          "$ref": "#/$defs/ExprOpTree",
+          "description": "Arithmetic over the leaf's own signal fields, compared against 'value'. Mutually exclusive with 'field'."
+        },
+        "comparator": { "$ref": "#/$defs/Comparator" },
+        "value": { "$ref": "#/$defs/SignalValue" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        { "not": { "required": ["field", "expr"] } },
+        {
+          "if": { "properties": { "comparator": { "const": "always" } }, "required": ["comparator"] },
+          "then": { "not": { "anyOf": [{ "required": ["field"] }, { "required": ["expr"] }, { "required": ["value"] }] } },
+          "else": { "required": ["value"] }
+        }
+      ]
+    },
+    "ExprOpTree": {
+      "$comment": "NEW (compiler pin): expr leaves ship PRE-PARSED -- the platform never parses strings; the authored expression string is display-side only (decompilation/UI), never wire.",
+      "description": "Arithmetic op-tree over one signal's fields: a field of the leaf's own signal, a canonical decimal constant, a binary arithmetic node, or unary negation.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["field"],
+          "properties": {
+            "field": { "type": "string", "description": "A field of the leaf's own signal." }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["const"],
+          "properties": {
+            "const": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]*[1-9])?$",
+              "description": "Canonical unsigned decimal string; negation is the 'neg' node."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["op", "lhs", "rhs"],
+          "properties": {
+            "op": { "type": "string", "enum": ["+", "-", "*", "/"] },
+            "lhs": { "$ref": "#/$defs/ExprOpTree" },
+            "rhs": { "$ref": "#/$defs/ExprOpTree" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["source"],
+          "properties": {
+            "source": { "type": "string", "description": "AMENDED (compiler pin, v0.3): the authored expression text, emitted when the tree reads several signals, params or builtins the op-tree cannot express. The program carries the real tree." }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["op", "arg"],
+          "properties": {
+            "op": { "const": "neg" },
+            "arg": { "$ref": "#/$defs/ExprOpTree" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ConditionTree": {
+      "$comment": "Authoring surface -- the arbitrary boolean formula the LLM emits and the node graph renders. A ConditionTree is one of: a leaf (a bare TriggerCondition, e.g. price >= 30000), an {all:[...]} AND-node (simultaneous semantics: all children must hold at the same moment; each child's bit SETS when it becomes true and CLEARS when it becomes false -- the SME tracks BOTH edges), or an {any:[...]} OR-node (stateless). Children are themselves trees, so nesting is unbounded: (A OR B) AND (B OR C) is {all:[{any:[A,B]},{any:[B,C]}]}. There is deliberately NO 'not' node: negation of a numeric comparison is free (flip the comparator -- NOT(x>=5) is x<5), and negation of events is the bug factory the timer+accumulator pattern replaces. If NOT is ever needed it is pushed to the leaves by De Morgan during normalization, never stored as a node. EXECUTION: the compiler normalizes this tree to flat DNF groups (see trigger-normalization.md) for the SME's registration bundle; the SME never consumes trees -- do not build a tree-walker.",
+      "oneOf": [
+        { "$ref": "#/$defs/TriggerCondition" },
+        {
+          "type": "object",
+          "required": ["all"],
+          "properties": {
+            "all": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/ConditionTree" } }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["any"],
+          "properties": {
+            "any": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/ConditionTree" } }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RejectReason": {
+      "$comment": "CONTRACT PENDING: to be reviewed with AJ (risk gateway / matching engine owner) -- the question to bring: 'can the gateway and engine tag every reject path with exactly one of these today, and which paths are missing?'. His answer edits this enum; then it freezes into the shared crate and Tier 4 builds on it. Bucketing principle: by REMEDIATION class, not by internal error site -- a reason earns a distinct value iff some strategy would plausibly react differently to it (ten flavors of validation failure collapse into invalid_order; insufficient_funds vs rate_limited stay distinct because one forbids retry and the other invites it). Additive-only: splitting a bucket later is cheap, merging published values is breaking -- when in doubt, start coarse. Reserved split to ask AJ about: whether envelope_violation should distinguish settled-balance failures from in-flight reservation failures. bundle_unfillable (an atomic_bundle whose legs could not all fill in one match -- see order-request) is added ahead of engine support per the additive-when-in-doubt rule; confirm with AJ alongside the order-request questions.",
+      "type": "string",
+      "enum": [
+        "insufficient_funds",
+        "envelope_violation",
+        "price_band",
+        "rate_limited",
+        "market_closed",
+        "invalid_order",
+        "bundle_unfillable",
+        "internal_error"
+      ],
+      "description": "Machine-readable cause on every reject event, emitted by the risk gateway / engine. MUST stay in lockstep with the reject codes the exchange actually produces -- this enum is a contract with the execution plane, not a wish list. Notes: envelope_violation (strategy's declared limit) vs insufficient_funds (account's actual balance) stay distinct -- an envelope violation in production means the compiler's static clamps and the runtime gate disagree, a platform-bug alert, not a user notification. internal_error is the honest 'the engine broke, not you' bucket; it must exist or infrastructure failures arrive reasonless and crash the totality guarantee; its safe default policy is pause_and_notify, never blind retry into a possibly-sick engine."
+    },
+    "RejectPolicy": {
+      "$comment": "Tier 4 validator rules, recorded now so they are not forgotten: (1) a leg's reject handling is a map from RejectReason to RejectPolicy that must be TOTAL over RejectReason -- a default entry is fine but is materialized explicitly in the artifact, never implied; (2) insufficient_funds may NEVER map to retry_with_backoff -- same balance, same rejection, same retry is a state failure not a transient one, and the loop hammers the risk gateway at machine speed; the one reason-x-policy pair that is structurally forbidden.",
+      "type": "object",
+      "required": ["action"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["pause_and_notify", "retry_with_backoff", "abandon", "kill"],
+          "description": "pause_and_notify: stop dispatching events to this strategy, alert the user, await manual resume. retry_with_backoff: re-emit per the backoff params; on exhausting max_attempts, escalate to the declared escalation action. abandon: drop this intent and continue normally (the reject still transitions the leg machine per its table -- abandon is not a swallow). kill: permanent stop, terminal state, positions handled per kill-policy."
+        },
+        "backoff_initial_ms": { "type": "integer", "minimum": 1 },
+        "backoff_multiplier": { "type": "number", "minimum": 1 },
+        "max_attempts": { "type": "integer", "minimum": 1 },
+        "escalation": {
+          "type": "string",
+          "enum": ["pause_and_notify", "kill"],
+          "description": "What retry_with_backoff escalates to when max_attempts is exhausted. Required for retry_with_backoff (enforced structurally); invalid on other actions."
+        }
+      },
+      "additionalProperties": false,
+      "if": { "properties": { "action": { "const": "retry_with_backoff" } } },
+      "then": { "required": ["escalation", "backoff_initial_ms", "max_attempts"] },
+      "else": {
+        "not": {
+          "anyOf": [
+            { "required": ["backoff_initial_ms"] },
+            { "required": ["backoff_multiplier"] },
+            { "required": ["max_attempts"] },
+            { "required": ["escalation"] }
+          ]
+        }
+      }
+    },
+    "OrderEvent": {
+      "type": "string",
+      "enum": ["fill", "partial", "reject", "cancel_ack", "expiry", "replaced"],
+      "description": "The complete order-lifecycle alphabet. Every execution report carries exactly one of these; every leg's transition table MUST answer all of them (totality -- there is no event the state machine lacks an answer for). 'replaced' is the single ack for an atomic cancel_replace -- PENDING AJ CONFIRMATION (order-request question 1): if the engine instead emits cancel_ack + a fresh ack, delete 'replaced' before freezing; the alphabet and the engine's reports must be the same list or totality is fiction. DELIBERATELY ABSENT: 'ack'. An ack means 'the exchange heard you', not 'you have a position' -- position-dependent transitions fire on fills, never on acks. The harness may track acks internally for reconciliation, but the strategy's state machine never branches on them. This exclusion WILL be proposed as an addition; it is a decision, not a gap."
+    },
+    "RestingOrderDisposition": {
+      "type": "string",
+      "enum": ["cancel_all", "keep", "replace_per_rules"],
+      "description": "What happens to this strategy's resting orders when a transition executes. A maker leg transitioning with quotes silently left on the book is a money-losing bug; this field makes not-thinking-about-it impossible."
+    },
+    "Trigger": {
+      "type": "object",
+      "description": "A named, armed trigger with its firing policy -- a tagged union: EXACTLY ONE of 'condition' (event-driven: a ConditionTree, arbitrary AND/OR/leaf nesting, authoring-shaped; the compiler normalizes it to flat DNF groups for the SME, see trigger-normalization.md) or 'timer' (time-driven: the SME manufactures the firing event, see TimerSpec). The routing rule: 'N things within T' is a lazy window in the IR; 'nothing for T' / 'after T' / 'when T remains' is a timer here -- time-based conditions are TIMERS on the wire, never threshold conditions on a 'time signal' (conditions evaluate when events arrive, and no event arrives as time drains; a secret condition-to-timer conversion inside the SME would be invisible on the wire and unreplayable if done wrong). `fire` and `rearm` apply to both families and attach to the trigger's OVERALL truth value: for conditions, on_crossing = the formula went false->true however it is stored, and representation/normalization never affect when it fires; for timers, fire is effectively on_crossing (an expiry IS a crossing) and rearm governs repetition.",
+      "required": ["id", "fire", "rearm"],
+      "properties": {
+        "id": { "type": "string" },
+        "condition": { "$ref": "#/$defs/ConditionTree" },
+        "timer": { "$ref": "#/$defs/TimerSpec" },
+        "fire": {
+          "type": "string",
+          "enum": ["on_crossing", "if_true"],
+          "description": "When to fire: 'on_crossing' = only on the rising edge (the trigger's condition goes false->true); 'if_true' = on every evaluation while it is true."
+        },
+        "rearm": {
+          "type": "object",
+          "description": "When the trigger may fire again after firing.",
+          "required": ["mode"],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["fresh_crossing", "immediate", "never"],
+              "description": "'fresh_crossing' = must go false then true again; 'immediate' = may re-fire while still true; 'never' = fires at most once."
+            },
+            "cooldown_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Optional minimum gap between fires, in ms. Composes with mode (e.g. fresh_crossing AND >=30s). NOT a timer: evaluated lazily in the SME's trigger row against event timestamps -- it never schedules anything and never injects events into the stream. TimerSpec is for when the firing itself must be manufactured from time passage; do not 'unify' the two into a timer-backed implementation that floods the log with cooldown expiries."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["condition"] },
+        { "required": ["timer"] }
+      ]
+    },
+    "TimerSpec": {
+      "$comment": "Consumed by the SME's timer wheel -- the one trigger family where the SME doesn't wait for an event but manufactures one, injecting the expiry into the same global sequenced stream as everything else (an expiry is not a special path; it is an event with a sequence number, and in backtest it replays from the log). ARMING IS LEG-SCOPED, uniformly: a timer arms at leg entry (registration) and disarms at leg exit, exactly like condition triggers register and deregister. This buys the key compositions for free: 'cancel if unfilled after 30s' is an after(30000) timer on the pending leg -- a fill arriving first transitions out of the leg, which disarms the timer; no cancellation bookkeeping, no race; the leg machine IS the timer's lifecycle. 'Now' for arming is the availability-time of the event that caused the leg entry -- never wall clock. Per-kind parameter coupling is enforced structurally below (exactly the matching parameter, nothing else).",
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["after", "interval", "at", "daily_window", "window_clock"]
+        },
+        "delay_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "kind=after: fires once, delay_ms after arming. THE order-timeout / event-negation primitive: 'cancel if unfilled after 30s' = after(30000) + the leg's expiry machinery; 'no follow-through in 5s' = after(5000), compiled guard checks the accumulator at expiry."
+        },
+        "period_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "kind=interval: fires every period_ms while the leg is active, first firing one period after arming. rearm=immediate is the natural pairing; cooldown composes."
+        },
+        "at": {
+          "$ref": "#/$defs/Timestamp",
+          "description": "kind=at: fires once at an absolute time. If already past at arming, fires immediately on arm (documented, not configurable -- the alternative, silently never firing, is the stuck-strategy bug wearing a clock)."
+        },
+        "daily_window": {
+          "type": "object",
+          "required": ["open", "close", "tz", "edge"],
+          "properties": {
+            "open": { "type": "string", "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$" },
+            "close": { "type": "string", "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$" },
+            "tz": {
+              "type": "string",
+              "description": "IANA zone, e.g. 'America/New_York'. REQUIRED, no default -- 'pull quotes 3:55-4:10pm' means a specific market's afternoon, and a silent UTC default is a strategy that fires at the wrong time every day while backtesting perfectly (timezone bugs are the class the log cannot catch: replay is identical, the strategy is just wrong about the world). DST transitions resolve per the zone database; the decompilation renders the zone explicitly."
+            },
+            "edge": {
+              "type": "string",
+              "enum": ["on_open", "on_close", "on_both"],
+              "description": "Which boundary crossings fire this trigger. Required, no default -- an undeclared edge is an implied default."
+            }
+          },
+          "additionalProperties": false
+        },
+        "window_clock": {
+          "type": "object",
+          "required": ["instrument_id", "remaining_ms"],
+          "properties": {
+            "instrument_id": { "type": "string" },
+            "remaining_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Fires when the instrument's trading window has this much time left. The SME schedules it from the known close time at arming; a close that shifts (delayed oracle resolution) reschedules the timer -- and the reschedule is itself a LOGGED event, never a side channel, so 'why did my t_remaining trigger fire late' stays answerable."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "after" } }, "required": ["kind"] },
+          "then": { "required": ["delay_ms"], "not": { "anyOf": [{ "required": ["period_ms"] }, { "required": ["at"] }, { "required": ["daily_window"] }, { "required": ["window_clock"] }] } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "interval" } }, "required": ["kind"] },
+          "then": { "required": ["period_ms"], "not": { "anyOf": [{ "required": ["delay_ms"] }, { "required": ["at"] }, { "required": ["daily_window"] }, { "required": ["window_clock"] }] } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "at" } }, "required": ["kind"] },
+          "then": { "required": ["at"], "not": { "anyOf": [{ "required": ["delay_ms"] }, { "required": ["period_ms"] }, { "required": ["daily_window"] }, { "required": ["window_clock"] }] } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "daily_window" } }, "required": ["kind"] },
+          "then": { "required": ["daily_window"], "not": { "anyOf": [{ "required": ["delay_ms"] }, { "required": ["period_ms"] }, { "required": ["at"] }, { "required": ["window_clock"] }] } }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "window_clock" } }, "required": ["kind"] },
+          "then": { "required": ["window_clock"], "not": { "anyOf": [{ "required": ["delay_ms"] }, { "required": ["period_ms"] }, { "required": ["at"] }, { "required": ["daily_window"] }] } }
+        }
+      ]
+    }
+  }
+}

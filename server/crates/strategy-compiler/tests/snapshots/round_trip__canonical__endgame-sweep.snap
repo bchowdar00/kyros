@@ -1,0 +1,79 @@
+---
+source: crates/strategy-compiler/tests/round_trip.rs
+expression: first_emission
+---
+{
+  "meta": {
+    "name": "Endgame Sweep",
+    "description": "On the 2-minute BTC up/down market: at 20 seconds before window close, if either side is trading at 95 cents or more, buy that side at the market and let it resolve. Runs every window; positions settle at expiry and the next window's check is the next wake.",
+    "dsl_version": "0.3"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_2m.current"
+  },
+  "signals": {
+    "book": "btc_usd.updown_2m.current.price.v1"
+  },
+  "state": [],
+  "triggers": [
+    {
+      "name": "last_20s",
+      "timer": {
+        "kind": "window_clock",
+        "instrument": "market",
+        "remaining": "20s"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "legs": [
+    {
+      "name": "sweeping",
+      "resident": true,
+      "arm": [
+        "last_20s"
+      ],
+      "body": [
+        {
+          "name": "buy_up",
+          "if": "triggered(last_20s) and signal.book.up >= 0.95",
+          "do": [
+            {
+              "place": {
+                "instrument": "market",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "sweep"
+              }
+            }
+          ]
+        },
+        {
+          "name": "buy_down",
+          "if": "triggered(last_20s) and signal.book.down >= 0.95",
+          "do": [
+            {
+              "place": {
+                "instrument": "market",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "sweep"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

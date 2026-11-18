@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.pyth.price_volatility",
+  "version": "1.0.0",
+  "name": "Pyth BTC/USD price volatility",
+  "description": "Realized volatility of the Pyth Network BTC/USD aggregate price on the oracle lane, from the Hermes stream source pyth.hermes.btc-usd.price. Pyth publishes at roughly one hertz, so this identity samples the aggregate price one-second causal and converts consecutive samples to simple basis-point returns. volatility_bps_1s, volatility_bps_10s, volatility_bps_30s, volatility_bps_1m, volatility_bps_5m, and volatility_bps_15m are the root mean square of the one-second returns inside the trailing one, ten, thirty, sixty, three-hundred, and nine-hundred second windows. short_long_ratio is the one-second value divided by the fifteen-minute value; when both windows have zero root-mean-square volatility the ratio is defined as 1 (the micro convention) and regime is stable. Regime is contracting at or below 0.8, expanding at or above 1.2, and stable between those boundaries; the 0.8 and 1.2 boundaries are initial research thresholds that require empirical calibration. Any missing or stale one-second observation breaks continuity and restarts the fifteen-minute warm-up. This definition ships approved but refuse-closed today, on the same precedent as btc.pyth.oracle_reference: no processor consumes pyth.hermes.btc-usd.price on the oracle lane yet, so the identity publishes no ready values and refuses at start-up. It begins publishing once the Pyth Hermes stream is wired as a lane input (slice C4). Reads only Pyth and predicts nothing. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "pyth.hermes.btc-usd.price", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "volatility_bps_1s", "type": "decimal", "location": "internal" },
+    { "name": "volatility_bps_10s", "type": "decimal", "location": "internal" },
+    { "name": "volatility_bps_30s", "type": "decimal", "location": "internal" },
+    { "name": "volatility_bps_1m", "type": "decimal", "location": "internal" },
+    { "name": "volatility_bps_5m", "type": "decimal", "location": "internal" },
+    { "name": "volatility_bps_15m", "type": "decimal", "location": "internal" },
+    { "name": "short_long_ratio", "type": "decimal", "location": "internal" },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["contracting", "stable", "expanding"]
+    },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

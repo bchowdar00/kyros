@@ -1,0 +1,26 @@
+{
+  "title": "Expected value",
+  "description": "What a dollar staked on each side of this venue's market is worth, from fair odds against the ask price and fee. The better side is the one that returns more per dollar.",
+  "fields": {
+    "best_side": {
+      "label": "Better side",
+      "description": "Up or Down, whichever returns more per dollar staked at today's prices. Neither when both lose to fees."
+    },
+    "ev_bps_of_stake": {
+      "label": "Return per dollar",
+      "description": "Expected return on the better side as a share of the stake, in basis points. Positive means the venue is paying you to take that side."
+    },
+    "fair_probability": {
+      "label": "Fair odds of Up",
+      "description": "The modelled chance the round settles Up, as a percentage. The yardstick the expected values are built from."
+    },
+    "ev_buy_yes_at_ask": {
+      "label": "EV buying Up",
+      "description": "Expected profit per contract from buying Up at the ask, fees included, in cents. Positive means Up is underpriced."
+    },
+    "ev_buy_no_at_ask": {
+      "label": "EV buying Down",
+      "description": "Expected profit per contract from buying Down at the ask, fees included, in cents. Positive means Down is underpriced."
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# Vercel builds only the frontend (project root directory: frontend).
+# Everything else, especially the Rust build output and the signal lanes'
+# multi-hundred-GB data directory, must never be uploaded.
+/server/
+/agent_docs/
+/docs/
+/ignore-old-frontend/
+**/node_modules/
+**/.next/
+**/.mastra-data/
+**/test-results/
+**/playwright-report/
+**/*.tsbuildinfo
+.git/
+/.claude/
+**/.mastra/

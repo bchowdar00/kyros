@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.cfbenchmarks.brti.value",
+  "version": "1.0.0",
+  "name": "Kalshi CF Benchmarks BRTI 1 Hz index value",
+  "description": "Authenticated Kalshi WebSocket channel cfbenchmarks_value for index id BRTI, the CF Benchmarks Bitcoin Real-Time Index that Kalshi KXBTC15M markets settle on. Ticks are emitted once per second, observed at 120 frames in 120 seconds on the 2026-09-03 Tokyo probe (ruling E23); Kalshi ignores duplicate and out-of-order upstream source timestamps and the adapter independently enforces the same rule against its own (index_id, event_time) frontier. The channel carries no top-level value: index_value and event_time are read from the embedded raw CF Benchmarks frame in msg.data, whose id must equal msg.index_id and whose time must equal msg.avg_60s_data.window_end_ts_exclusive, and the raw frame bytes are preserved in the capture rather than in values. avg_60s_* is the trailing per-tick average over [source_ts_ms - 60000, source_ts_ms); window_size counts prior ticks only and is observed to be 0 on the first frame of a fresh subscription, growing to 60 as the window fills, so zero is a normal value and not a payload error. The averaged value carries exactly eight fractional digits while the raw tick value is free-scale within eight, so the two spellings of one price are compared by decimal value and never as text. The quarter-hour final-minute average carried on the same wire message is a separate identity, kalshi.cfbenchmarks.brti.settlement-window, because it is present only during the final minute before :00, :15, :30 and :45; every observed frame was mid-quarter, so its absence is the normal case and its presence remains documented-not-observed. event_time is the CF Benchmarks index time; kalshi_received_at is Kalshi's own receipt of the upstream frame; the envelope received_at is our local receipt, and the three are never substituted for one another. upstream_sequence is the per-subscription seq counter, a Kalshi concept, not a CF Benchmarks one. This is a full-state value stream with no snapshot and no history on the socket: a sequence gap is reported and publication continues from the newest valid image. Rights-gated: retention, derived-use and redistribution of CF Benchmarks data received through Kalshi are unresolved in knowledge/RIGHTS-LEDGER.md, and the live runner refuses this stream until that row clears. The channel is subscribed on Kalshi's market socket wss://external-api-ws.kalshi.com/trade-api/ws/v2 under the market command envelope {\"cmd\":\"subscribe\",\"id\":101,\"params\":{\"channels\":[\"cfbenchmarks_value\"],\"index_ids\":[\"BRTI\"]}}, answered {\"type\":\"subscribed\",\"id\":101,\"msg\":{\"channel\":\"cfbenchmarks_value\",\"sid\":1}}; the per-channel paths Kalshi documents do not connect. Runtime refusal gate: the channel is subscribed only when the environment allow-list SIGNALS_ENABLED_VENUES lists cfbrti; absent, it is not subscribed and the dependent instances publish unavailable. Wire contract is OBSERVED, and since 2026-09-03 the evidence is an in-tree capture rather than a probe: the 65-minute kalshi-index hours of 08:45-09:50Z and 10:01-11:06Z replay through btc-feeds replay unmodified and attribute all 3,900 and 3,899 frames respectively to this identity with zero adapter errors, a contiguous publisher sequence and avg_60s_data.window_size running 0 through 60.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    {
+      "name": "index_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "index_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_received_at",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "upstream_sequence",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "avg_60s_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "avg_60s_window_size",
+      "type": "u32",
+      "location": "external"
+    },
+    {
+      "name": "avg_60s_window_start",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "avg_60s_window_end_exclusive",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time",
+  "sequence_field": "upstream_sequence"
+}

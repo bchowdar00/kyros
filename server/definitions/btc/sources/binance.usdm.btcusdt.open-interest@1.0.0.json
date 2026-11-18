@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "source_id": "binance.usdm.btcusdt.open-interest",
+  "version": "1.0.0",
+  "name": "Binance USD-M BTCUSDT perpetual open-interest snapshot",
+  "description": "Normalized responses from `GET https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT`, polled every 5000 milliseconds under a self-imposed budget of at most fifteen requests per minute across all Binance REST pollers. `open_interest_base` is open interest in BTC contracts. `event_time` is the venue `time` field and is the ordering cursor: the venue republishes an unchanged snapshot between its own updates, so an equal value is a duplicate and a lower value is out of order, both dropped. A non-200 response, a malformed body, a body larger than one mebibyte or a symbol mismatch emits no event and raises a recovery notice; the dependent identity then ages toward its staleness bound rather than reading a stale value as fresh. `poll_sequence` is an internal, strictly increasing ordinal over the polls this publisher has admitted, starting at zero: it distinguishes two successive polls that report an identical open interest at different venue timestamps without a consumer having to compare decimal text, and it is derived from the record stream alone so replay reproduces it exactly (ruling E7). The request and the response are both written to the capture, so replay needs no network. Refusal-gated: Binance redistribution requires written consent (see RIGHTS-LEDGER.md). OBSERVED against a 65-minute Tokyo capture on 2026-09-03 (07:47Z-08:52Z; `fapi.binance.com` answers from there and returns HTTP 451 from a US host, ruling E27): 739 polls, exactly the three drafted fields on every response, `openInterest` always at three fractional digits. The venue `time` is NOT monotonic - 30 polls repeated the previous timestamp and 12 went BACKWARD by up to 2,415 ms - so the strictly-increasing rule is what the venue requires rather than a formality: 697 of 739 polls were admitted and 42 dropped. `poll_sequence` ran 0..696 with no hole. No poll was rate-limited or refused in the hour, so the `Retry-After` and used-weight paths remain unexercised by observation.",
+  "status": "approved",
+  "transport": "http_poll",
+  "expected_heartbeat_ms": 5000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "open_interest_base",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "poll_sequence",
+      "type": "u64",
+      "location": "internal"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time"
+}

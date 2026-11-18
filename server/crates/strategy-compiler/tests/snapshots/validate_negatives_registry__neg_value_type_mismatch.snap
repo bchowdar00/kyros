@@ -1,0 +1,9 @@
+---
+source: crates/compiler/tests/validate_negatives_registry.rs
+expression: rendered
+---
+error[value-type-mismatch] at triggers[0].condition.all[0].value: `dunk` is not a variant of field `action` (expected one of: two_pointer, three_pointer, free_throw, rebound, turnover, foul, timeout, substitution)
+  = help: leaf values write enum variants plain, without quotes
+
+error[value-type-mismatch] at triggers[0].condition.all[1].value: `made` is not a number — field `quarter` is numeric
+  = help: compare a numeric field against a canonical decimal

@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[group-too-small] at triggers[0].condition.all: an `all` group needs at least 2 leaves
+  = help: a single leaf needs no group — write the leaf directly

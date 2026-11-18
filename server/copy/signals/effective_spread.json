@@ -1,0 +1,10 @@
+{
+  "title": "Realized spread",
+  "description": "Whether recent trades were informed. Each trade is checked against the midpoint five seconds later; if the price followed the trade, the taker knew something.",
+  "fields": {
+    "realized_spread_bps": {
+      "label": "Realized spread",
+      "description": "What the maker actually earned on recent trades after the price moved, in basis points. Negative means takers are moving the price and the flow is informed."
+    }
+  }
+}

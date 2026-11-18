@@ -1,0 +1,36 @@
+---
+source: crates/compiler/tests/lower_triggers.rs
+expression: registration
+---
+(
+    (
+        "subscriptions",
+        [
+            "btc_usd.updown_2m.current.price.v1",
+        ],
+    ),
+    (
+        "legs",
+        [
+            (
+                "sweeping",
+                [
+                    "last_20s",
+                ],
+            ),
+        ],
+    ),
+    (
+        "initial_leg",
+        "sweeping",
+    ),
+    (
+        "envelope_consts",
+        [
+            (
+                MaxOrderSize,
+                "100",
+            ),
+        ],
+    ),
+)

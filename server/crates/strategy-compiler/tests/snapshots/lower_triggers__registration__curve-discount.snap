@@ -1,0 +1,51 @@
+---
+source: crates/compiler/tests/lower_triggers.rs
+expression: registration
+---
+(
+    (
+        "subscriptions",
+        [
+            "btc_usd.updown_2m.current.price.v1",
+            "platform.btc_usd.window_delta.v1",
+            "btc_usd.updown_2m.current.window.v1",
+        ],
+    ),
+    (
+        "legs",
+        [
+            (
+                "waiting",
+                [
+                    "last_30s",
+                ],
+            ),
+            (
+                "endgame",
+                [
+                    "book_tick",
+                    "window_open",
+                ],
+            ),
+            (
+                "filled",
+                [
+                    "window_open",
+                ],
+            ),
+        ],
+    ),
+    (
+        "initial_leg",
+        "waiting",
+    ),
+    (
+        "envelope_consts",
+        [
+            (
+                MaxOrderSize,
+                "100",
+            ),
+        ],
+    ),
+)

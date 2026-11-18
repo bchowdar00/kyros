@@ -1,0 +1,18 @@
+{
+  "title": "Odds volatility",
+  "description": "How jumpy this venue's odds of Up have been, in probability points. Jumpy odds mean the venue is repricing hard on every tick.",
+  "fields": {
+    "volatility_pp_1m": {
+      "label": "Volatility 1m",
+      "description": "The spread of changes in the odds over the last minute, in probability points. Bigger means the venue is swinging more."
+    },
+    "volatility_pp_5m": {
+      "label": "Volatility 5m",
+      "description": "The spread of changes in the odds over the last five minutes, in probability points. The baseline the one-minute read is compared with."
+    },
+    "regime": {
+      "label": "Odds regime",
+      "description": "Rising when the last minute is jumpier than the last five, falling when calmer, steady in between. Rising means the venue is getting nervous."
+    }
+  }
+}

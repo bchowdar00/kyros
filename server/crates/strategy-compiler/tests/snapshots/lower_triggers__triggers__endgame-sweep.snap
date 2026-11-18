@@ -1,0 +1,20 @@
+---
+source: crates/strategy-compiler/tests/lower_triggers.rs
+expression: lowered.triggers
+---
+[
+    (
+        "last_20s",
+        TriggerRow {
+            source: Timer(
+                WindowClock {
+                    instrument_id: "btc_usd.updown_2m.current",
+                    remaining_ms: 20000,
+                },
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+]

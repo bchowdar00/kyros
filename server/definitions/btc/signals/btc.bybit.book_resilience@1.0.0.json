@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.book_resilience",
+  "version": "1.0.0",
+  "name": "Bybit BTC/USDT book replenishment resilience",
+  "description": "A depletion event is a top-level displayed size on one side of the Bybit BTC/USDT book dropping by at or above deplete_fraction between consecutive Bybit book updates. recovery_ms is the time until that side's top-level size first returns to at or above recover_fraction of the pre-depletion size. The signal emits the most recent completed recovery_ms and a state of recovering, recovered, or quiet. An unresolved recovery stays recovering with no fabricated recovery time; a second depletion during recovery abandons the first, unresolved measurement and tracks the new one, so recovery is always measured against the most recent liquidity withdrawal. depletion_side and pre_depletion_size expose the tracked baseline. deplete_fraction defaults to 0.5 and recover_fraction defaults to 0.75; each must lie strictly in (0, 1). A current top size of zero against a positive baseline is maximal depletion; a zero baseline starts no new depletion, while an in-progress recovery is still measured against its fixed pre-depletion size. Only a negative size is rejected. Every state-dependent field is always present, so a ready update never omits a declared field: recovery_ms_present is false with recovery_ms 0 until a recovery completes, because 0 ms is itself a legitimate recovery time and only the flag can carry presence; depletion_side is none with pre_depletion_size 0 whenever no depletion is tracked, and 0 is unambiguous there because a tracked pre-depletion size is always strictly positive. This identity is single-venue by construction: the measurement compares one venue's consecutive book updates against each other, so it reads only Bybit inputs and is ready whenever the Bybit book join is fresh, independently of the other adopted spot venue. No blended `btc.external.*` variant of this measurement is published: a cross-venue form would have to rule how two venues' independent depletions combine, and that ruling is deferred pending evidence (ADR 0023 amendment and ADR 0024, both 2026-09-02). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Bybit sibling of `btc.coinbase.book_resilience@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Bybit spot BTCUSDT; this identity publishes no price-level field, so its outputs (base sizes, basis points, imbalances, ratios, counts) are quote-currency neutral and nothing is converted. Bybit inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `bybit`, which the deployment sets only after that row clears. The Bybit book input is the `orderbook.200.BTCUSDT` stream (100 ms, snapshot plus delta, 200 levels per side). `update_kind` carries the venue's own snapshot/delta semantics, so the Coinbase snapshot and delta rules port unchanged. Event time is the venue `cts` when present (`event_time_basis` = `source`) and the local receipt time otherwise (`receipt`). Ordering is the per-topic `update_id`; a repeated or lower id is dropped, and a delta before a seeding snapshot awaits a fresh snapshot. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: this identity publishes no price-denominated field — its outputs are base sizes, ratios, basis-point and count fields, all quote-currency neutral — so nothing is converted. E47 (USD quoting): this identity quotes in USD and publishes no price, notional or quote-denominated cost field — its outputs are base sizes, counts, basis-point ratios and durations, which are quote-currency neutral — so nothing is converted and no usdt_usd_rate is published. quote_currency is the constant \"usd\".",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.book-levels",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "recovering",
+        "recovered",
+        "quiet"
+      ]
+    },
+    {
+      "name": "recovery_ms_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "recovery_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "depletion_side",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "bid",
+        "ask",
+        "none"
+      ]
+    },
+    {
+      "name": "pre_depletion_size",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "deplete_fraction",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "recover_fraction",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

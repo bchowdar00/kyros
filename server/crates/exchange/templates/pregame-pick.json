@@ -1,0 +1,163 @@
+{
+  "id": "pregame-pick",
+  "title": "Pregame Pick",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-04.jpg" },
+  "series": ["nba-h2h"],
+  "logic": "Trades only before tipoff. When the sharp sportsbook makes the home team a clear favourite, 55 percent or better, and our book sells Home at least two cents cheaper than that, it buys Home and holds to the final.",
+  "inverse_logic": "Trades only before tipoff. When the sharp sportsbook gives a team under a 40 percent chance and that side costs 35 cents or less here, it buys the underdog and holds to the final. One in three of these pays out at almost three to one.",
+  "envelope": {
+    "loss_budget_fraction": "1",
+    "order_fraction": "0.1",
+    "max_order_size": "200",
+    "max_open_orders": "1",
+    "max_position_per_market": "200"
+  },
+  "substitutions": {
+    "nba-h2h": { "pregame_left": "240000", "favourite": "0.55", "edge": "0.02", "dog": "0.4", "dog_price": "0.35" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Home Court",
+      "description": "While the round is open with more than the pregame mark of time left, when the sharp line's home probability is at least the favourite level and exceeds our home ask by the edge, take Home with an immediate-or-cancel limit two cents over the ask, once per round, and hold to the final.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "clock": "{{series}}.current.window.v1",
+      "sharp": "nba.sim.sharp_line.v1"
+    },
+    "state": [],
+    "triggers": [
+      {
+        "name": "home_favourite",
+        "condition": {
+          "all": [
+            { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+            { "signal": "clock", "field": "remaining", "comparator": ">", "value": "{{pregame_left}}" },
+            { "signal": "sharp", "field": "home_prob", "comparator": ">=", "value": "{{favourite}}" },
+            { "expr": "signal.sharp.home_prob - signal.book.ask", "comparator": ">=", "value": "{{edge}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "pregame",
+        "resident": true,
+        "arm": ["home_favourite"],
+        "body": [
+          {
+            "name": "take_home",
+            "if": "triggered(home_favourite) and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_home",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "pregame", "cancel_ack": "pregame", "expiry": "pregame" }
+                }
+              }
+            ],
+            "then": "holding"
+          }
+        ]
+      },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Underdog",
+      "description": "While the round is open with more than the pregame mark of time left, when the sharp line gives Home at most the dog level and our home ask is at most the dog price, take Home; when it gives Away at most the dog level and our away ask is at most the dog price, take Away. Immediate-or-cancel limits two cents over the ask, once per round, held to the final.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "clock": "{{series}}.current.window.v1",
+      "sharp": "nba.sim.sharp_line.v1"
+    },
+    "state": [],
+    "triggers": [
+      {
+        "name": "home_dog",
+        "condition": {
+          "all": [
+            { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+            { "signal": "clock", "field": "remaining", "comparator": ">", "value": "{{pregame_left}}" },
+            { "signal": "sharp", "field": "home_prob", "comparator": "<=", "value": "{{dog}}" },
+            { "signal": "book", "field": "ask", "comparator": "<=", "value": "{{dog_price}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      },
+      {
+        "name": "away_dog",
+        "condition": {
+          "all": [
+            { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+            { "signal": "clock", "field": "remaining", "comparator": ">", "value": "{{pregame_left}}" },
+            { "signal": "sharp", "field": "away_prob", "comparator": "<=", "value": "{{dog}}" },
+            { "expr": "1 - signal.book.bid", "comparator": "<=", "value": "{{dog_price}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "pregame",
+        "resident": true,
+        "arm": ["home_dog", "away_dog"],
+        "body": [
+          {
+            "name": "take_home",
+            "if": "triggered(home_dog)",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_home",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "pregame", "cancel_ack": "pregame", "expiry": "pregame" }
+                }
+              }
+            ],
+            "then": "holding"
+          },
+          {
+            "name": "take_away",
+            "if": "triggered(away_dog)",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_away",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "pregame", "cancel_ack": "pregame", "expiry": "pregame" }
+                }
+              }
+            ],
+            "then": "holding"
+          }
+        ]
+      },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

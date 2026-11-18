@@ -1,0 +1,34 @@
+---
+source: crates/strategy-compiler/tests/walk_corpus.rs
+expression: "rendered.join(\"\\n\")"
+---
+PARSED (4):
+  legs[0].body[2].if (Guard)
+  legs[0].body[2].do[0] (Statement)
+  legs[0].body[2].do[1].place.size (Size)
+  legs[0].body[2].do[1].place.max_size (MaxSize)
+
+DIAGNOSTICS (4):
+--- triggers[0].condition.all[1].expr
+error[bare-identifier]: `ask` is not a reference — bare identifiers do not exist
+  signal.book.bid - ask
+                    ^^^
+  = help: references must start with a namespace: event., signal., state., platform., legs., expr., table., entry., envelope., or param.
+
+--- legs[0].body[0].if
+error[superseded-crossed]: `crossed()` was removed in v0.2 — edge detection lives in trigger fire/rearm modes
+  crossed(signal.book.up > 0.75)
+  ^^^^^^^
+  = help: declare a trigger with fire: on_crossing, rearm: fresh_crossing and gate the block with triggered(<trigger name>)
+
+--- legs[0].body[0].do[0]
+error[invalid-lvalue]: `platform` cannot be assigned
+  set platform.position = 1
+      ^^^^^^^^
+  = help: only state slots can be assigned: set state.<slot> = ...
+
+--- legs[0].body[1].if
+error[superseded-fired]: `fired()` was removed in v0.2 — cause dispatch is `triggered(NAME)`
+  fired(timer.analyze)
+  ^^^^^
+  = help: write triggered(<trigger name>) with the bare name of a trigger declared in the triggers section

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTC Signal Package Row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["c", "r"],
+  "properties": {
+    "c": { "type": "string", "pattern": "^[0-9a-f]{8}$" },
+    "r": { "$ref": "signal-stream-message.schema.json" }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.executable_edge",
+  "version": "1.0.0",
+  "name": "Polymarket BTC executable edge",
+  "description": "Model-versus-market edge for the bound Polymarket market on both sides, gross of costs. edge_up is the fair up probability minus executable_up_price, the ask to buy the affirmative (up) outcome now; edge_down is one minus the fair up probability minus executable_down_price, the ask to buy the negative (down) outcome now. For Polymarket the down side is taken from the down outcome token's own quoted ask (the venue quotes both outcome tokens directly; no complement is computed). cost_model is a named limitation: V1 publishes GROSS edge with cost_model equal to none, declaring that fees and other execution costs are not yet modeled; fee-aware edge requires an approved fee specification and an explicit V1 amendment before production release or a new version afterward. The update fails closed when the required quote side is missing or crossed or when the fair up probability is unavailable. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.fair_up_probability",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.prediction_quote",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.prediction_liquidity",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    { "name": "opening_strike_source", "type": "enum", "location": "internal", "variants": ["exact", "prior_frame", "post_frame"] },
+    {
+      "name": "edge_up",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "edge_down",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "probability",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "executable_up_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "executable_down_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "cost_model",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "none"
+      ]
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

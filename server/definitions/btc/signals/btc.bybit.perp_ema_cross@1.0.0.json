@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.perp_ema_cross",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT perpetual mark one-minute EMA(9)/EMA(21) cross state",
+  "description": "A causal reading over the fresh Bybit linear BTCUSDT perpetual mark price carried by the `tickers` stream, sampled once per second on the lane decision clock. Each one-second sample holds the venue's latest mark row for up to a 3-second bound (a research default; the premium-index poll lands about every 1.3 seconds and Bybit mark prices carry multi-second gaps), and a mark row 3 seconds or more old is a missing sample, so a stalled poll or an absent mark invalidates the bar spanning it and re-warms the identity. Ema_9 and ema_21 are exponential moving averages of the one-minute bar closes with smoothing factor alpha equal to two divided by (period plus one) — 0.2 and approximately 0.09090909 respectively. Each is seeded with the arithmetic mean of its first `period` closes and advanced as previous value plus alpha times (current close minus previous value). spread_bps is (ema_9 minus ema_21) divided by ema_21, times ten thousand. state is bullish when spread_bps is positive, bearish when it is negative, and flat when it is exactly zero. crossed_present is true once a sign change of spread_bps has been observed since continuity started, and crossed_at is the bar close at which that change was observed; while crossed_present is false, crossed_at repeats window_close and carries no cross information. The nine- and twenty-one-bar lengths are initial research defaults that require empirical calibration; the exponential-moving-average recursion is not a heuristic threshold. One-minute bars are closed on the lane decision clock at minute boundaries from the one-second sample series: open is the first sample of the minute, high and low its extrema, close its last sample. A bar that is missing any one-second sample is invalid; the missing sample breaks continuity, every retained bar and every smoothed state derived from them is discarded, and the bar warm-up restarts from the next whole bar. Nothing is bridged across a gap. Ready once twenty-one contiguous one-minute bars have closed (the longer average's seed). Decimal outputs are rounded to eight places using round-half-to-even. Every reading is causal: it reads only samples at or before the decision it is published on. E47 (USD quoting): this identity quotes in USD. Its price-level fields (`ema_9`, `ema_21`) are converted from the venue's USDT quote through the Kraken USDT/USD reference midpoint at decision time, and the rate and its age are published as usdt_usd_rate and usdt_usd_rate_age_ms; an absent or stale reference forces the identity non-ready with `usdt_reference_stale`. Its remaining outputs are basis-point ratios, counts and timestamps and are quote-currency neutral. quote_currency is the constant \"usd\". Bybit inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `bybit`. Adopted in the C3a TA pack (ruling E51, 2026-09-04): the seven technical-analysis identities are published on every price venue we carry, computed from the venue's own one-second sample ring by the shared `crates/btc-signals/src/ta.rs` helper, so every scope runs byte-identical arithmetic and only the sample series differs.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.linear.btcusdt.tickers",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "ema_9",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "ema_21",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "spread_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "bearish",
+        "flat",
+        "bullish"
+      ]
+    },
+    {
+      "name": "crossed_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "crossed_at",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "bar_count",
+      "type": "u16",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "u64",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

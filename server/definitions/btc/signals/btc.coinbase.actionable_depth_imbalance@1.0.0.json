@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.coinbase.actionable_depth_imbalance",
+  "version": "1.0.0",
+  "name": "Coinbase BTC/USD near-touch depth imbalance",
+  "description": "For each fresh reconstructed Coinbase level-two book, bid and ask base size are summed inside an inclusive five-basis-point band around that book's midpoint. The five-basis-point band is an initial research threshold that requires empirical calibration. The Coinbase input is the full displayed level-two book this repository reconstructs locally. imbalance equals (bid depth minus ask depth) divided by total depth. Ready output requires a complete positive uncrossed Coinbase book no more than 10 seconds old and positive observable depth on both sides. This identity is single-venue: it reads only Coinbase inputs and is ready whenever the Coinbase book is complete, uncrossed, and inside the staleness bound, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "band_bps", "type": "u16", "location": "internal" },
+    { "name": "imbalance", "type": "decimal", "location": "internal" },
+    { "name": "bid_depth_base", "type": "decimal", "location": "internal" },
+    { "name": "ask_depth_base", "type": "decimal", "location": "internal" },
+    { "name": "book_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

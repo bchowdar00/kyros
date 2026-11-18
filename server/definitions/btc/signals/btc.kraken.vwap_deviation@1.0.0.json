@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.vwap_deviation",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD rolling VWAP deviation",
+  "description": "Kraken BTC/USD trade price times base-size divided by base volume over causal 10- and 60-second receipt-time windows of (window close minus duration, window close]. Kraken subscription-snapshot rows are excluded. Each deviation_bps is (midpoint minus VWAP) divided by VWAP times 10000, where midpoint is the fresh Kraken displayed best-quote midpoint, so a positive value means the Kraken quote is above its own rolling VWAP. Ready output requires 60 seconds of uninterrupted Kraken observation measured from the first observed Kraken trade data after startup or recovery, positive volume in both windows, and a Kraken trade and quote no more than 10 seconds old. This identity is single-venue: it reads only Kraken inputs and is ready whenever Kraken trades are warmed and fresh and its quote is fresh, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "kraken.spot.btc-usd.trades", "version": "1.0.0" },
+    { "kind": "source", "id": "kraken.spot.btc-usd.ticker", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "vwap_10s", "type": "decimal", "location": "internal" },
+    { "name": "vwap_60s", "type": "decimal", "location": "internal" },
+    { "name": "midpoint", "type": "decimal", "location": "internal" },
+    { "name": "deviation_bps_10s", "type": "decimal", "location": "internal" },
+    { "name": "deviation_bps_60s", "type": "decimal", "location": "internal" },
+    { "name": "base_volume_60s", "type": "decimal", "location": "internal" },
+    { "name": "trade_count_60s", "type": "u32", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

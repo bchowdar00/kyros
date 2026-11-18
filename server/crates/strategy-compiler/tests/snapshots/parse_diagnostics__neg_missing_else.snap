@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[missing-else]: this `if` expression is missing its `else` branch
+  if signal.a.b > 0 then 1
+                          ^
+  = help: 'if ... then ...' expressions require an 'else' branch — every expression must produce a value

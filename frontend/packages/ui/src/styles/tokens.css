@@ -1,0 +1,255 @@
+:root {
+  color-scheme: dark;
+
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted-foreground: rgb(255 255 255 / 50%);
+  --surface-subtle: rgb(255 255 255 / 4%);
+  --surface: rgb(255 255 255 / 5%);
+  --surface-raised: rgb(255 255 255 / 10%);
+  --border: rgb(255 255 255 / 20%);
+  --border-subtle: rgb(255 255 255 / 10%);
+  --highlight: rgb(255 255 255 / 20%);
+
+  --positive: #66e762;
+  --positive-muted: rgb(102 231 98 / 10%);
+  --negative: #fa286e;
+  --negative-muted: rgb(250 40 110 / 10%);
+  --warning: #fec72d;
+  --action: #0059ff;
+  --market-away: #00853f;
+  --market-home: var(--warning);
+  --asset-btc: #fe8d04;
+  --asset-eth: #627eea;
+  --asset-lakers: #320170;
+  /* NBA team colours: a sports market re-points --market-home / --market-away at these. */
+  --team-bos: #007a33;
+  --team-lal: #fdb927;
+  --team-nyk: #f58426;
+  --team-phi: #006bb6;
+  --team-sas: #c4ced4;
+  --team-tor: #ce1141;
+  --focus-ring: #ffffff;
+  --trade-widget-shadow: 0 0 8px rgb(0 0 0 / 50%);
+  --chat-fade: #0a0a0a;
+  --composer-sheen: rgb(255 255 255 / 6%);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-15: 3.75rem;
+  --avatar-size-sm: 1.25rem;
+  --avatar-size-md: 2.25rem;
+  --avatar-size-lg: 2.5rem;
+  --avatar-overlap: 0.625rem;
+  --app-nav-height: 3rem;
+  /* The market-detail chat rail, and the width of a widget inside a reply (rail is 30rem,
+     panel content 27.375rem; the widget stops short of both so it reads as an object). */
+  --chat-rail-width: 30rem;
+  --chat-widget-width: 24rem;
+  --market-card-width: 20rem;
+  --market-card-chart-height: 3.25rem;
+  --content-width: 48rem;
+  --content-copy-width: 36rem;
+
+  --font-size-caption: 0.625rem;
+  --line-height-caption: 0.75rem;
+  --font-size-label: 0.75rem;
+  --line-height-label: 0.875rem;
+  --font-size-body: 0.875rem;
+  --line-height-body: 1rem;
+  --font-size-heading-sm: 1rem;
+  --line-height-heading-sm: 1.125rem;
+  --font-size-heading-md: 1.25rem;
+  --line-height-heading-md: 1.5rem;
+  /* Chat answers read at 1.7 leading; every other scale keeps its fixed line height. */
+  --font-size-prose: 1rem;
+  --line-height-prose: 1.7;
+  --letter-spacing-label: 0.02em;
+}
+
+@theme inline {
+  /*
+   * Viewport breakpoints. Tailwind's defaults, declared so the system is explicit and
+   * single: lg is the desktop line where side rails and multi-column layouts appear.
+   */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-highlight: var(--highlight);
+  --color-positive: var(--positive);
+  --color-positive-muted: var(--positive-muted);
+  --color-negative: var(--negative);
+  --color-negative-muted: var(--negative-muted);
+  --color-warning: var(--warning);
+  --color-action: var(--action);
+  --color-market-away: var(--market-away);
+  --color-market-home: var(--market-home);
+  --color-asset-btc: var(--asset-btc);
+  --color-asset-eth: var(--asset-eth);
+  --color-asset-lakers: var(--asset-lakers);
+  --color-focus-ring: var(--focus-ring);
+  --color-chat-fade: var(--chat-fade);
+  --background-image-composer-sheen: radial-gradient(
+    ellipse 48% 234% at 50% 100%,
+    var(--composer-sheen),
+    transparent
+  );
+
+  --background-image-composer-surface:
+    linear-gradient(var(--surface-subtle), var(--surface-subtle)),
+    linear-gradient(rgb(0 0 0 / 50%), rgb(0 0 0 / 50%));
+  --shadow-strategy-logic: inset 0 0 120px color-mix(in srgb, var(--action) 25%, transparent);
+  --shadow-trade-widget: var(--trade-widget-shadow);
+  --spacing-trade-amount: 4.5rem;
+  --text-trade-amount: 1.625rem;
+  --text-trade-amount--line-height: 2rem;
+  --spacing-sort-hit: 0.9375rem;
+  --spacing-copy: 0.375rem;
+  --spacing-strategy-glow: 9rem;
+  --spacing-public-strategy-glow: 34.625rem;
+  --spacing-widget-viewport: calc(100dvh - var(--app-nav-height) - var(--space-15));
+  --spacing-strategy-action: 4.4375rem;
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-3);
+  --spacing-lg: var(--space-4);
+  --spacing-xl: var(--space-5);
+  --spacing-2xl: var(--space-6);
+  --spacing-3xl: var(--space-8);
+  --spacing-4xl: var(--space-10);
+  /* Market-detail section rhythm and the main-column ↔ rail gutter (60px). */
+  --spacing-5xl: var(--space-15);
+  --spacing-avatar-sm: var(--avatar-size-sm);
+  --spacing-avatar-md: var(--avatar-size-md);
+  --spacing-avatar-lg: var(--avatar-size-lg);
+  --spacing-avatar-overlap: var(--avatar-overlap);
+  --spacing-app-nav: var(--app-nav-height);
+  /* The viewport below the app nav; the height a screen inside the app shell fills. */
+  --spacing-below-nav: calc(100dvh - var(--app-nav-height));
+  /* Chart plot heights: compact card, playground card, and the market-detail hero chart. */
+  --spacing-chart-sm: 18.25rem;
+  --spacing-chart-md: 22.5rem;
+  --spacing-chart-lg: 30.8125rem;
+  --spacing-chart-stat-rule: 2rem;
+  --spacing-market-card: var(--market-card-width);
+  --spacing-market-card-chart: var(--market-card-chart-height);
+  /* Chat rail column, and the in-chat widget width. */
+  --spacing-chat-rail: var(--chat-rail-width);
+  --spacing-chat-widget: var(--chat-widget-width);
+  /* Resting height of an empty widget frame; a real widget grows with its content. */
+  --spacing-chat-widget-min: 12.5rem;
+  /* The plot inside a chat chart widget; fixed so a reply never reflows as data arrives. */
+  --spacing-chat-plot: 8rem;
+  /* One side of the in-chat ladder: seven rows; a deeper book scrolls inside it. */
+  --spacing-ladder-side: 12.25rem;
+  /* The Browse All ledger's fixed columns: a row's minute-long trace and its value. */
+  --spacing-signal-trace: 6rem;
+  --spacing-signal-value: 7rem;
+  /* Minimum touch target (44 CSS px). Use min-h-touch / min-w-touch on anything tappable. */
+  --spacing-touch: 2.75rem;
+  /* Device safe areas. Use pb-safe-bottom on fixed bars and sheets; needs viewport-fit=cover. */
+  --spacing-safe-top: env(safe-area-inset-top);
+  --spacing-safe-right: env(safe-area-inset-right);
+  --spacing-safe-bottom: env(safe-area-inset-bottom);
+  --spacing-safe-left: env(safe-area-inset-left);
+
+  --container-content: var(--content-width);
+  --container-content-copy: var(--content-copy-width);
+
+  --text-caption: var(--font-size-caption);
+  --text-caption--line-height: var(--line-height-caption);
+  --text-label: var(--font-size-label);
+  --text-label--line-height: var(--line-height-label);
+  --text-body: var(--font-size-body);
+  --text-body--line-height: var(--line-height-body);
+  --text-heading-sm: var(--font-size-heading-sm);
+  --text-heading-sm--line-height: var(--line-height-heading-sm);
+  --text-heading-md: var(--font-size-heading-md);
+  --text-heading-md--line-height: var(--line-height-heading-md);
+  --text-prose: var(--font-size-prose);
+  --text-prose--line-height: var(--line-height-prose);
+  /* Body-size chat text at the prose leading: `text-body leading-prose`. */
+  --leading-prose: var(--line-height-prose);
+  --tracking-label: var(--letter-spacing-label);
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --radius-composer: 0.75rem;
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 999px;
+
+  /* Glass surfaces (nav, sticky table heads) and the strategy composer's heavier blur. */
+  --blur-glass: 15px;
+  --blur-composer: 32px;
+  --blur-strategy-glow: 53px;
+  --blur-public-strategy-glow: 75px;
+
+  --animate-chart-pulse: chart-pulse 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  --animate-chart-fade-in: chart-fade-in 360ms ease-out both;
+  /* A slow, one-second shine sweep, followed by a quiet pause. */
+  --animate-payout-shine: payout-shine 4s linear infinite;
+
+  @keyframes payout-shine {
+    0% {
+      mask-position: 100% 0;
+    }
+    25%,
+    100% {
+      mask-position: 0% 0;
+    }
+  }
+
+  @keyframes chart-pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    70%,
+    100% {
+      opacity: 0;
+      transform: scale(3.4);
+    }
+  }
+
+  @keyframes chart-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Sweep a highlight through the icon silhouette without moving or recoloring its base. */
+@utility payout-shine-mask {
+  mask-image: linear-gradient(90deg, transparent 40%, var(--foreground) 50%, transparent 60%);
+  mask-size: 300% 100%;
+  mask-repeat: no-repeat;
+}

@@ -1,0 +1,22 @@
+{
+  "title": "Perp EMA cross",
+  "description": "A fast moving average against a slow one on the perpetual. Which is on top says the direction of the trend, and the gap says how strong it is.",
+  "fields": {
+    "state": {
+      "label": "Trend state",
+      "description": "Bullish when the nine-period average is above the twenty-one, bearish when below. A fresh cross is the classic trend-change read."
+    },
+    "ema_9": {
+      "label": "Fast average",
+      "description": "The nine-period exponential moving average, in dollars. It follows the price closely."
+    },
+    "ema_21": {
+      "label": "Slow average",
+      "description": "The twenty-one-period exponential moving average, in dollars. It smooths out the noise the fast one follows."
+    },
+    "spread_bps": {
+      "label": "Average gap",
+      "description": "Fast average minus slow average as a share of price, in basis points. A widening gap means the trend is gathering pace."
+    }
+  }
+}

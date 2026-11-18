@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.market_contract",
+  "version": "1.0.0",
+  "name": "Polymarket BTC market rules card",
+  "description": "Full-replacement rules card for one automatically bound Polymarket BTC Up/Down market generation. The signal contract accepts validated five- or fifteen-minute Gamma markets; the included automatic lifecycle selects the configured five-minute cadence. strike is the Chainlink BTC/USD 60-second TWAP observation whose event_time equals window_open (opening_strike_source=exact). When that exact-boundary frame has not arrived by window_open + 2 s, the strike falls back to the last frame with event_time <= window_open within 5 s before the open (opening_strike_source=prior_frame), else the first frame with event_time > window_open within 5 s after it (opening_strike_source=post_frame). A fallback strike is an approximation of the venue's exact-boundary Chainlink TWAP, but the market still publishes Ready: opening_strike_source rides the wire on this identity and on every strike-derived Polymarket identity (window_delta, standardized_moneyness, fair_up_probability, executable_edge, expected_value, settlement_anchor_state, tie_rule_context) so a consumer can filter an approximate strike itself. A strike is fixed once per market: a later exact frame never revises a strike already taken. opening_strike_source is always present on a published market. If no frame lies within either window the market stays warming (opening_strike_unavailable) with no strike. settlement_benchmark, comparator, tie_outcome, outcome mapping, rules hash, and venue order constraints are first-class values and must not be treated as equivalent to another venue's benchmark. A market_transition bound frame precedes the first update for a generation, and an unavailable frame plus degraded batch ends it. Decimal values are rounded to at most eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "polymarket.btc.market-contracts", "version": "1.0.0" },
+    { "kind": "source", "id": "polymarket.rtds.btc-usd.twap-60s", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "market_id", "type": "string", "location": "external" },
+    { "name": "market_generation", "type": "u64", "location": "internal" },
+    { "name": "window_open", "type": "timestamp", "location": "external" },
+    { "name": "window_close", "type": "timestamp", "location": "external" },
+    { "name": "strike", "type": "decimal", "location": "external" },
+    { "name": "opening_strike_source", "type": "enum", "location": "internal", "variants": ["exact", "prior_frame", "post_frame"] },
+    { "name": "settlement_benchmark", "type": "enum", "location": "internal", "variants": ["chainlink_btc_usd_twap_60s"] },
+    { "name": "averaging_window_seconds", "type": "u32", "location": "internal" },
+    { "name": "comparator", "type": "enum", "location": "internal", "variants": ["greater_than_or_equal"] },
+    { "name": "tie_outcome", "type": "enum", "location": "internal", "variants": ["up"] },
+    { "name": "affirmative_outcome", "type": "enum", "location": "internal", "variants": ["up"] },
+    { "name": "negative_outcome", "type": "enum", "location": "internal", "variants": ["down"] },
+    { "name": "minimum_tick_size", "type": "decimal", "location": "external" },
+    { "name": "minimum_order_size", "type": "decimal", "location": "external" },
+    { "name": "rules_sha256", "type": "string", "location": "internal" },
+    { "name": "contract_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "contract_time"
+}

@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[guard-not-boolean] at legs[0].body[0].if: a guard is a boolean condition — this expression is a value
+  signal.price.home + 1
+  ^^^^^^^^^^^^^^^^^^^^^
+  = help: compare the value against a threshold, or drop the guard

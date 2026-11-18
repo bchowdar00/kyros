@@ -1,0 +1,190 @@
+---
+source: crates/strategy-compiler/tests/round_trip.rs
+expression: first_emission
+---
+{
+  "meta": {
+    "name": "Momentum Flip",
+    "description": "On the 2-minute BTC up/down market: when either side's price rises above 75 cents, buy that side at half max size. While holding, if the held side's price falls below 40 cents, flip the position by buying the opposite side at double size (one order flips sides on the unified book). If an entry or flip order is rejected, return to the prior mode.",
+    "dsl_version": "0.3"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_2m.current"
+  },
+  "signals": {
+    "book": "btc_usd.updown_2m.current.price.v1"
+  },
+  "state": [],
+  "triggers": [
+    {
+      "name": "up_rich",
+      "condition": {
+        "signal": "book",
+        "field": "up",
+        "comparator": ">",
+        "value": "0.75"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "name": "down_rich",
+      "condition": {
+        "signal": "book",
+        "field": "down",
+        "comparator": ">",
+        "value": "0.75"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "name": "up_cheap",
+      "condition": {
+        "signal": "book",
+        "field": "up",
+        "comparator": "<",
+        "value": "0.4"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "name": "down_cheap",
+      "condition": {
+        "signal": "book",
+        "field": "down",
+        "comparator": "<",
+        "value": "0.4"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "legs": [
+    {
+      "name": "hunting",
+      "resident": true,
+      "arm": [
+        "up_rich",
+        "down_rich"
+      ],
+      "body": [
+        {
+          "name": "buy_up",
+          "if": "triggered(up_rich)",
+          "do": [
+            {
+              "place": {
+                "instrument": "market",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "size": "clamp(envelope.max_order_size / 2, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry",
+                "on": {
+                  "reject": "hunting"
+                }
+              }
+            }
+          ],
+          "then": "holding_up"
+        },
+        {
+          "name": "buy_down",
+          "if": "triggered(down_rich)",
+          "do": [
+            {
+              "place": {
+                "instrument": "market",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "size": "clamp(envelope.max_order_size / 2, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry",
+                "on": {
+                  "reject": "hunting"
+                }
+              }
+            }
+          ],
+          "then": "holding_down"
+        }
+      ]
+    },
+    {
+      "name": "holding_up",
+      "resident": true,
+      "arm": [
+        "up_cheap"
+      ],
+      "body": [
+        {
+          "name": "flip_to_down",
+          "if": "triggered(up_cheap)",
+          "do": [
+            {
+              "place": {
+                "instrument": "market",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "flip",
+                "on": {
+                  "reject": "holding_up"
+                }
+              }
+            }
+          ],
+          "then": "holding_down"
+        }
+      ]
+    },
+    {
+      "name": "holding_down",
+      "resident": true,
+      "arm": [
+        "down_cheap"
+      ],
+      "body": [
+        {
+          "name": "flip_to_up",
+          "if": "triggered(down_cheap)",
+          "do": [
+            {
+              "place": {
+                "instrument": "market",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "flip",
+                "on": {
+                  "reject": "holding_down"
+                }
+              }
+            }
+          ],
+          "then": "holding_up"
+        }
+      ]
+    }
+  ]
+}

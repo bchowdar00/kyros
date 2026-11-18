@@ -1,0 +1,22 @@
+{
+  "title": "Cross-venue pair cost",
+  "description": "Whether buying Up on one venue and Down on the other is cheaper than buying the pair on either alone. The spread is the difference, and the cheaper venue is where the discount sits.",
+  "fields": {
+    "state": {
+      "label": "Spread state",
+      "description": "Opportunity when a cross-venue pair costs less than a dollar after fees, none otherwise. The two venues' strikes and clocks differ, so the lock is not perfect."
+    },
+    "pair_cost_spread": {
+      "label": "Pair cost spread",
+      "description": "The Kalshi pair cost minus the Polymarket pair cost, in dollars. The sign says which venue is dearer."
+    },
+    "cheaper_venue": {
+      "label": "Cheaper venue",
+      "description": "Which venue sells the full pair for less right now. Buy both legs there if you only want one venue."
+    },
+    "best_cross_direction": {
+      "label": "Best combination",
+      "description": "Which venue to buy Up on and which to buy Down on for the cheapest cross-venue pair. None when no combination beats a dollar."
+    }
+  }
+}

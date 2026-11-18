@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "name": "Follow Whale",
+    "description": "On the one-minute BTC up/down: watch the trade tape for a chosen account (the target param). When that account buys up in size at least min_size, and the ask on up still sits at least edge under fair, buy up at market once and remember who we followed. The target, the minimum size and the edge are deploy-time params the user can change on a running strategy.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+
+  "signals": {
+    "tape": "btc_usd.updown_1m.current.trades.v1",
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1"
+  },
+
+  "state": [
+    { "name": "followed", "kind": "scalar", "value_type": "string" },
+    { "name": "follows", "kind": "scalar", "value_type": "u8" }
+  ],
+
+  "params": [
+    { "name": "target", "type": "string", "default": "0x0000000000000000000000000000000000000000" },
+    { "name": "min_size", "type": "decimal", "default": "25" },
+    { "name": "edge", "type": "decimal", "default": "0.04" },
+    { "name": "side", "type": { "type": "enum", "variants": ["buy", "sell"] }, "default": "buy" }
+  ],
+
+  "triggers": [
+    { "name": "whale",
+      "condition": { "all": [
+        { "signal": "tape", "field": "taker", "comparator": "==", "value": { "param": "target" } },
+        { "signal": "tape", "field": "side", "comparator": "==", "value": { "param": "side" } },
+        { "signal": "tape", "field": "size", "comparator": ">=", "value": { "param": "min_size" } }
+      ]},
+      "fire": "if_true", "rearm": { "mode": "immediate" } }
+  ],
+
+  "legs": [
+    { "name": "watching",
+      "resident": true,
+      "arm": ["whale"],
+      "body": [
+        { "name": "follow",
+          "if": "triggered(whale) and event.taker == param.target and signal.fair.up - signal.book.ask >= param.edge",
+          "do": [
+            "set state.followed = event.taker",
+            "set state.follows = state.follows + 1",
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "follow",
+                "on": { "reject": "watching" }
+            }}
+          ],
+          "then": "done" }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

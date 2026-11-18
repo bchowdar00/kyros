@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.order_flow_imbalance",
+  "version": "1.0.0",
+  "name": "BTC level-two order-flow imbalance",
+  "description": "Standard best-quote event order-flow imbalance over completed atomic level-two delta groups. Bid contribution adds current size when bid price is unchanged or improves and subtracts prior size when unchanged or worsens; ask contribution subtracts current size when ask price is unchanged or improves and adds prior size when unchanged or worsens. Positive output represents net bid-side pressure and negative output net ask-side pressure. Venue contributions are summed in BTC base units over causal 1-, 10-, and 60-second receipt-time windows of (window close minus duration, window close]. Snapshots establish baselines and contribute no flow. Ready output requires 60 seconds of uninterrupted observation measured from complete snapshots after startup or recovery and each venue demonstrably alive. An eventless book window on a venue that is alive — any admitted input event from that venue within staleness_bound_ms — publishes truthful zero imbalance; a venue with no admitted input within that bound keeps degrading as book_snapshot_stale_or_missing, and crossed, invalid, or unsnapshotted books still degrade. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.book-levels", "version": "1.0.0" },
+    { "kind": "source", "id": "kraken.spot.btc-usd.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "ofi_base_1s", "type": "decimal", "location": "internal" },
+    { "name": "ofi_base_10s", "type": "decimal", "location": "internal" },
+    { "name": "ofi_base_60s", "type": "decimal", "location": "internal" },
+    { "name": "event_count_60s", "type": "u32", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

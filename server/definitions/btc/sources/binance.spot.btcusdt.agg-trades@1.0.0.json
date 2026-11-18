@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "source_id": "binance.spot.btcusdt.agg-trades",
+  "version": "1.0.0",
+  "name": "Binance spot BTCUSDT aggregate trades",
+  "description": "Normalized `aggTrade` messages from the Binance spot `btcusdt@aggTrade` stream on the market-data-only host wss://data-stream.binance.vision/stream. This definition promotes the existing refusal-gated capture adapter to an adopted source and describes exactly what that adapter already emits; it adds no adapter behaviour. `agg_trade_id` is a monotonic per-symbol counter and is the ordering key: an equal id is a duplicate and a lower id is out of order, both dropped; an id jump raises a gap recovery notice while still emitting the in-hand trade, because a Binance WebSocket reconnect does not backfill and REST backfill is outside this slice. The aggregate-trade cursor persists across reconnects so a hole spanning a reconnect is caught on the first post-reconnect trade. `buyer_is_maker` is the venue `m` flag preserved verbatim and `aggressor_side` is its inverse. Refusal-gated: Binance redistribution requires written consent (see RIGHTS-LEDGER.md). Rights-gated: the Binance row in knowledge/RIGHTS-LEDGER.md defers commercial redistribution, and the lane refuses to start unless SIGNALS_ENABLED_VENUES lists binance (R7).",
+  "status": "approved",
+  "transport": "websocket",
+  "expected_heartbeat_ms": 10000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "agg_trade_id",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "first_trade_id",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "last_trade_id",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "quantity",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "buyer_is_maker",
+      "type": "bool",
+      "location": "external"
+    },
+    {
+      "name": "aggressor_side",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "buy",
+        "sell"
+      ]
+    },
+    {
+      "name": "trade_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time",
+  "sequence_field": "agg_trade_id"
+}

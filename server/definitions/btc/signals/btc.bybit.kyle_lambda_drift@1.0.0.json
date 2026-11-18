@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.kyle_lambda_drift",
+  "version": "1.0.0",
+  "name": "Bybit BTC/USDT Kyle lambda price-impact drift",
+  "description": "Over a rolling window of the last window_trades (N) Bybit BTC/USDT trades, kyle_lambda = sum(mid_change_i * signed_volume_i) / sum(signed_volume_i^2): the least-squares slope through the origin of per-trade midpoint change on signed volume, a form chosen for the exact-decimal idiom because it needs only multiply and divide. Each trade's signed_volume_i (trade size times aggressor sign, positive for a buyer-aggressor) pairs with the Bybit midpoint change that FOLLOWS it — from the midpoint prevailing at the trade to the next observed Bybit midpoint update — so the estimator measures price impact rather than anticipation; trades between two midpoint updates share that same forward change, and a trade with no subsequent midpoint update yet has no completed pair. lambda_drift is the current window's lambda minus the previous disjoint window's lambda. Fewer than 2N completed pairs, or a window whose sum of squared signed volume is zero, is a defined not-ready state and never a division by zero. window_trades defaults to 100. This identity is single-venue by construction: the measurement compares one venue's own trades and book against each other, so it reads only Bybit inputs and is ready whenever the Bybit book-and-trade join is fresh, independently of the other adopted spot venue. No blended `btc.external.*` variant of this measurement is published: a cross-venue form would have to rule which venue's book prices another venue's trade, and that ruling is deferred pending evidence (ADR 0023 amendment and ADR 0024, both 2026-09-02). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Bybit sibling of `btc.coinbase.kyle_lambda_drift@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Bybit spot BTCUSDT; at decision time every price-level field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio fields (basis points, imbalances, ratios, counts) are quote-currency neutral. Bybit inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `bybit`, which the deployment sets only after that row clears. The Bybit book input is the `orderbook.200.BTCUSDT` stream (100 ms, snapshot plus delta, 200 levels per side). `update_kind` carries the venue's own snapshot/delta semantics, so the Coinbase snapshot and delta rules port unchanged. Event time is the venue `cts` when present (`event_time_basis` = `source`) and the local receipt time otherwise (`receipt`). Ordering is the per-topic `update_id`; a repeated or lower id is dropped, and a delta before a seeding snapshot awaits a fresh snapshot. The Bybit trade input is the `publicTrade.BTCUSDT` stream: one message carries up to 1024 individual fills, each with its own `event_time`, `aggressor_side` and provider `trade_id`. `cross_sequence` is a relative-ordering token only, with no documented gap semantics, so no gap logic reads it and no valid trade is ever discarded on its account. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: every price-denominated field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio, basis-point, base-size and count fields are quote-currency neutral. E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (kyle_lambda, kyle_lambda_previous, lambda_drift) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. kyle_lambda, kyle_lambda_previous and lambda_drift are price-impact coefficients in quote per base unit and so convert (E47(e)). The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.book-levels",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.trades",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "kyle_lambda",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "kyle_lambda_previous",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "lambda_drift",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "window_trades",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "pair_count",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

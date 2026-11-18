@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.spot_reference",
+  "version": "1.0.0",
+  "name": "Coinbase and Kraken BTC/USD spot reference",
+  "description": "Event-driven two-venue BTC/USD reference with a one-second health publication. Each constituent is the exact-decimal midpoint of displayed best bid and ask from the declared ticker input. The reference is the equal-weight arithmetic mean of both fresh unrounded constituent midpoints. Ready output requires positive uncrossed quotes received no more than 10000 milliseconds before production and cross-venue midpoint dispersion no greater than 10 basis points relative to the reference. Readiness guards evaluate full internal decimal precision before decimal outputs are rounded to eight places using round-half-to-even; quality state and reasons are authoritative if a published value rounds to a guard boundary. A non-ready update omits reference_price and uses fixed quality reason codes rather than substituting a stale or single-venue price. reference_time is the latest provider event time among fresh constituents and is omitted when neither constituent is fresh.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "coinbase.exchange.btc-usd.ticker",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.btc-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    { "name": "reference_price", "type": "decimal", "location": "internal" },
+    { "name": "coinbase_mid", "type": "decimal", "location": "internal" },
+    { "name": "kraken_mid", "type": "decimal", "location": "internal" },
+    { "name": "dispersion_bps", "type": "decimal", "location": "internal" },
+    { "name": "healthy_venue_count", "type": "u8", "location": "internal" },
+    { "name": "max_input_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "reference_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "reference_time"
+}

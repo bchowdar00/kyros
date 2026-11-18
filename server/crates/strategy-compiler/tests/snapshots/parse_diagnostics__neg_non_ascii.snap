@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[non-ascii-character]: expressions are ASCII-only
+  signal.é
+         ^
+  = help: replace the non-ASCII character; identifiers and variants use [a-zA-Z0-9_]

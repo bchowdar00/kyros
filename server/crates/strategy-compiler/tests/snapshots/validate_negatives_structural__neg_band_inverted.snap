@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[band-inverted] at legs[0].body[0].do[0].place.price_band: price band [0.6, 0.4] is inverted — the low bound exceeds the high
+  = help: write the band as [lo, hi]

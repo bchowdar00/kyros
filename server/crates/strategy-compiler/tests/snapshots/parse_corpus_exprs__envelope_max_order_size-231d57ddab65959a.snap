@@ -1,0 +1,25 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Ref(
+        Ref {
+            namespace: Envelope,
+            path: [
+                Spanned {
+                    node: "max_order_size",
+                    span: Span {
+                        start: 9,
+                        end: 23,
+                    },
+                },
+            ],
+            index: None,
+        },
+    ),
+    span: Span {
+        start: 0,
+        end: 23,
+    },
+}

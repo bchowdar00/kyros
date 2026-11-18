@@ -1,0 +1,22 @@
+{
+  "title": "Odds momentum",
+  "description": "How this venue's odds of Up have been moving, in probability points. Odds that keep drifting one way are usually following a spot move.",
+  "fields": {
+    "return_pp_30s": {
+      "label": "Change 30s",
+      "description": "How much the odds of Up moved over the last thirty seconds, in probability points. Positive means the venue is warming to Up."
+    },
+    "return_pp_1m": {
+      "label": "Change 1m",
+      "description": "How much the odds of Up moved over the last minute, in probability points. Positive means the venue is warming to Up."
+    },
+    "return_pp_5m": {
+      "label": "Change 5m",
+      "description": "How much the odds of Up moved over the last five minutes, in probability points. The slow drift behind the shorter reads."
+    },
+    "direction_1m": {
+      "label": "Odds direction 1m",
+      "description": "Up or down once the one-minute change clears a small threshold, otherwise flat. The one-word version of the change."
+    }
+  }
+}

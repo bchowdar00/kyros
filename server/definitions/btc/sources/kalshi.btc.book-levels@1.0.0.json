@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.btc.book-levels",
+  "version": "1.0.0",
+  "name": "Kalshi BTC order-book levels",
+  "description": "Flattened Kalshi orderbook_snapshot and orderbook_delta rows subscribed with use_yes_price=true. Provider yes-side levels map to bids and no-side levels map to asks on one YES-price scale. Delta quantities are applied to local state and emitted as absolute size; event_time uses provider time for deltas and local receipt time for timestamp-less snapshots, with event_time_basis making that distinction explicit.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    { "name": "market_ticker", "type": "string", "location": "external" },
+    { "name": "upstream_sequence", "type": "u64", "location": "external" },
+    { "name": "update_group", "type": "string", "location": "internal" },
+    { "name": "update_index", "type": "u32", "location": "internal" },
+    { "name": "update_count", "type": "u32", "location": "internal" },
+    {
+      "name": "update_kind",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["snapshot", "delta"]
+    },
+    {
+      "name": "side",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["bid", "ask"]
+    },
+    { "name": "price", "type": "decimal", "location": "external" },
+    { "name": "size", "type": "decimal", "location": "internal" },
+    { "name": "event_time", "type": "timestamp", "location": "internal" },
+    {
+      "name": "event_time_basis",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["provider", "local_receipt"]
+    }
+  ],
+  "event_time_field": "event_time",
+  "sequence_field": "upstream_sequence"
+}

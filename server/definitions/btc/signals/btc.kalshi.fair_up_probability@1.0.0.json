@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.fair_up_probability",
+  "version": "1.0.0",
+  "name": "Kalshi BTC fair up probability",
+  "description": "Model fair probability that the bound Kalshi market settles in favor of the affirmative (up) outcome, computed as the standard normal CDF phi_cdf(d) of the standardized moneyness d in pinned exact-decimal arithmetic. The comparator and tie handling are taken from the rules card: the pinned contracts settle greater-than-or-equal with an exact tie paying the affirmative outcome, so the affirmative is the up move and probability equals phi_cdf(d); an affirmative-down card publishes one minus phi_cdf(d) instead. Exact ties carry zero mass in the continuous model. Every published decimal is rounded to eight places using round-half-to-even and the probability is never clamped. The update fails closed with explicit reasons when volatility is warming or zero, the reference is missing or stale, the rules card is missing, tau is not positive, or the model domain is exceeded.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.kalshi.standardized_moneyness", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "probability", "type": "decimal", "location": "internal" },
+    { "name": "moneyness", "type": "decimal", "location": "internal" },
+    { "name": "reference_price", "type": "decimal", "location": "external" },
+    { "name": "strike", "type": "decimal", "location": "external" },
+    { "name": "sigma_per_second", "type": "decimal", "location": "internal" },
+    { "name": "tau_seconds", "type": "decimal", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

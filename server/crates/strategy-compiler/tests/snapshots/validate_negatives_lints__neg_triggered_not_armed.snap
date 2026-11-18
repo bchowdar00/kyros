@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_lints.rs
+expression: rendered
+---
+warning[triggered-not-armed] at legs[0].body[0].if: `triggered(other)` can never be true in leg `main` — the leg does not arm it
+  = help: add the trigger to the leg's arm list, or drop the test

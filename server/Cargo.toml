@@ -1,0 +1,69 @@
+# ───────────────────────────── Workspace ─────────────────────────────
+#
+# Two crates:
+#   crates/exchange           the server binary (engine, bots, API)
+#   crates/strategy-compiler  library: IR → validated → lowered → artifacts
+#
+# `cargo run` / `cargo test` from here default to the exchange; use
+# `--workspace` to include the compiler. The lints below apply only to
+# crates that opt in with `[lints] workspace = true`; the exchange does not.
+
+[workspace]
+members = ["crates/*"]
+default-members = ["crates/exchange"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+publish = false
+# Consumed by the signals crates (`rust-version.workspace = true`). Matches
+# the toolchain pinned in rust-toolchain.toml.
+rust-version = "1.93"
+
+[workspace.dependencies]
+serde = { version = "1.0.228", features = ["derive", "rc"] }
+serde_json = { version = "1.0.150", features = ["raw_value"] }
+schemars = "1.2.1"
+thiserror = "2.0.18"
+anyhow = "1.0.103"
+sha2 = "0.10.9"
+insta = { version = "1.48.0", features = ["json"] }
+
+# Pins carried over from the signals prototype workspace for the copied
+# crates: crates/signals-core, crates/btc-feeds, crates/btc-signals.
+base64 = "0.22.1"
+chrono = { version = "0.4.40", default-features = false, features = ["std"] }
+clap = { version = "4.5.32", features = ["derive"] }
+crc32fast = "1.5.0"
+futures-util = { version = "0.3.31", default-features = false, features = ["sink", "std"] }
+getrandom = "0.3.4"
+hmac = "0.12.1"
+jsonschema = { version = "0.49.9", default-features = false }
+libc = "0.2.189"
+proptest = "1"
+rust_decimal = { version = "1.37.1", default-features = false, features = ["serde", "std"] }
+reqwest = { version = "0.12.15", default-features = false, features = ["http2", "rustls-tls-webpki-roots"] }
+ring = "0.17.14"
+rustix = { version = "1.1.4", default-features = false, features = ["std", "fs", "process"] }
+rustls = { version = "0.23.43", default-features = false, features = ["ring", "std", "tls12"] }
+semver = "1.0.26"
+tokio = { version = "1.53.0", features = ["fs", "io-util", "macros", "net", "rt", "signal", "sync", "time"] }
+tokio-rustls = { version = "0.26.4", default-features = false, features = ["ring", "tls12"] }
+tokio-tungstenite = { version = "0.30.0", default-features = false, features = ["connect", "rustls-tls-webpki-roots"] }
+walkdir = "2.5.0"
+webpki-roots = "0.26"
+zeroize = "1.8.1"
+zstd = { version = "0.13.3", default-features = false }
+
+[profile.release]
+opt-level = 3
+lto = false
+codegen-units = 16
+
+# compiler-prototype CLAUDE.md invariants, enforced by the compiler rather than by review.
+[workspace.lints.rust]
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"

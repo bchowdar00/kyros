@@ -1,0 +1,5 @@
+---
+source: crates/compiler/tests/validate_corpus.rs
+expression: rendered
+---
+(no warnings)

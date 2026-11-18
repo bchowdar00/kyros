@@ -1,0 +1,32 @@
+---
+source: crates/compiler/tests/lower_blocks.rs
+expression: reads
+---
+[
+    (
+        "waiting.enter_endgame",
+        [],
+    ),
+    (
+        "endgame.rollover_reset",
+        [],
+    ),
+    (
+        "endgame.buy_up",
+        [
+            "book.up",
+            "delta.pct",
+        ],
+    ),
+    (
+        "endgame.buy_down",
+        [
+            "book.down",
+            "delta.pct",
+        ],
+    ),
+    (
+        "filled.rollover_reset",
+        [],
+    ),
+]

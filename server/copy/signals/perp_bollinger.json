@@ -1,0 +1,18 @@
+{
+  "title": "Perp Bollinger bands",
+  "description": "Where the perpetual's price sits inside its recent range. The bands sit two standard deviations either side of a moving average.",
+  "fields": {
+    "percent_b": {
+      "label": "Position in bands",
+      "description": "Where the price is between the bands, as a percentage. Above one hundred is outside the top band, below zero outside the bottom."
+    },
+    "bandwidth_bps": {
+      "label": "Band width",
+      "description": "How far apart the bands are, in basis points. Narrow bands mean a quiet market that often precedes a move."
+    },
+    "state": {
+      "label": "Band state",
+      "description": "Upper when pressed against the top band, lower against the bottom, inside otherwise. Pressed readings tend to come back."
+    }
+  }
+}

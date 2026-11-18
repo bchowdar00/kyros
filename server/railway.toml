@@ -1,0 +1,30 @@
+# Railway service config for the exchange. The Railway service's Root
+# Directory must be `server` (this file's directory): the Cargo workspace
+# has no root package, so the build names the crate explicitly.
+#
+# Runtime layout the deploy playbook in the repo CLAUDE.md relies on:
+#   - a volume mounted at /data; SIGNALS_LANE_ROOT=/data/signals keeps the
+#     signal lanes' file generations off the container disk, and the
+#     in-process retention sweep (signals_retention.rs, SIGNALS_KEEP_GENERATIONS)
+#     bounds what they hold.
+#   - PORT is injected by Railway; the server binds 0.0.0.0:$PORT.
+#   - secrets (PYTH_PRO_API_KEY, OPENAI_API_KEY) are Railway variables, never
+#     baked into the image; `.env` is gitignored and not uploaded by `railway up`.
+
+[build]
+builder = "RAILPACK"
+# Railpack's Rust provider runs `cargo build --release --package $RAILPACK_CARGO_WORKSPACE`
+# and copies that binary to `bin/`; the runtime image keeps `bin/` and drops
+# `target/`. The service variables RAILPACK_CARGO_WORKSPACE=exchange and
+# RAILPACK_RUST_BIN=exchange select the crate and the start binary (the
+# workspace also has the btc-signals binaries). railpack.json repeats the
+# start command for the provider's own detection.
+
+[deploy]
+startCommand = "./bin/exchange"
+healthcheckPath = "/health"
+# Boot connects the price feed, compiles every template and seeds the
+# house before the listener opens; give it room.
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

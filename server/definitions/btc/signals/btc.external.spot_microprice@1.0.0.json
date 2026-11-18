@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.spot_microprice",
+  "version": "1.0.0",
+  "name": "Coinbase and Kraken BTC/USD microprice",
+  "description": "For each fresh reconstructed level-two book, microprice is (ask times bid size plus bid times ask size) divided by total touch size. The combined microprice is the equal-weight mean of the two venue microprices. microprice_deviation_bps is (combined microprice minus the equal-weight book midpoint) divided by that midpoint times 10000, so a positive value indicates touch-size pressure toward the ask. Ready output requires complete positive uncrossed books from both venues no more than 10 seconds old. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.book-levels", "version": "1.0.0" },
+    { "kind": "source", "id": "kraken.spot.btc-usd.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "microprice", "type": "decimal", "location": "internal" },
+    { "name": "coinbase_microprice", "type": "decimal", "location": "internal" },
+    { "name": "kraken_microprice", "type": "decimal", "location": "internal" },
+    { "name": "book_midpoint", "type": "decimal", "location": "internal" },
+    { "name": "microprice_deviation_bps", "type": "decimal", "location": "internal" },
+    { "name": "max_book_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

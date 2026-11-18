@@ -1,0 +1,14 @@
+{
+  "title": "Depth imbalance",
+  "description": "Bid size against ask size close to the touch, within five basis points of the midpoint. It says which side has more waiting to trade.",
+  "fields": {
+    "imbalance": {
+      "label": "Depth imbalance",
+      "description": "Bids minus asks over the total, from minus one to plus one. Positive means buyers are stacked closer to the price."
+    },
+    "combined_imbalance": {
+      "label": "Depth imbalance",
+      "description": "The same read across Coinbase and Kraken together, from minus one to plus one. Positive means buyers are stacked closer to the price."
+    }
+  }
+}

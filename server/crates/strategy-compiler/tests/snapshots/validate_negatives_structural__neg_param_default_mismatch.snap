@@ -1,0 +1,24 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[param-default-mismatch] at params[0].default: param `a` default does not fit its type: `abc` is not a canonical decimal (e.g. `0.04`, `-1.5`, `12`)
+  = help: the default is the value the strategy deploys with; write it in the declared type
+
+error[param-default-mismatch] at params[1].default: param `b` default does not fit its type: `0.40` is not a canonical decimal (e.g. `0.04`, `-1.5`, `12`)
+  = help: the default is the value the strategy deploys with; write it in the declared type
+
+error[param-default-mismatch] at params[2].default: param `c` default does not fit its type: `300` is not an integer in 0..=255
+  = help: the default is the value the strategy deploys with; write it in the declared type
+
+error[param-default-mismatch] at params[3].default: param `d` default does not fit its type: `1.5` is not an integer in 0..=255
+  = help: the default is the value the strategy deploys with; write it in the declared type
+
+error[param-default-mismatch] at params[4].default: param `e` default does not fit its type: `yes` is text — a bool default is JSON `true` or `false`
+  = help: the default is the value the strategy deploys with; write it in the declared type
+
+error[param-default-mismatch] at params[5].default: param `f` default does not fit its type: `blue` is not a declared variant (variants: home, away)
+  = help: the default is the value the strategy deploys with; write it in the declared type
+
+error[param-default-mismatch] at params[6].default: param `g` default does not fit its type: `true` is a boolean — the declared type is not bool
+  = help: the default is the value the strategy deploys with; write it in the declared type

@@ -1,0 +1,83 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Call {
+        builtin: Lookup,
+        name_span: Span {
+            start: 0,
+            end: 6,
+        },
+        args: [
+            Spanned {
+                node: Ref(
+                    Ref {
+                        namespace: Table,
+                        path: [
+                            Spanned {
+                                node: "fair_curve",
+                                span: Span {
+                                    start: 13,
+                                    end: 23,
+                                },
+                            },
+                        ],
+                        index: None,
+                    },
+                ),
+                span: Span {
+                    start: 7,
+                    end: 23,
+                },
+            },
+            Spanned {
+                node: Call {
+                    builtin: Abs,
+                    name_span: Span {
+                        start: 25,
+                        end: 28,
+                    },
+                    args: [
+                        Spanned {
+                            node: Ref(
+                                Ref {
+                                    namespace: Signal,
+                                    path: [
+                                        Spanned {
+                                            node: "delta",
+                                            span: Span {
+                                                start: 36,
+                                                end: 41,
+                                            },
+                                        },
+                                        Spanned {
+                                            node: "pct",
+                                            span: Span {
+                                                start: 42,
+                                                end: 45,
+                                            },
+                                        },
+                                    ],
+                                    index: None,
+                                },
+                            ),
+                            span: Span {
+                                start: 29,
+                                end: 45,
+                            },
+                        },
+                    ],
+                },
+                span: Span {
+                    start: 25,
+                    end: 46,
+                },
+            },
+        ],
+    },
+    span: Span {
+        start: 0,
+        end: 47,
+    },
+}

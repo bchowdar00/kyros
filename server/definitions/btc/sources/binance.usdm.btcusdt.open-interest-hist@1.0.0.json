@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "source_id": "binance.usdm.btcusdt.open-interest-hist",
+  "version": "1.0.0",
+  "name": "Binance USD-M BTCUSDT historical open-interest series (5-minute period)",
+  "description": "Normalized rows from `GET https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=5m&limit=30`, polled every 300000 milliseconds. Rows sharing `row_group` come from one response and are emitted in `row_index` order; `row_count` states the complete set. Only rows whose `event_time` is strictly greater than the last admitted event time are emitted, so the deliberately overlapping poll window deduplicates itself. A response with more than 1024 rows fails closed; a response with zero rows emits no event and raises an informational state-inconsistency. The venue's `CMCCirculatingSupply` field is deliberately not carried: it is not a market fact about BTCUSDT and no adopted signal reads it. This series has a five-minute minimum granularity and is regime and context input only; it must never be used as a sub-two-minute trigger, and no adopted signal in the Binance lane takes it as an input. Refusal-gated: Binance redistribution requires written consent (see RIGHTS-LEDGER.md). OBSERVED against the same 65-minute Tokyo capture: 13 polls, 390 rows, exactly the drafted fields plus `CMCCirculatingSupply`, which is accepted and deliberately not carried. The 30 rows of each response overlap the previous one, so the watermark admitted 42 distinct five-minute buckets and dropped the rest; observed bucket spacing was exactly 300,000 ms between adjacent timestamps. `sumOpenInterest` and `sumOpenInterestValue` both carried eight fractional digits.",
+  "status": "approved",
+  "transport": "http_poll",
+  "expected_heartbeat_ms": 300000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "row_group",
+      "type": "string",
+      "location": "internal"
+    },
+    {
+      "name": "row_index",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "row_count",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "period",
+      "type": "string",
+      "location": "internal"
+    },
+    {
+      "name": "sum_open_interest_base",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "sum_open_interest_value_usd",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time"
+}

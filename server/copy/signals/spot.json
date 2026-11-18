@@ -1,0 +1,10 @@
+{
+  "title": "BTC price",
+  "description": "The live BTC price the exchange reads for every strike and settlement. It comes from the Pyth aggregate when a key is set and from Coinbase otherwise.",
+  "fields": {
+    "last": {
+      "label": "BTC price",
+      "description": "The reference price right now, in dollars. This is the number a round is settled against, not any single venue's quote."
+    }
+  }
+}

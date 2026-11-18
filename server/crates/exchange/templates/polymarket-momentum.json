@@ -1,0 +1,154 @@
+{
+  "id": "polymarket-momentum",
+  "title": "Polymarket Pulse",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": null },
+  "series": ["btc-15m"],
+  "logic": "Polymarket's fifteen-minute BTC market is a crowd betting on the same price we settle on. When its Up odds move at least three points in thirty seconds, it goes with the crowd: Up when the odds are rising, Down when they are falling. One trade per round, held to the close. Nothing in the final ninety seconds.",
+  "inverse_logic": "Polymarket's fifteen-minute BTC market is a crowd betting on the same price we settle on. When its Up odds move at least three points in thirty seconds, it bets the crowd is late: Down when the odds are rising, Up when they are falling. One trade per round, held to the close. Nothing in the final ninety seconds.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-15m": { "cutoff": "90s" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Ride Polymarket Odds",
+      "description": "While Polymarket's strike is within the strike band of this round's strike, follow its thirty-second probability momentum: when the Up probability has risen by at least the threshold, take Up with an immediate-or-cancel limit two cents over the ask; when it has fallen by at least the threshold, take Down the same way. Once per round, held to settlement, no entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "strike": "{{series}}.current.strike.v1",
+      "pmom": "btc.polymarket.probability_momentum.v1",
+      "contract": "btc.polymarket.market_contract.v1"
+    },
+    "state": [],
+    "params": [
+      { "name": "min_move_pp", "type": "decimal", "default": "3" },
+      { "name": "strike_band", "type": "decimal", "default": "0.0003" }
+    ],
+    "triggers": [
+      { "name": "odds_up",
+        "condition": { "all": [
+          { "expr": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price", "comparator": "<=", "value": { "param": "strike_band" } },
+          { "expr": "signal.pmom.return_pp_30s", "comparator": ">=", "value": { "param": "min_move_pp" } },
+          { "signal": "pmom", "field": "direction_30s", "comparator": "==", "value": "up" }
+        ] },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+      { "name": "odds_down",
+        "condition": { "all": [
+          { "expr": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price", "comparator": "<=", "value": { "param": "strike_band" } },
+          { "expr": "0 - signal.pmom.return_pp_30s", "comparator": ">=", "value": { "param": "min_move_pp" } },
+          { "signal": "pmom", "field": "direction_30s", "comparator": "==", "value": "down" }
+        ] },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["odds_up", "odds_down"],
+        "body": [
+          { "name": "take_up",
+            "if": "triggered(odds_up) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_up",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" },
+          { "name": "take_down",
+            "if": "triggered(odds_down) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_down",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" }
+        ] },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Fade Polymarket Odds",
+      "description": "While Polymarket's strike is within the strike band of this round's strike, fade its thirty-second probability momentum: when the Up probability has risen by at least the threshold, take Down with an immediate-or-cancel limit two cents over the ask; when it has fallen by at least the threshold, take Up the same way. Once per round, held to settlement, no entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "strike": "{{series}}.current.strike.v1",
+      "pmom": "btc.polymarket.probability_momentum.v1",
+      "contract": "btc.polymarket.market_contract.v1"
+    },
+    "state": [],
+    "params": [
+      { "name": "min_move_pp", "type": "decimal", "default": "3" },
+      { "name": "strike_band", "type": "decimal", "default": "0.0003" }
+    ],
+    "triggers": [
+      { "name": "odds_up",
+        "condition": { "all": [
+          { "expr": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price", "comparator": "<=", "value": { "param": "strike_band" } },
+          { "expr": "signal.pmom.return_pp_30s", "comparator": ">=", "value": { "param": "min_move_pp" } },
+          { "signal": "pmom", "field": "direction_30s", "comparator": "==", "value": "up" }
+        ] },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+      { "name": "odds_down",
+        "condition": { "all": [
+          { "expr": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price", "comparator": "<=", "value": { "param": "strike_band" } },
+          { "expr": "0 - signal.pmom.return_pp_30s", "comparator": ">=", "value": { "param": "min_move_pp" } },
+          { "signal": "pmom", "field": "direction_30s", "comparator": "==", "value": "down" }
+        ] },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["odds_up", "odds_down"],
+        "body": [
+          { "name": "fade_down",
+            "if": "triggered(odds_up) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "fade_down",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" },
+          { "name": "fade_up",
+            "if": "triggered(odds_down) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "fade_up",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" }
+        ] },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

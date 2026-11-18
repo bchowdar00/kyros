@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.chainlink.price_momentum",
+  "version": "1.0.0",
+  "name": "Chainlink BTC/USD price momentum",
+  "description": "Momentum of the Chainlink on-chain BTC/USD oracle, computed live on the oracle lane from the accepted-round answer series of source chainlink.ethereum.btc-usd.rounds (the same accepted-round fold that feeds btc.chainlink.oracle_reference). Chainlink rounds are sparse (a 0.5 percent deviation threshold OR a one-hour heartbeat), so sampling is per accepted round (event), not one-second. return_bps_15m, return_bps_1h, and return_bps_4h are simple basis-point returns of the newest accepted answer against the newest accepted round whose publish time is at or before now minus the horizon; when no accepted round is that old the horizon has no causal anchor and the return is reported as 0. return_bps_last_1_round and return_bps_last_5_rounds are simple basis-point returns of the newest answer against the round one and five accepted rounds back, regardless of age, so a recent move is visible even when the time windows are empty. direction_1h is down, flat, or up from the full-precision one-hour return, with flat exactly zero. rounds_in_4h is the count of accepted rounds inside the trailing four-hour window (the longest horizon). newest_round_age_ms is now minus the newest accepted round's publish time, floored at zero, so sparse periods are visible. The identity is ready when at least two accepted rounds fall inside the fifteen-minute window or the count horizon is satisfied (at least two accepted rounds observed); otherwise it is not ready with chainlink_rounds_sparse. Reads only Chainlink and predicts nothing. Instance-status reasons: oracle_rights_gated, chainlink_warming_up, chainlink_rounds_sparse. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 60000,
+  "staleness_bound_ms": 300000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "chainlink.ethereum.btc-usd.rounds",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    { "name": "return_bps_15m", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_1h", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_4h", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_last_1_round", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_last_5_rounds", "type": "decimal", "location": "internal" },
+    {
+      "name": "direction_1h",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["down", "flat", "up"]
+    },
+    { "name": "rounds_in_4h", "type": "u16", "location": "internal" },
+    { "name": "newest_round_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.horizon_momentum",
+  "version": "1.0.0",
+  "name": "Binance BTC/USDT one-, five-, and fifteen-minute momentum",
+  "description": "Causal simple basis-point returns of the fresh Binance displayed best-quote midpoint over one-, five-, and fifteen-minute horizons on the one-second midpoint ring. direction_5m is down, flat, or up from the full-precision five-minute return. Any missing or non-ready one-second observation breaks continuity and restarts the fifteen-minute warm-up; the identity is ready only once the ring holds 901 contiguous one-second samples (the longest horizon, 15 minutes). This is a longer-horizon companion to the micro identities and never widens the existing micro_momentum contract (SME contract stability). Decimal outputs are rounded to eight places using round-half-to-even. This identity is single-venue: it reads only Binance inputs and is ready whenever the Binance midpoint ring holds 901 contiguous one-second samples, independently of the other adopted spot venues. The blended btc.external.* reading of the same measurement keeps its every-venue AND-gate and stays the reference layer (ADR 0024). Binance inputs are rights-gated (signals/knowledge/RIGHTS-LEDGER.md): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list SIGNALS_ENABLED_VENUES names binance. E47 (USD quoting): this identity publishes no price-, notional- or quote-denominated field \u2014 its outputs are basis-point returns, their root mean square, a ratio, a direction word and a sample count, all scale-free \u2014 so nothing is converted, no usdt_usd_rate is published, and it never goes usdt_reference_stale; quote_currency is the constant \"usd\".",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.spot.btcusdt.book-ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "return_bps_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "return_bps_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "return_bps_15m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "direction_5m",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "down",
+        "flat",
+        "up"
+      ]
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

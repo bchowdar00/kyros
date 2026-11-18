@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.cross.derivatives_regime",
+  "version": "1.0.0",
+  "name": "Perpetual derivatives leverage regime",
+  "description": "Deterministic classification of the Bybit perpetual derivatives regime from three sub-states plus a stress override, carrying every factor it combined (SIG-045). basis_bps and basis_state are the published basis_bps and state of btc.cross.perp_spot_basis@1.0.0. funding_rate is the published funding_rate and funding_annualised_bps the published annualised_rate_bps of btc.bybit.funding_state@1.0.0; this identity does no annualisation of its own. funding_regime is the venue's published sign_regime, so the flat band is the one the venue identity already declares. oi_delta_pct_1m is the published delta_pct_1m of btc.bybit.open_interest_delta@1.0.0, in the percent units that identity publishes; open_interest_regime is rising above oi_threshold_pct, falling below its negation and flat otherwise, with oi_threshold_pct defaulting to 0.05. regime is evaluated in this fixed order. First, stress when btc.cross.liquidation_vs_spot_response@1.0.0 has published follow_through and its time_since_burst_ms is at or below stress_window_ms (default 300000). Otherwise the closed table on (basis_state, funding_regime, open_interest_regime): (contango, longs_pay, rising) is long_leverage_building; (contango, longs_pay, falling) is long_leverage_unwinding; (backwardation, shorts_pay, rising) is short_leverage_building; (backwardation, shorts_pay, falling) is short_leverage_unwinding. Every other combination, including any flat sub-state, is mixed. Ready output requires btc.cross.perp_spot_basis ready and the Bybit funding and open-interest identities ready and no more than 10000 milliseconds old. The liquidation input is deliberately NOT a readiness constituent: when no cascade has been observed the stress override cannot fire and stress_active publishes false, which is a correct reading rather than a missing one. The cross lane is Bybit-only (ruling E66 under E62): the {binance, bybit} venue set of the original spec §6.1 predates E62 and, from the Tokyo box, carries no Binance streams (rulings E30/E34), so a two-venue mean would make this regime structurally never ready. Bybit is the sole configured derivatives venue and is fully observable; venue_count is 1. The basis sub-state inherits btc.cross.perp_spot_basis@1.0.0, whose Bybit mark is converted to USD upstream through the Kraken USDT/USD reference (ruling E47), so every sub-state is a USD reading. No binance_* field or reason can appear on this lane. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.cross.perp_spot_basis",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.cross.liquidation_vs_spot_response",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.bybit.funding_state",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.bybit.open_interest_delta",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "long_leverage_building",
+        "long_leverage_unwinding",
+        "short_leverage_building",
+        "short_leverage_unwinding",
+        "mixed",
+        "stress"
+      ]
+    },
+    {
+      "name": "basis_state",
+      "type": "enum",
+      "location": "external",
+      "variants": [
+        "contango",
+        "backwardation",
+        "flat"
+      ]
+    },
+    {
+      "name": "funding_regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "shorts_pay",
+        "flat",
+        "longs_pay"
+      ]
+    },
+    {
+      "name": "open_interest_regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "rising",
+        "falling",
+        "flat"
+      ]
+    },
+    {
+      "name": "basis_bps",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "funding_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "funding_annualised_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "oi_delta_pct_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "stress_active",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "stress_window_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "oi_threshold_pct",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "venue_count",
+      "type": "u8",
+      "location": "internal"
+    },
+    {
+      "name": "max_input_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

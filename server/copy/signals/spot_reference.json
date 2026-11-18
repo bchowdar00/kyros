@@ -1,0 +1,5 @@
+{
+  "title": "Blended price",
+  "description": "One BTC price built from Coinbase and Kraken together. Useful as a reference, but the exchange settles on the oracle feed, not on this.",
+  "fields": {}
+}

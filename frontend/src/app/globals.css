@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import "@tiny/ui/styles/fonts.css";
+@import "@tiny/ui/styles/tokens.css";
+@source "../../packages/ui/src";
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTC Signals Delivery-Neutral Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "delivery_id", "destination", "package_id",
+    "manifest_sha256", "publisher_epoch", "last_sequence"
+  ],
+  "properties": {
+    "schema_version": { "const": "btc.signals.delivery-envelope/v1" },
+    "delivery_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "destination": {
+      "type": "string", "minLength": 1, "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "package_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "publisher_epoch": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "last_sequence": { "type": "integer", "minimum": 0 }
+  }
+}

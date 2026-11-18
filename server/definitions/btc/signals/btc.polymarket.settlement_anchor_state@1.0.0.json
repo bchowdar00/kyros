@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.settlement_anchor_state",
+  "version": "1.0.0",
+  "name": "Polymarket BTC settlement-anchor state",
+  "description": "Consumes the resolving Chainlink BTC/USD 60-second TWAP (the exact data Polymarket resolves on) and the bound market's rules card. anchor_price is the latest TWAP value; threshold is the contract reference level verbatim from the rules card. distance_bps = (anchor - threshold) / threshold in signed basis points. time_to_close_ms is the time remaining to the rules-card close; the update is not ready once the window is closed or an input is missing. side_if_settled_now applies the contract comparator to anchor versus threshold (an exact tie resolves per the contract's tie outcome). state is pinned when the absolute distance is at or within pin_threshold_bps AND time_to_close_ms is at or within pin_window_ms — the resolution-sensitivity context — and tracking otherwise. Not ready until both inputs are seen. Polymarket only: the Kalshi variant is deferred while its CF Benchmarks BRTI settlement path is rights-gated. Published under the bound market scope, so an unbound, still-warming or closed market fails it closed. observation_time is the decision instant the reading was evaluated at, which is also the instant time_to_close_ms is measured from. This contextualizes the anchor path; it does no probability or volatility modeling and predicts nothing. pin_threshold_bps defaults to 10 and pin_window_ms defaults to 60000. Decimal outputs are rounded to eight places using round-half-to-even. side_if_settled_now's void variant is reachable only through a rules card declaring tie_outcome void; the currently declared Polymarket rules-card vocabulary is up-only, so void is unreachable from the present surface and is retained for contract variants that declare it.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "polymarket.rtds.btc-usd.twap-60s",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.market_contract",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    { "name": "opening_strike_source", "type": "enum", "location": "internal", "variants": ["exact", "prior_frame", "post_frame"] },
+    {
+      "name": "anchor_price",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "threshold",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "distance_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "time_to_close_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "comparator",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "greater_than_or_equal"
+      ]
+    },
+    {
+      "name": "side_if_settled_now",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "up",
+        "down",
+        "void"
+      ]
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "pinned",
+        "tracking"
+      ]
+    },
+    {
+      "name": "pin_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "pin_window_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.window_delta",
+  "version": "1.0.0",
+  "name": "Polymarket BTC window strike delta",
+  "description": "Distance of the internally hosted BTC spot reference from the bound Polymarket market strike. reference_price and strike are the ready spot reference and the rules-card strike; delta_absolute is reference minus strike (signed); delta_bps is delta_absolute divided by strike times ten thousand. The spot reference is computed inside this process by the identical published btc.external.spot_reference@1.0.0 code path over the Coinbase and Kraken ticker streams, so it is pinned here as a signal-kind input. A ready update requires a bound market with a validated rules card and a ready spot reference; otherwise the update is non-ready with fixed reason codes and omits values rather than substituting stale numbers. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.polymarket.market_contract", "version": "1.0.0" },
+    { "kind": "signal", "id": "btc.external.spot_reference", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "opening_strike_source", "type": "enum", "location": "internal", "variants": ["exact", "prior_frame", "post_frame"] },
+    { "name": "reference_price", "type": "decimal", "location": "external" },
+    { "name": "strike", "type": "decimal", "location": "external" },
+    { "name": "delta_absolute", "type": "decimal", "location": "internal" },
+    { "name": "delta_bps", "type": "decimal", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

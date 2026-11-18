@@ -1,0 +1,45 @@
+---
+source: crates/compiler/tests/parse_positives.rs
+expression: comparison
+---
+Spanned {
+    node: Cmp {
+        op: Eq,
+        lhs: Spanned {
+            node: Ref(
+                Ref {
+                    namespace: Event,
+                    path: [
+                        Spanned {
+                            node: "result",
+                            span: Span {
+                                start: 6,
+                                end: 12,
+                            },
+                        },
+                    ],
+                    index: None,
+                },
+            ),
+            span: Span {
+                start: 0,
+                end: 12,
+            },
+        },
+        rhs: Spanned {
+            node: Literal(
+                Variant(
+                    "missed",
+                ),
+            ),
+            span: Span {
+                start: 16,
+                end: 24,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 24,
+    },
+}

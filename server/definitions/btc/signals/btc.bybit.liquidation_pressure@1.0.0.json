@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.liquidation_pressure",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT perpetual liquidation pressure",
+  "description": "Forced-liquidation flow on the Bybit linear BTCUSDT perpetual contract. Each event contributes notional of size times price, where price_basis declares which price the venue supplies: \"bankruptcy_price\" here. count_10s, count_60s and count_300s are event counts and notional_usd_10s, notional_usd_60s and notional_usd_300s are notional sums over causal receipt-time windows of (window close minus duration, window close]. long_notional_usd_60s and short_notional_usd_60s split the 60-second notional by which position side was liquidated, so both venues answer one shared question and no raw venue side field is summed directly. The liquidated position side is the source's declared side field: Bybit v5 allLiquidation documents S as the position side (a Buy update means a long position was liquidated, a Sell update a short position), so buy maps to a long liquidation and sell to a short liquidation. That convention is confirmed by the Bybit observed-contract capture named in build/A4-bybit-linear-feeds.md (R1 step 2, 2026-09-04: 7 events, all Buy). side_skew_60s is long_notional_usd_60s minus short_notional_usd_60s divided by their sum, inside [-1, 1], and is exactly 0 when both are 0. max_single_notional_usd_300s is the largest single event notional in 300 seconds and is 0 when the window is empty. burst_ratio is notional_usd_10s divided by notional_usd_300s divided by 30, and is exactly 0 when that denominator is 0. clustering_state is quiet when count_10s is 0; otherwise cascade when burst_ratio is at least cascade_ratio and count_10s is at least cascade_min_count; otherwise elevated when burst_ratio is at least elevated_ratio; otherwise quiet. cascade_ratio is 5, elevated_ratio is 2 and cascade_min_count is 3, all published. feed_completeness is \"complete\" for this venue: Binance forceOrder publishes at most one order per symbol per second and is a cross-check rather than a census, while Bybit allLiquidation publishes every liquidation on a 500-millisecond cadence. Liquidations are sparse, so liveness comes from the connection and never from events: any admitted input from this venue within staleness_bound_ms yields truthful zeros with clustering_state = quiet, and nothing admitted within that bound degrades the instance. The event history is bounded at 300 seconds and 200000 entries per venue; exceeding it refuses as a resource limit. Notional is converted from USDT to USD via the Kraken USDT/USD mid; base sizes, counts, ratios and durations are quote-currency neutral; quote_currency is \"usd\" for this instrument. Ready output requires 300 seconds of uninterrupted Bybit linear observation and an admitted input no older than staleness_bound_ms; warm-up degrades as bybit_warming_up, a lapsed bound as bybit_stale, a closed socket as bybit_disconnected, a recovery-required feed state as bybit_recovery_required, a refused subscription as bybit_subscription_rejected and a venue outage as bybit_venue_unavailable. The R1 step-2 capture confirmed the side convention, so the instance no longer degrades as liquidation_side_unconfirmed; had it remained unconfirmed the instance would be non-ready with that reason and no side-derived output could be keyed on. Decimal outputs are rounded to eight places using round-half-to-even. The Bybit linear lane refuses to start (exit 78) unless SIGNALS_ENABLED_VENUES lists bybit; the rights gate is a startup refusal, never an instance status. E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (notional_usd_10s, notional_usd_60s, notional_usd_300s, long_notional_usd_60s, short_notional_usd_60s, max_single_notional_usd_300s) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.linear.btcusdt.liquidations",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "count_10s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "count_60s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "count_300s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "notional_usd_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "notional_usd_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "notional_usd_300s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "long_notional_usd_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "short_notional_usd_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "side_skew_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "max_single_notional_usd_300s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "burst_ratio",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "clustering_state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "quiet",
+        "elevated",
+        "cascade"
+      ]
+    },
+    {
+      "name": "cascade_ratio",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "elevated_ratio",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "cascade_min_count",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "price_basis",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "bankruptcy_price",
+        "average_fill_price"
+      ]
+    },
+    {
+      "name": "feed_completeness",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "complete",
+        "throttled"
+      ]
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

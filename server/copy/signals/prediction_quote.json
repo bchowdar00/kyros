@@ -1,0 +1,22 @@
+{
+  "title": "Venue price",
+  "description": "What this venue is paying for Up on its own BTC market, in cents on the dollar. Its strike and clock differ from ours, so compare with care.",
+  "fields": {
+    "affirmative_bid": {
+      "label": "Up bid",
+      "description": "The highest price a buyer is waiting at for the Up contract on this venue. Selling Up there fills here."
+    },
+    "affirmative_ask": {
+      "label": "Up ask",
+      "description": "The lowest price a seller is waiting at for the Up contract on this venue. Buying Up there fills here."
+    },
+    "affirmative_midpoint": {
+      "label": "Up midpoint",
+      "description": "Halfway between the venue's Up bid and ask, its fair odds that BTC finishes above its strike. Fifty cents is a coin flip."
+    },
+    "last_trade_price": {
+      "label": "Last trade",
+      "description": "The price of the most recent fill on this venue. It lags the book when nobody is trading."
+    }
+  }
+}

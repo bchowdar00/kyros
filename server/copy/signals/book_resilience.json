@@ -1,0 +1,18 @@
+{
+  "title": "Book resilience",
+  "description": "How fast the book refills after a price level is wiped out. A fast recovery means patient liquidity is sitting behind the touch.",
+  "fields": {
+    "state": {
+      "label": "Book state",
+      "description": "Quiet when no level has been depleted lately, recovering while one refills, and depleted if it has not come back. Depleted books move easily."
+    },
+    "depletion_side": {
+      "label": "Depleted side",
+      "description": "Which side of the book last lost half a level, bid or ask. None when nothing has been hit."
+    },
+    "recovery_ms": {
+      "label": "Recovery time",
+      "description": "How long the last depleted level took to refill to three quarters of its size. Shorter means deeper hidden liquidity."
+    }
+  }
+}

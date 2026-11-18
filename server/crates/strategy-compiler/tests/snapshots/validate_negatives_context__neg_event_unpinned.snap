@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[event-unpinned] at legs[0].body[0].do[0]: event.* is not available here: the block's guard pins no trigger — add exactly one triggered(NAME)
+  set state.q = event.quarter
+                ^^^^^^^^^^^^^
+  = help: read signal.* snapshots instead, or restructure the guard

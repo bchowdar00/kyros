@@ -1,0 +1,22 @@
+{
+  "title": "Momentum",
+  "description": "How the price has moved over the last one, five and fifteen minutes. Longer windows say whether a short burst is running with the trend or against it.",
+  "fields": {
+    "return_bps_1m": {
+      "label": "Return 1m",
+      "description": "The change in price over the last minute, in basis points. Positive means the price has been rising."
+    },
+    "return_bps_5m": {
+      "label": "Return 5m",
+      "description": "The change in price over the last five minutes, in basis points. The window most fifteen-minute rounds care about."
+    },
+    "return_bps_15m": {
+      "label": "Return 15m",
+      "description": "The change in price over the last fifteen minutes, in basis points. The slow trend behind the shorter reads."
+    },
+    "direction_5m": {
+      "label": "Move direction 5m",
+      "description": "Up or down once the five-minute return clears a small threshold, otherwise flat. The one-word version of the return."
+    }
+  }
+}

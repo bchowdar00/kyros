@@ -1,0 +1,22 @@
+{
+  "title": "Derivatives regime",
+  "description": "Funding, basis and open interest read together as one state. It is the quickest read on how much leverage sits behind a move.",
+  "fields": {
+    "regime": {
+      "label": "Leverage regime",
+      "description": "Calm, crowded long, crowded short or stressed, from the three leverage signals combined. Crowded sides are the ones that get flushed."
+    },
+    "basis_bps": {
+      "label": "Basis",
+      "description": "Perp minus spot as a share of price, in basis points, across the venues watched. Positive means leverage is bid."
+    },
+    "funding_rate": {
+      "label": "Funding rate",
+      "description": "The current funding rate across the venues watched. Positive means longs are paying shorts."
+    },
+    "open_interest_regime": {
+      "label": "Open interest",
+      "description": "Whether open interest is building, flat or unwinding. Building means new leverage is coming in."
+    }
+  }
+}

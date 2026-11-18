@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "name": "Favorite Panic",
+    "description": "On the NBA moneyline: the pregame Pinnacle line decides who the favorite is. First half only — if the favorite is down by 10 or more, the opponent has made 5 or more threes in the current quarter, and the favorite's price is under 35 cents, buy the favorite (the deficit is hot-shooting variance and usually comes back). After entry: sell if the favorite recovers past 70 cents; if it keeps dying and drops under 15 cents, sell anyway and eat the loss.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "game": "nba.sim.h2h.current"
+  },
+
+  "signals": {
+    "pbp":   "nba.sim.h2h.current.pbp.v1",
+    "price": "nba.sim.h2h.current.price.v1",
+    "fair":  "pinnacle.nba.sim.h2h.current.fair.v1"
+  },
+
+  "state": [
+    { "name": "favorite", "kind": "scalar",
+      "value_type": { "type": "enum", "variants": ["unknown", "home", "away"] } },
+    { "name": "made_threes", "kind": "map",
+      "key_types": [{ "type": "enum", "variants": ["home", "away"] }, { "type": "u8" }],
+      "value_type": "u8", "max_keys": 16, "overflow": "refuse_update" }
+  ],
+
+  "triggers": [
+    { "name": "opening_line",
+      "condition": { "signal": "fair" },
+      "fire": "if_true", "rearm": { "mode": "never" } },
+
+    { "name": "made_three",
+      "condition": { "all": [
+        { "signal": "pbp", "field": "action", "comparator": "==", "value": "three_pointer" },
+        { "signal": "pbp", "field": "result", "comparator": "==", "value": "made" }
+      ]},
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "home_panic",
+      "condition": { "all": [
+        { "signal": "price", "field": "home", "comparator": "<", "value": "0.35" },
+        { "expr": "signal.pbp.away_score - signal.pbp.home_score", "comparator": ">=", "value": "10" },
+        { "signal": "pbp", "field": "quarter", "comparator": "<=", "value": "2" }
+      ]},
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "away_panic",
+      "condition": { "all": [
+        { "signal": "price", "field": "away", "comparator": "<", "value": "0.35" },
+        { "expr": "signal.pbp.home_score - signal.pbp.away_score", "comparator": ">=", "value": "10" },
+        { "signal": "pbp", "field": "quarter", "comparator": "<=", "value": "2" }
+      ]},
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "home_recovered",
+      "condition": { "signal": "price", "field": "home", "comparator": ">", "value": "0.7" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "home_dead",
+      "condition": { "signal": "price", "field": "home", "comparator": "<", "value": "0.15" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "away_recovered",
+      "condition": { "signal": "price", "field": "away", "comparator": ">", "value": "0.7" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "away_dead",
+      "condition": { "signal": "price", "field": "away", "comparator": "<", "value": "0.15" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "hunting",
+      "resident": true,
+      "arm": ["opening_line", "made_three", "home_panic", "away_panic"],
+      "body": [
+        { "name": "capture_favorite",
+          "if": "triggered(opening_line)",
+          "do": ["set state.favorite = if signal.fair.home > 0.5 then 'home' else 'away'"] },
+
+        { "name": "count_threes",
+          "if": "triggered(made_three)",
+          "do": ["set state.made_threes[event.team, event.quarter] = state.made_threes[event.team, event.quarter] + 1"] },
+
+        { "name": "buy_home_favorite",
+          "if": "triggered(home_panic) and state.favorite == 'home' and state.made_threes['away', signal.pbp.quarter] >= 5",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "home", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry",
+                "on": { "reject": "hunting" }
+            }}
+          ],
+          "then": "holding_home" },
+
+        { "name": "buy_away_favorite",
+          "if": "triggered(away_panic) and state.favorite == 'away' and state.made_threes['home', signal.pbp.quarter] >= 5",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "away", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry",
+                "on": { "reject": "hunting" }
+            }}
+          ],
+          "then": "holding_away" }
+      ] },
+
+    { "name": "holding_home",
+      "resident": true,
+      "arm": ["home_recovered", "home_dead"],
+      "body": [
+        { "name": "take_profit",
+          "if": "triggered(home_recovered)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "home", "side": "sell",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "exit",
+                "on": { "reject": "holding_home" }
+            }}
+          ],
+          "then": "done" },
+
+        { "name": "cut_loss",
+          "if": "triggered(home_dead)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "home", "side": "sell",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "stop",
+                "on": { "reject": "holding_home" }
+            }}
+          ],
+          "then": "done" }
+      ] },
+
+    { "name": "holding_away",
+      "resident": true,
+      "arm": ["away_recovered", "away_dead"],
+      "body": [
+        { "name": "take_profit",
+          "if": "triggered(away_recovered)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "away", "side": "sell",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "exit",
+                "on": { "reject": "holding_away" }
+            }}
+          ],
+          "then": "done" },
+
+        { "name": "cut_loss",
+          "if": "triggered(away_dead)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "away", "side": "sell",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "stop",
+                "on": { "reject": "holding_away" }
+            }}
+          ],
+          "then": "done" }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

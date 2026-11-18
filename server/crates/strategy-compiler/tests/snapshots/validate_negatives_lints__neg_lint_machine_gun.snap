@@ -1,0 +1,6 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_lints.rs
+expression: rendered
+---
+warning[lint-machine-gun] at legs[0].body[0]: block `spray` places an order but nothing stops it re-firing on consecutive wakes
+  = help: add a `then` out of the leg, gate on an edge-fired, rearm-limited or cooled-down trigger, or flip a state slot the guard reads (an on table does not pace — it acts only at the order outcome)

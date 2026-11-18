@@ -1,0 +1,40 @@
+---
+source: crates/compiler/tests/parse_positives.rs
+expression: ast
+---
+Spanned {
+    node: Push {
+        slot: Spanned {
+            node: "big_trades",
+            span: Span {
+                start: 11,
+                end: 21,
+            },
+        },
+        value: Spanned {
+            node: Ref(
+                Ref {
+                    namespace: Event,
+                    path: [
+                        Spanned {
+                            node: "notional",
+                            span: Span {
+                                start: 30,
+                                end: 38,
+                            },
+                        },
+                    ],
+                    index: None,
+                },
+            ),
+            span: Span {
+                start: 24,
+                end: 38,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 38,
+    },
+}

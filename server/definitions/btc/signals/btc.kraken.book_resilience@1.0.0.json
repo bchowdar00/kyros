@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.book_resilience",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD book replenishment resilience",
+  "description": "A depletion event is a top-level displayed size on one side of the Kraken BTC/USD book dropping by at or above deplete_fraction between consecutive Kraken book updates. recovery_ms is the time until that side's top-level size first returns to at or above recover_fraction of the pre-depletion size. The signal emits the most recent completed recovery_ms and a state of recovering, recovered, or quiet. An unresolved recovery stays recovering with no fabricated recovery time; a second depletion during recovery abandons the first, unresolved measurement and tracks the new one, so recovery is always measured against the most recent liquidity withdrawal. depletion_side and pre_depletion_size expose the tracked baseline. deplete_fraction defaults to 0.5 and recover_fraction defaults to 0.75; each must lie strictly in (0, 1). A current top size of zero against a positive baseline is maximal depletion; a zero baseline starts no new depletion, while an in-progress recovery is still measured against its fixed pre-depletion size. Only a negative size is rejected. Every state-dependent field is always present, so a ready update never omits a declared field: recovery_ms_present is false with recovery_ms 0 until a recovery completes, because 0 ms is itself a legitimate recovery time and only the flag can carry presence; depletion_side is none with pre_depletion_size 0 whenever no depletion is tracked, and 0 is unambiguous there because a tracked pre-depletion size is always strictly positive. This identity is single-venue by construction: the measurement compares one venue's consecutive book updates against each other, so it reads only Kraken inputs and is ready whenever the Kraken book join is fresh, independently of the other adopted spot venue. No blended `btc.external.*` variant of this measurement is published: a cross-venue form would have to rule how two venues' independent depletions combine, and that ruling is deferred pending evidence (ADR 0023 amendment and ADR 0024, both 2026-09-02). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "kraken.spot.btc-usd.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["recovering", "recovered", "quiet"]
+    },
+    { "name": "recovery_ms_present", "type": "bool", "location": "internal" },
+    { "name": "recovery_ms", "type": "duration_ms", "location": "internal" },
+    {
+      "name": "depletion_side",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["bid", "ask", "none"]
+    },
+    { "name": "pre_depletion_size", "type": "decimal", "location": "internal" },
+    { "name": "deplete_fraction", "type": "decimal", "location": "internal" },
+    { "name": "recover_fraction", "type": "decimal", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "observation_time"
+}

@@ -1,0 +1,55 @@
+---
+source: crates/strategy-compiler/tests/lower_triggers.rs
+expression: lowered.triggers
+---
+[
+    (
+        "last_30s",
+        TriggerRow {
+            source: Timer(
+                WindowClock {
+                    instrument_id: "btc_usd.updown_2m.current",
+                    remaining_ms: 30000,
+                },
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "book_tick",
+        TriggerRow {
+            source: All(
+                [
+                    Bare {
+                        signal_id: "btc_usd.updown_2m.current.price.v1",
+                    },
+                ],
+            ),
+            fire: IfTrue,
+            rearm: Immediate,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "window_open",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "btc_usd.updown_2m.current.window.v1",
+                        field: "phase",
+                        comparator: Eq,
+                        value: Literal(
+                            "open",
+                        ),
+                    },
+                ],
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+]

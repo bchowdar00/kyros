@@ -1,0 +1,10 @@
+{
+  "title": "Distance from strike",
+  "description": "How far the live BTC price sits from this round's strike, as a signed gap in basis points. Positive means BTC is above the strike and Up is winning; negative means Down is.",
+  "fields": {
+    "delta_bps": {
+      "label": "Gap (bps)",
+      "description": "Spot minus strike, as a share of the strike, in basis points. One basis point is a hundredth of a percent, so 25 means BTC is 0.25% above the line."
+    }
+  }
+}

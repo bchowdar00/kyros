@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "source_id": "polymarket.btc.market-contracts",
+  "version": "1.0.0",
+  "name": "Polymarket BTC market contracts",
+  "description": "Normalized Polymarket Gamma discovery and archived rule bindings for one exact BTC 5m or 15m Up/Down slug. Active lookup uses closed=false and resolved lookup retries closed=true. A ready event requires one matching event start, exact end window, Up-then-Down token mapping, the verified Chainlink BTC/USD TWAP URL, and rules proving >= resolves Up and otherwise resolves Down; event_time is Gamma updatedAt.",
+  "status": "approved",
+  "transport": "http_poll",
+  "fields": [
+    { "name": "market_id", "type": "string", "location": "external" },
+    { "name": "condition_id", "type": "string", "location": "external" },
+    { "name": "question_id", "type": "string", "location": "external" },
+    { "name": "slug", "type": "string", "location": "external" },
+    { "name": "question", "type": "string", "location": "external" },
+    { "name": "up_token_id", "type": "string", "location": "internal" },
+    { "name": "down_token_id", "type": "string", "location": "internal" },
+    { "name": "window_open", "type": "timestamp", "location": "external" },
+    { "name": "window_close", "type": "timestamp", "location": "external" },
+    { "name": "resolution_source", "type": "string", "location": "external" },
+    {
+      "name": "comparator",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "greater_than",
+        "greater_than_or_equal",
+        "less_than",
+        "less_than_or_equal"
+      ]
+    },
+    {
+      "name": "tie_outcome",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["up", "down", "void"]
+    },
+    { "name": "minimum_tick_size", "type": "decimal", "location": "external" },
+    { "name": "minimum_order_size", "type": "decimal", "location": "external" },
+    { "name": "order_book_enabled", "type": "bool", "location": "external" },
+    { "name": "active", "type": "bool", "location": "external" },
+    { "name": "closed", "type": "bool", "location": "external" },
+    { "name": "rules_sha256", "type": "string", "location": "internal" },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

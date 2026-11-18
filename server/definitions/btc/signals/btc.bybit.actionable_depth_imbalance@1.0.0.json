@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.actionable_depth_imbalance",
+  "version": "1.0.0",
+  "name": "Bybit BTC/USDT near-touch depth imbalance",
+  "description": "For each fresh reconstructed Bybit level-two book, bid and ask base size are summed inside an inclusive five-basis-point band around that book's midpoint. The five-basis-point band is an initial research threshold that requires empirical calibration. The Bybit input is the full displayed level-two book this repository reconstructs locally. imbalance equals (bid depth minus ask depth) divided by total depth. Ready output requires a complete positive uncrossed Bybit book no more than 10 seconds old and positive observable depth on both sides. This identity is single-venue: it reads only Bybit inputs and is ready whenever the Bybit book is complete, uncrossed, and inside the staleness bound, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Bybit sibling of `btc.coinbase.actionable_depth_imbalance@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Bybit spot BTCUSDT; this identity publishes no price-level field, so its outputs (base sizes, basis points, imbalances, ratios, counts) are quote-currency neutral and nothing is converted. Bybit inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `bybit`, which the deployment sets only after that row clears. The Bybit book input is the `orderbook.200.BTCUSDT` stream (100 ms, snapshot plus delta, 200 levels per side). `update_kind` carries the venue's own snapshot/delta semantics, so the Coinbase snapshot and delta rules port unchanged. Event time is the venue `cts` when present (`event_time_basis` = `source`) and the local receipt time otherwise (`receipt`). Ordering is the per-topic `update_id`; a repeated or lower id is dropped, and a delta before a seeding snapshot awaits a fresh snapshot. The captured window is 200 levels per side, so the five-basis-point band is always inside the observed book and there is no band-truncation deviation. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: this identity publishes no price-denominated field — its outputs are base sizes, ratios, basis-point and count fields, all quote-currency neutral — so nothing is converted. E47 (USD quoting): this identity quotes in USD and publishes no price, notional or quote-denominated cost field — its outputs are base sizes, counts, basis-point ratios and durations, which are quote-currency neutral — so nothing is converted and no usdt_usd_rate is published. quote_currency is the constant \"usd\".",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.book-levels",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "band_bps",
+      "type": "u16",
+      "location": "internal"
+    },
+    {
+      "name": "imbalance",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "bid_depth_base",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "ask_depth_base",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "book_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

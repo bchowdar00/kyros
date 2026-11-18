@@ -1,0 +1,22 @@
+{
+  "title": "Oracle volatility",
+  "description": "How much the oracle price has been moving over the last minute, five minutes and hour. Higher volatility means a round is likelier to end far from its strike.",
+  "fields": {
+    "volatility_bps_1m": {
+      "label": "Volatility 1m",
+      "description": "The spread of returns over the last minute, in basis points. Bigger means the price is swinging more."
+    },
+    "volatility_bps_5m": {
+      "label": "Volatility 5m",
+      "description": "The spread of returns over the last five minutes, in basis points. The window most fifteen-minute rounds care about."
+    },
+    "volatility_bps_1h": {
+      "label": "Volatility 1h",
+      "description": "The spread of returns over the last hour, in basis points. The slow baseline the shorter reads are compared with."
+    },
+    "regime": {
+      "label": "Volatility regime",
+      "description": "Rising when the short window is hotter than the long one, falling when calmer, steady in between. Rising volatility widens the range of likely closes."
+    }
+  }
+}

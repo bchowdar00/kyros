@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.coinbase.vwap_deviation",
+  "version": "1.0.0",
+  "name": "Coinbase BTC/USD rolling VWAP deviation",
+  "description": "Coinbase BTC/USD trade price times base-size divided by base volume over causal 10- and 60-second receipt-time windows of (window close minus duration, window close]. Each deviation_bps is (midpoint minus VWAP) divided by VWAP times 10000, where midpoint is the fresh Coinbase displayed best-quote midpoint, so a positive value means the Coinbase quote is above its own rolling VWAP. Ready output requires 60 seconds of uninterrupted Coinbase observation measured from the first observed Coinbase trade data after startup or recovery, positive volume in both windows, and a Coinbase trade and quote no more than 10 seconds old. This identity is single-venue: it reads only Coinbase inputs and is ready whenever Coinbase trades are warmed and fresh and its quote is fresh, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.trades", "version": "1.0.0" },
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.ticker", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "vwap_10s", "type": "decimal", "location": "internal" },
+    { "name": "vwap_60s", "type": "decimal", "location": "internal" },
+    { "name": "midpoint", "type": "decimal", "location": "internal" },
+    { "name": "deviation_bps_10s", "type": "decimal", "location": "internal" },
+    { "name": "deviation_bps_60s", "type": "decimal", "location": "internal" },
+    { "name": "base_volume_60s", "type": "decimal", "location": "internal" },
+    { "name": "trade_count_60s", "type": "u32", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

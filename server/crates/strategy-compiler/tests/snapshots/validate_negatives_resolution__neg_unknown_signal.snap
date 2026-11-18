@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-signal] at triggers[0].condition.signal: trigger leaf names undeclared signal `prices`
+  = help: declared signals: price

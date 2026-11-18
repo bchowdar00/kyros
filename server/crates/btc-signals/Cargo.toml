@@ -1,0 +1,38 @@
+[package]
+name = "btc-signals"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+btc-feeds = { path = "../btc-feeds" }
+chrono.workspace = true
+clap.workspace = true
+futures-util.workspace = true
+getrandom.workspace = true
+rust_decimal.workspace = true
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+signals-core = { path = "../signals-core" }
+thiserror.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+jsonschema.workspace = true
+proptest.workspace = true
+
+# Lints carried over from the signals prototype workspace (not this
+# workspace's table, which is tuned for the exchange and compiler).
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"

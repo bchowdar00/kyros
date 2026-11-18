@@ -1,0 +1,251 @@
+{
+  "markets": [
+    {
+      "market_id": "btc_usd.perp",
+      "structure": "linear",
+      "quote": { "tick": "0.5" },
+      "metadata": { "base": "btc", "quote_ccy": "usd" }
+    }
+  ],
+  "series": [
+    {
+      "series_id": "btc_usd.updown_2m",
+      "structure": "outcome",
+      "cadence": "2m",
+      "outcomes": ["up", "down"],
+      "quote": { "tick": "0.01", "range": ["0.01", "0.99"] },
+      "metadata": { "base": "btc", "quote_ccy": "usd" }
+    },
+    {
+      "series_id": "nba.sim.h2h",
+      "structure": "outcome",
+      "cadence": "10m",
+      "outcomes": ["home", "away"],
+      "quote": { "tick": "0.01", "range": ["0.01", "0.99"] },
+      "capabilities": { "post_only": true, "gtd": false, "reduce_only": true },
+      "metadata": { "sport": "nba" }
+    }
+  ],
+  "signals": [
+    {
+      "signal_id": "binance.btc_usdt.ticks.v1",
+      "version": "1",
+      "location": "external",
+      "description": "Binance BTC-USDT spot trade ticks. Event-driven: publishes on each trade; last is the traded price.",
+      "fields": [
+        { "name": "last", "type": "decimal" }
+      ],
+      "metadata": { "venue": "binance", "pair": "btc_usdt", "_fixture_note": "Invented for the corpus; fields inferred from window-delta-momentum expressions." }
+    },
+    {
+      "signal_id": "chainlink.btc_usd.ptb.v1",
+      "version": "1",
+      "location": "external",
+      "description": "Chainlink BTC/USD price-to-beat: the oracle print each up/down window opens at and settles against. Publishes at window open.",
+      "fields": [
+        { "name": "price", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_2m", "_fixture_note": "Invented for the corpus; fields inferred from window-delta-momentum expressions." }
+    },
+    {
+      "signal_id": "platform.btc_usd.window_delta.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed (spot - window open) / open for the active btc_usd up/down window. Recomputed on each spot tick; resets at window rollover. Fraction, not percent: 0.0008 = 0.08%.",
+      "fields": [
+        { "name": "pct", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_2m", "_fixture_note": "Invented for the corpus; fields inferred from ta-ensemble expressions." }
+    },
+    {
+      "signal_id": "platform.btc_usd.rsi_1m.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed RSI over 1-minute bars of btc_usd spot, 0-100.",
+      "fields": [
+        { "name": "value", "type": "decimal" }
+      ],
+      "metadata": { "_fixture_note": "Invented for the corpus; fields inferred from ta-ensemble expressions." }
+    },
+    {
+      "signal_id": "platform.btc_usd.ema_cross_5_20.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed EMA(5) minus EMA(20) spread as a percentage of price, btc_usd spot. Percent, not fraction: 0.5 = 0.5%.",
+      "fields": [
+        { "name": "spread_pct", "type": "decimal" }
+      ],
+      "metadata": { "_fixture_note": "Invented for the corpus; fields inferred from ta-ensemble expressions." }
+    },
+    {
+      "signal_id": "platform.btc_usd.vwap_dev.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed deviation of btc_usd spot from session VWAP, as a percentage. Percent, not fraction: 0.5 = 0.5%.",
+      "fields": [
+        { "name": "deviation_pct", "type": "decimal" }
+      ],
+      "metadata": { "_fixture_note": "Invented for the corpus; fields inferred from ta-ensemble expressions." }
+    },
+    {
+      "signal_id": "platform.btc_usd.momentum_30s.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed 30-second normalized momentum of btc_usd spot.",
+      "fields": [
+        { "name": "value", "type": "decimal" }
+      ],
+      "metadata": { "_fixture_note": "Invented for the corpus; fields inferred from ta-ensemble expressions." }
+    },
+    {
+      "signal_id": "platform.btc_usd.volume_ratio_1m.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed btc_usd 1-minute volume divided by its trailing average. Dimensionless ratio: 2 = twice the trailing average.",
+      "fields": [
+        { "name": "ratio", "type": "decimal" }
+      ],
+      "metadata": { "_fixture_note": "Invented for the corpus; fields inferred from ta-ensemble expressions." }
+    },
+    {
+      "signal_id": "platform.btc_usd.acceleration.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed second derivative of btc_usd spot price, normalized.",
+      "fields": [
+        { "name": "value", "type": "decimal" }
+      ],
+      "metadata": { "_fixture_note": "Invented for the corpus; fields inferred from ta-ensemble expressions." }
+    },
+    {
+      "signal_id": "platform.btc_usd.realized_vol_5m.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed realized volatility of btc_usd spot over the trailing 5 minutes. Fraction of price, not percent, not annualized: 0.0012 = 0.12%.",
+      "fields": [
+        { "name": "value", "type": "decimal" }
+      ],
+      "metadata": { "_fixture_note": "Added for the vol-gate strategy; units stated per the ratio-field convention in registry-conventions.md." }
+    },
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Market state for the active btc_usd up/down window. Event-driven: publishes on book change. Per-outcome implied probabilities (up, down — mid-based complements). bid/ask/last quote the up side of the book. Resets at window rollover.",
+      "fields": [
+        { "name": "up", "type": "decimal" },
+        { "name": "down", "type": "decimal" },
+        { "name": "bid", "type": "decimal" },
+        { "name": "ask", "type": "decimal" },
+        { "name": "last", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_2m", "quotes_outcome": "up", "outcome_fields": { "up": "up", "down": "down" }, "_fixture_note": "Invented for the corpus during the price_band limit-ify sweep; the updown market had no price signal and the ruling's conversion requires one." }
+    },
+    {
+      "signal_id": "btc_usd.updown_2m.current.window.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Window lifecycle for the active btc_usd up/down window. Level, not edge: phase is the current lifecycle state, published on each phase change at the rollover boundaries; seq increments once per window and never repeats.",
+      "fields": [
+        { "name": "phase", "type": "enum", "variants": ["open", "closing", "settled"] },
+        { "name": "seq", "type": "u32" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_2m", "_fixture_note": "First-class rollover wake source; supersedes the chainlink ptb open-print workaround for window-exit routing." }
+    },
+    {
+      "signal_id": "nba.sim.h2h.current.price.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Moneyline market state for the active nba.sim.h2h game. Event-driven: publishes on book change. Per-outcome implied win probabilities (home, away — mid-based; on a binary market they are complements). bid/ask/last quote the home side of the book. Resets at game rollover.",
+      "fields": [
+        { "name": "home", "type": "decimal" },
+        { "name": "away", "type": "decimal" },
+        { "name": "bid", "type": "decimal" },
+        { "name": "ask", "type": "decimal" },
+        { "name": "last", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "nba.sim.h2h", "quotes_outcome": "home", "outcome_fields": { "home": "home", "away": "away" } }
+    },
+    {
+      "signal_id": "nba.sim.h2h.current.book_ticks.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Every book tick for the active nba.sim.h2h game, as home-side bid and ask. Publishes on every change, many times a second.",
+      "fields": [
+        { "name": "bid", "type": "decimal" },
+        { "name": "ask", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "nba.sim.h2h", "quotes_outcome": "home", "approximate_interval_ms": 50, "_fixture_note": "Added for the requote-rate lint negatives: the one corpus signal that declares a sub-second interval." }
+    },
+    {
+      "signal_id": "pinnacle.nba.sim.h2h.current.fair.v1",
+      "version": "1",
+      "location": "external",
+      "description": "Pinnacle-derived fair win probabilities for the active nba.sim.h2h game, de-vigged. Event-driven: publishes on line move. Per-outcome fields (home, away). Resets at game rollover.",
+      "fields": [
+        { "name": "home", "type": "decimal" },
+        { "name": "away", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "nba.sim.h2h", "outcome_fields": { "home": "home", "away": "away" }, "_fixture_note": "Invented for the corpus; fields inferred from sharp-line-fade expressions." }
+    },
+    {
+      "signal_id": "platform.nba.sim.h2h.current.sharp_spread.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed sharp spread for the active nba.sim.h2h game: home is Pinnacle fair home minus exchange price home (positive = exchange cheap relative to Pinnacle); away is the mirror. Publishes whenever either input publishes. Resets at game rollover.",
+      "fields": [
+        { "name": "home", "type": "decimal" },
+        { "name": "away", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "nba.sim.h2h", "inputs": ["pinnacle.nba.sim.h2h.current.fair.v1", "nba.sim.h2h.current.price.v1"], "_fixture_note": "Cross-signal conditions become platform-computed signals, never IR extensions." }
+    },
+    {
+      "signal_id": "nba.sim.h2h.current.bets.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "The bet tape of the active nba.sim.h2h game. Event-driven: publishes once per fill. bettor is the aggressing account's address; team is the side bought; stake is the filled quantity in tokens.",
+      "fields": [
+        { "name": "bettor", "type": "string" },
+        { "name": "team", "type": "enum", "variants": ["home", "away"] },
+        { "name": "stake", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "nba.sim.h2h", "_fixture_note": "Added for the v0.3 string-field and param negatives." }
+    },
+    {
+      "signal_id": "nba.sim.h2h.current.pbp.v1",
+      "version": "1",
+      "normalization_version": "1",
+      "feed": "sim.nba.h2h.pbp",
+      "feed_version": "v1",
+      "location": "external",
+      "description": "Normalized play-by-play for the active nba.sim.h2h game. Event-driven. Every event carries the full game context (score, quarter, clock), so current game state is readable as a snapshot of this signal's fields. Resets at game rollover.",
+      "fields": [
+        { "name": "action", "type": "enum", "variants": ["two_pointer", "three_pointer", "free_throw", "rebound", "turnover", "foul", "timeout", "substitution"] },
+        { "name": "result", "type": "enum", "variants": ["made", "missed", "none"] },
+        { "name": "team", "type": "enum", "variants": ["home", "away"] },
+        { "name": "player", "type": "u32" },
+        { "name": "quarter", "type": "u8" },
+        { "name": "clock_remaining", "type": "duration_ms" },
+        { "name": "home_score", "type": "u32" },
+        { "name": "away_score", "type": "u32" },
+        { "name": "home_score_before", "type": "u32" },
+        { "name": "away_score_before", "type": "u32" }
+      ],
+      "metadata": { "series_id": "nba.sim.h2h", "_fixture_note": "Series-scoped: no per-game roster metadata; team-shaped enums use the series outcome labels verbatim per registry-conventions.md." }
+    },
+    {
+      "signal_id": "nba.sim.h2h.current.game_state.v1",
+      "version": "1",
+      "normalization_version": "1",
+      "feed": "sim.nba.h2h.pbp",
+      "feed_version": "v1",
+      "location": "external",
+      "description": "Game phase for the active nba.sim.h2h game. Level, not edge: phase is the current state of play, published on phase change; quarter carries the current (or just-completed) quarter. Resets at game rollover.",
+      "fields": [
+        { "name": "phase", "type": "enum", "variants": ["pregame", "live", "break", "halftime", "final"] },
+        { "name": "quarter", "type": "u8" }
+      ],
+      "metadata": { "series_id": "nba.sim.h2h", "_fixture_note": "Phase is a level for condition leaves to compare against; pbp actions remain the event stream." }
+    }
+  ]
+}

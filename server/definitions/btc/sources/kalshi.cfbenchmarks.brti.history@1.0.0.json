@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.cfbenchmarks.brti.history",
+  "version": "1.0.0",
+  "name": "Kalshi CF Benchmarks REST passthrough BRTI history",
+  "description": "Kalshi's CF Benchmarks REST passthrough, which forwards /trade-api/v2/cfbenchmarks/* to the CF Benchmarks API. Two operations are used: GET /cfbenchmarks/values?id=BRTI for the current value and GET /cfbenchmarks/history/values?id=BRTI&timespan=HOUR&timestamp=<unix> for tick-level history. It is the only documented repair path for a WebSocket gap on the cfbenchmarks_value channels, which are real-time only, and it is the only way to reach intra-second granularity historically. Requests are signed with standard Kalshi API key signing over the path WITHOUT the query string, using KALSHI-ACCESS-KEY, KALSHI-ACCESS-SIGNATURE and a millisecond KALSHI-ACCESS-TIMESTAMP over a signing helper that does not yet exist in the crate and is new work in this wave; the key material is the same as the market socket, read from the environment, zeroized, never in argv, notices, captures or logs. Each request costs fifty tokens from the Read bucket against a default of ten, so at the Basic tier's two hundred tokens per second roughly four requests per second is the ceiling; this adapter budgets far below that to leave the read bucket for market discovery. Responses wrap the CF Benchmarks payload in a Kalshi envelope keyed data; the observed row shape is {time, value} with up to 3600 rows on timespan=HOUR, and the body is read under a bounded reader. Upstream failures map to 404, 429, 503 and 400; a response that does not cover the entire requested repair interval is a repair failure and is never partially applied. This is a repair-only path: it emits no SourceEvent, is not a stream-visible source, and is not counted in the adopted stream closure. Rows are handed to the adapter's backfill entry point in strictly increasing event_time order, subject to the same (index_id, event_time) identity rules as the live channels: a row that conflicts with an already accepted live value is a state inconsistency, never an overwrite. The fields below are the repair-row contract, not published values. Rights-gated exactly as kalshi.cfbenchmarks.brti.value. The request signing, envelope and row shape are documented-not-observed: they are confirmed against a live probe response on the Tokyo host in wave A (PIPELINE gate 4) and this definition is corrected to what was observed before the repair path is enabled.",
+  "status": "approved",
+  "transport": "http_poll",
+  "fields": [
+    {
+      "name": "index_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "index_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "retrieved_at",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "request_timespan",
+      "type": "string",
+      "location": "internal"
+    },
+    {
+      "name": "request_timestamp",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "event_time"
+}

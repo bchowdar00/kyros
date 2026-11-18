@@ -1,0 +1,8 @@
+---
+source: crates/strategy-compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[bare-identifier]: `high_water` is not a reference — bare identifiers do not exist
+  high_water
+  ^^^^^^^^^^
+  = help: references must start with a namespace: event., signal., state., platform., legs., expr., table., entry., envelope., or param.

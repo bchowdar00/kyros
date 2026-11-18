@@ -1,0 +1,14 @@
+{
+  "title": "Repricing lag",
+  "description": "How long this venue takes to react to a sharp BTC move. After a move the venue is watched for its first reprice, and the delay is the lag.",
+  "fields": {
+    "state": {
+      "label": "Lag state",
+      "description": "Current when the venue has caught up with spot, lagging while it has not. A lagging venue is briefly mispriced."
+    },
+    "repricing_lag_ms": {
+      "label": "Repricing lag",
+      "description": "How long the venue took to reprice after the last sharp spot move. Longer means a wider window to trade the stale price."
+    }
+  }
+}

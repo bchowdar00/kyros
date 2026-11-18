@@ -1,0 +1,9 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[interval-too-fast] at triggers[0].timer.every: interval `spin` fires every 10ms — the floor is 250ms
+  = help: slow the interval down, or wake on the signal you are polling
+
+warning[interval-never-rearms] at triggers[1].rearm: interval `once` has rearm: never — it fires once and is then spent
+  = help: use rearm: immediate for a repeating timer, or an `after` timer for a one-shot

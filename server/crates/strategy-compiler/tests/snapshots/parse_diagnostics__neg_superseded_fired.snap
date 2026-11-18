@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[superseded-fired]: `fired()` was removed in v0.2 — cause dispatch is `triggered(NAME)`
+  fired(signal.missed_threes)
+  ^^^^^
+  = help: write triggered(<trigger name>) with the bare name of a trigger declared in the triggers section

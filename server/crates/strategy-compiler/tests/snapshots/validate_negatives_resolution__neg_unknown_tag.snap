@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-tag] at legs[0].body[0].do[1].cancel.tag: cancel targets tag `nada` but no place intent declares it
+  = help: declared tags: entry

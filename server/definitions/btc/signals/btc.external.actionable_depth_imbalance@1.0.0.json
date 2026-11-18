@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.actionable_depth_imbalance",
+  "version": "1.0.0",
+  "name": "BTC near-touch depth imbalance",
+  "description": "For each fresh locally reconstructed level-two book, bid and ask base size are summed inside an inclusive five-basis-point band around that venue's midpoint. The five-basis-point band is an initial research threshold that requires empirical calibration. The Kraken input is pinned to its top-100-level subscription, so its depth values measure the observable part of that local book rather than undisclosed deeper venue liquidity. Per-venue and combined imbalance equal (bid depth minus ask depth) divided by total depth. Combined depth sums both USD books because all sizes use BTC base units. Ready output requires complete positive uncrossed books from both venues no more than 10 seconds old and positive observable depth on both sides. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.book-levels", "version": "1.0.0" },
+    { "kind": "source", "id": "kraken.spot.btc-usd.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "band_bps", "type": "u16", "location": "internal" },
+    { "name": "coinbase_imbalance", "type": "decimal", "location": "internal" },
+    { "name": "kraken_imbalance", "type": "decimal", "location": "internal" },
+    { "name": "combined_imbalance", "type": "decimal", "location": "internal" },
+    { "name": "bid_depth_base", "type": "decimal", "location": "internal" },
+    { "name": "ask_depth_base", "type": "decimal", "location": "internal" },
+    { "name": "max_book_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

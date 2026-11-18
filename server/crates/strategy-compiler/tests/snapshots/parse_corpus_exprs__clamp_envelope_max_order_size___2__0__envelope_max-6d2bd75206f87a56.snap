@@ -1,0 +1,92 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Call {
+        builtin: Clamp,
+        name_span: Span {
+            start: 0,
+            end: 5,
+        },
+        args: [
+            Spanned {
+                node: Arith {
+                    op: Div,
+                    lhs: Spanned {
+                        node: Ref(
+                            Ref {
+                                namespace: Envelope,
+                                path: [
+                                    Spanned {
+                                        node: "max_order_size",
+                                        span: Span {
+                                            start: 15,
+                                            end: 29,
+                                        },
+                                    },
+                                ],
+                                index: None,
+                            },
+                        ),
+                        span: Span {
+                            start: 6,
+                            end: 29,
+                        },
+                    },
+                    rhs: Spanned {
+                        node: Literal(
+                            Decimal(
+                                "2",
+                            ),
+                        ),
+                        span: Span {
+                            start: 32,
+                            end: 33,
+                        },
+                    },
+                },
+                span: Span {
+                    start: 6,
+                    end: 33,
+                },
+            },
+            Spanned {
+                node: Literal(
+                    Decimal(
+                        "0",
+                    ),
+                ),
+                span: Span {
+                    start: 35,
+                    end: 36,
+                },
+            },
+            Spanned {
+                node: Ref(
+                    Ref {
+                        namespace: Envelope,
+                        path: [
+                            Spanned {
+                                node: "max_order_size",
+                                span: Span {
+                                    start: 47,
+                                    end: 61,
+                                },
+                            },
+                        ],
+                        index: None,
+                    },
+                ),
+                span: Span {
+                    start: 38,
+                    end: 61,
+                },
+            },
+        ],
+    },
+    span: Span {
+        start: 0,
+        end: 62,
+    },
+}

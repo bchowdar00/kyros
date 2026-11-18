@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.order_flow_imbalance",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD level-two order-flow imbalance",
+  "description": "Standard best-quote event order-flow imbalance over completed atomic Kraken level-two delta groups. Bid contribution adds current size when bid price is unchanged or improves and subtracts prior size when unchanged or worsens; ask contribution subtracts current size when ask price is unchanged or improves and adds prior size when unchanged or worsens. Positive output represents net bid-side pressure and negative output net ask-side pressure, in BTC base units, over causal 1-, 10-, and 60-second receipt-time windows of (window close minus duration, window close]. Snapshots establish baselines and contribute no flow. Ready output requires 60 seconds of uninterrupted Kraken observation measured from a complete snapshot after startup or recovery, and Kraken demonstrably alive. An eventless book window on a live Kraken connection \u2014 any admitted Kraken input event within staleness_bound_ms \u2014 publishes truthful zero imbalance; no admitted Kraken input within that bound keeps degrading as book_snapshot_stale_or_missing, and a crossed, invalid, or unsnapshotted Kraken book still degrades. This identity is single-venue: it reads only Kraken inputs and is ready whenever Kraken is warmed and alive and its book is valid, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "kraken.spot.btc-usd.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "ofi_base_1s", "type": "decimal", "location": "internal" },
+    { "name": "ofi_base_10s", "type": "decimal", "location": "internal" },
+    { "name": "ofi_base_60s", "type": "decimal", "location": "internal" },
+    { "name": "event_count_60s", "type": "u32", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

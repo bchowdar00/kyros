@@ -1,0 +1,163 @@
+---
+source: crates/strategy-compiler/tests/round_trip.rs
+expression: first_emission
+---
+{
+  "meta": {
+    "name": "Curve Discount",
+    "description": "On the 2-minute BTC up/down market, trade only the last 30 seconds. A hand-fitted fair-value curve maps the absolute move from window open to the leading side's worth: 0.02% moved is about 55 cents, 0.05% about 65, 0.10% about 80, 0.15% or more about 92. During the last 30 seconds, whenever the leading side trades at least 5 cents below the curve, buy it — once per window. At window rollover, reset and wait for the next window's endgame.",
+    "dsl_version": "0.3"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_2m.current"
+  },
+  "signals": {
+    "book": "btc_usd.updown_2m.current.price.v1",
+    "delta": "platform.btc_usd.window_delta.v1",
+    "window": "btc_usd.updown_2m.current.window.v1"
+  },
+  "state": [],
+  "expressions": {
+    "named": {
+      "fair": "lookup(table.fair_curve, abs(signal.delta.pct))"
+    },
+    "tables": {
+      "fair_curve": {
+        "keys": [
+          "0.0002",
+          "0.0005",
+          "0.001",
+          "0.0015"
+        ],
+        "values": [
+          "0.55",
+          "0.65",
+          "0.8",
+          "0.92"
+        ],
+        "interpolation": "linear"
+      }
+    }
+  },
+  "triggers": [
+    {
+      "name": "last_30s",
+      "timer": {
+        "kind": "window_clock",
+        "instrument": "market",
+        "remaining": "30s"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "name": "book_tick",
+      "condition": {
+        "signal": "book"
+      },
+      "fire": "if_true",
+      "rearm": {
+        "mode": "immediate"
+      }
+    },
+    {
+      "name": "window_open",
+      "condition": {
+        "signal": "window",
+        "field": "phase",
+        "comparator": "==",
+        "value": "open"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "legs": [
+    {
+      "name": "waiting",
+      "resident": true,
+      "arm": [
+        "last_30s"
+      ],
+      "body": [
+        {
+          "name": "enter_endgame",
+          "do": [],
+          "then": "endgame"
+        }
+      ]
+    },
+    {
+      "name": "endgame",
+      "resident": true,
+      "arm": [
+        "book_tick",
+        "window_open"
+      ],
+      "body": [
+        {
+          "name": "rollover_reset",
+          "if": "triggered(window_open)",
+          "do": [],
+          "then": "waiting"
+        },
+        {
+          "name": "buy_up",
+          "if": "signal.delta.pct > 0.0002 and expr.fair - signal.book.up >= 0.05",
+          "do": [
+            {
+              "place": {
+                "instrument": "market",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "value_buy"
+              }
+            }
+          ],
+          "then": "filled"
+        },
+        {
+          "name": "buy_down",
+          "if": "signal.delta.pct < -0.0002 and expr.fair - signal.book.down >= 0.05",
+          "do": [
+            {
+              "place": {
+                "instrument": "market",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "value_buy"
+              }
+            }
+          ],
+          "then": "filled"
+        }
+      ]
+    },
+    {
+      "name": "filled",
+      "resident": true,
+      "arm": [
+        "window_open"
+      ],
+      "body": [
+        {
+          "name": "rollover_reset",
+          "do": [],
+          "then": "waiting"
+        }
+      ]
+    }
+  ]
+}

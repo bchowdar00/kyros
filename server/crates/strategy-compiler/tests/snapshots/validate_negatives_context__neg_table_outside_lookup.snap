@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[table-outside-lookup] at legs[0].body[0].if: a table is not a value — tables are consumed only via lookup(table.NAME, key)
+  lookup(table.curve, signal.price.home) > table.curve
+                                           ^^^^^^^^^^^
+  = help: wrap the reference: lookup(table.NAME, <key expression>)

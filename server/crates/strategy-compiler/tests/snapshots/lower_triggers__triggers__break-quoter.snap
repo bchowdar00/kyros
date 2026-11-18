@@ -1,0 +1,74 @@
+---
+source: crates/strategy-compiler/tests/lower_triggers.rs
+expression: lowered.triggers
+---
+[
+    (
+        "break_started",
+        TriggerRow {
+            source: Any(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.game_state.v1",
+                        field: "phase",
+                        comparator: Eq,
+                        value: Literal(
+                            "break",
+                        ),
+                    },
+                    Field {
+                        signal_id: "nba.sim.h2h.current.game_state.v1",
+                        field: "phase",
+                        comparator: Eq,
+                        value: Literal(
+                            "halftime",
+                        ),
+                    },
+                ],
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "play_resumed",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.game_state.v1",
+                        field: "phase",
+                        comparator: Eq,
+                        value: Literal(
+                            "live",
+                        ),
+                    },
+                ],
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "game_over",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.game_state.v1",
+                        field: "phase",
+                        comparator: Eq,
+                        value: Literal(
+                            "final",
+                        ),
+                    },
+                ],
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+]

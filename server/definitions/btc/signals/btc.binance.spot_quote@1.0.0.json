@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.spot_quote",
+  "version": "1.0.0",
+  "name": "Binance BTC/USDT displayed best quote",
+  "description": "The displayed best bid and ask from the Binance BTC/USDT book-ticker input, with the exact-decimal midpoint (bid plus ask divided by two) and spread_bps as (ask minus bid) divided by midpoint times 10000. input_age_ms is the admission time minus the quote's logical receipt time. Ready output requires a positive uncrossed quote received no more than 10000 milliseconds before production. Readiness guards evaluate full internal decimal precision before rounding. This identity is single-venue: it reads only Binance inputs and is ready whenever the Binance quote is positive, uncrossed, and inside the staleness bound, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Binance sibling of `btc.coinbase.spot_quote@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Binance spot BTCUSDT; at decision time every price-level field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio fields (basis points, imbalances, ratios, counts) are quote-currency neutral. Binance inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `binance`, which the deployment sets only after that row clears. The Binance quote input is the `btcusdt@bookTicker` stream, a scalar best-bid and best-ask row republished on every best-quote change, shaped like the Coinbase ticker rather than a level-two book. It carries no venue clock, so `event_time_basis` is `receipt` and `event_time` is the local receipt time. Ordering is the strictly increasing `order_book_update_id`; a duplicate or lower id is dropped, and a crossed quote is flagged by the venue-local invalidity path and never silently repaired. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: every price-denominated field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio, basis-point, base-size and count fields are quote-currency neutral. Wire contract status (E45b): this identity reads only binance.spot.btcusdt.book-ticker, whose live payload was absent from the wave-A capture; its contract, documented ahead of observation, is now observed and confirmed against a fresh gated Binance spot capture (binance-spot-r2-20260903T235740Z, 2026-09-03, 454344 `btcusdt@bookTicker` frames carrying the u/s/b/B/a/A best-quote fields and no engine timestamp). E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (bid, ask, midpoint) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.spot.btcusdt.book-ticker",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "bid",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "ask",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "midpoint",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "spread_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "input_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

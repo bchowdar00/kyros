@@ -1,0 +1,10 @@
+/*
+ * The font files load through next/font/local in the app (preload, metric-matched fallback,
+ * served from the app origin). The app sets --font-roobert and --font-roobert-mono on <html>;
+ * these stacks fall back to system fonts wherever the app has not.
+ */
+:root {
+  --font-sans: var(--font-roobert, "Tiny Roobert"), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    var(--font-roobert-mono, "Tiny Roobert Mono"), ui-monospace, "SFMono-Regular", monospace;
+}

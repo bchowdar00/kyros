@@ -1,0 +1,10 @@
+{
+  "title": "Moneyness",
+  "description": "How far BTC is from this venue's strike, in units of the move that volatility says is plausible in the time left. Near zero is a coin flip; beyond two is nearly decided.",
+  "fields": {
+    "moneyness": {
+      "label": "Moneyness",
+      "description": "Distance from the strike divided by the expected move before close. Positive means above the strike and Up is favoured."
+    }
+  }
+}

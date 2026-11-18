@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.roc",
+  "version": "1.0.0",
+  "name": "Polymarket BTC affirmative-probability rate of change",
+  "description": "Rate of change of the affirmative midpoint of the affirmative (up) outcome token of the bound market over three trailing horizons - ten seconds, one minute and five minutes - read off the one-second midpoint ring. Two conventions are published for every horizon because a prediction midpoint is a probability, not a price: roc_points_* is the change in probability points (the difference of the two midpoints times one hundred), which is the additive quantity a trader reasons in, and roc_percent_* is the classic ROC convention, the change as a percent of the prior value. probability_points is the current midpoint in the same points unit. Each horizon requires the one-second sample at exactly that offset to have been observed: there is no gap bridging, so a horizon whose sample is missing is reported absent through its *_present flag with its two values left at zero rather than measured over a silently longer span. Readiness needs the ten-second horizon only, so the identity publishes early in a window and the longer horizons join as they fill; while the ten-second sample is missing the instance-status reason is market_contract_warming_up. A prior midpoint of zero has no percent change and reports that horizon absent. This identity is the fast-horizon companion to the C2 horizon-momentum family, which stays the canonical one, five and fifteen minute return. The identity is market-scoped: it fails closed while the venue is unbound, the market contract is still warming, or the affirmative quote is missing, stale or crossed, and it publishes no value rather than a stale one. Its rolling history is per generation and is cleared at the market roll, so a reading never mixes two contracts (ruling E51, spec C3 \u00a72). The history is rolling market-relative state and is deliberately not checkpointed: it re-warms after a restart. All arithmetic is exact decimal and causal - every published number is a fold over admitted events at or before the decision instant. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.prediction_quote",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "probability_points",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_10s_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "roc_points_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_percent_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_1m_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "roc_points_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_percent_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_5m_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "roc_points_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_percent_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

@@ -1,0 +1,227 @@
+{
+  "id": "fair-value-discount",
+  "title": "Fair Price Finder",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-01.jpg" },
+  "series": ["btc-2m", "btc-15m"],
+  "logic": "Works out what each side is really worth from where BTC sits against the strike and how much time is left. When either side is selling at least three cents under that, it buys it. Sells once the price catches up, then hunts for the next bargain. Stops buying near the close.",
+  "inverse_logic": "Watches which way the fair odds are moving, not where they sit. When the odds of Up rise two cents and the book has not followed, it buys Up; when they fall, it buys Down. If the odds turn against it, it closes and switches sides.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "2", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-2m": { "sigma": "0.00009", "edge": "0.03", "step": "0.02", "cutoff": "10000", "requote": "1s", "entry_cooldown": "3s" },
+    "btc-15m": { "sigma": "0.00009", "edge": "0.03", "step": "0.02", "cutoff": "45000", "requote": "2s", "entry_cooldown": "1s" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Buy the Bargain",
+      "description": "Fair for Up is a digital-call model over the round's delta from strike and the time left. When either side's ask is at least the edge under its fair value, take it with an immediate-or-cancel limit at the ask; when the book's bid on that side reaches fair, sell out with an immediate-or-cancel and return to hunting. No new entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "delta": "{{series}}.current.delta.v1",
+      "window": "{{series}}.current.window.v1"
+    },
+    "state": [],
+    "expressions": {
+      "named": {
+        "fair": "norm_cdf(signal.delta.delta_bps / (10000 * {{sigma}} * sqrt(signal.window.remaining / 1000)))"
+      }
+    },
+    "triggers": [
+      { "name": "up_cheap",
+        "condition": { "expr": "norm_cdf(signal.delta.delta_bps / (10000 * {{sigma}} * sqrt(signal.window.remaining / 1000))) - signal.book.ask", "comparator": ">=", "value": "{{edge}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "{{entry_cooldown}}" } },
+      { "name": "down_cheap",
+        "condition": { "expr": "signal.book.bid - norm_cdf(signal.delta.delta_bps / (10000 * {{sigma}} * sqrt(signal.window.remaining / 1000)))", "comparator": ">=", "value": "{{edge}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "{{entry_cooldown}}" } },
+      { "name": "up_at_fair",
+        "condition": { "expr": "signal.book.bid - norm_cdf(signal.delta.delta_bps / (10000 * {{sigma}} * sqrt(signal.window.remaining / 1000)))", "comparator": ">=", "value": "0" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "down_at_fair",
+        "condition": { "expr": "norm_cdf(signal.delta.delta_bps / (10000 * {{sigma}} * sqrt(signal.window.remaining / 1000))) - signal.book.ask", "comparator": ">=", "value": "0" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["up_cheap", "down_cheap"],
+        "body": [
+          { "name": "buy_up",
+            "if": "triggered(up_cheap) and platform.window.remaining_ms > {{cutoff}} and abs(platform.position.size) < 1 and signal.book.ask < 0.95",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_up" },
+          { "name": "buy_down",
+            "if": "triggered(down_cheap) and platform.window.remaining_ms > {{cutoff}} and abs(platform.position.size) < 1 and 1 - signal.book.bid < 0.95",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_down" }
+        ] },
+      { "name": "holding_up", "resident": true, "arm": ["up_at_fair"],
+        "body": [
+          { "name": "sell_up",
+            "if": "triggered(up_at_fair) and platform.position.size >= 1",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(platform.position.size, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "hunting", "partial": "holding_up", "reject": "holding_up", "cancel_ack": "holding_up", "expiry": "holding_up" }
+              } }
+            ],
+            "then": "hunting" }
+        ] },
+      { "name": "holding_down", "resident": true, "arm": ["down_at_fair"],
+        "body": [
+          { "name": "sell_down",
+            "if": "triggered(down_at_fair) and platform.position.size <= -1",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "hunting", "partial": "holding_down", "reject": "holding_down", "cancel_ack": "holding_down", "expiry": "holding_down" }
+              } }
+            ],
+            "then": "hunting" }
+        ] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Ride the Odds",
+      "description": "Fair for Up is the same digital-call model over the round's delta from strike and the time left. Every check, compare fair to the previous check: when it has risen by the step and the book's ask on Up is still at or under fair, take Up; when it has fallen by the step and the Down ask is at or under Down's fair, take Down. While holding, a move of the step the other way flips the position: close it and take the same dollars on the opposite side. Held to settlement otherwise.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "delta": "{{series}}.current.delta.v1",
+      "window": "{{series}}.current.window.v1"
+    },
+    "state": [
+      { "name": "prev_fair", "kind": "scalar", "value_type": "decimal" }
+    ],
+    "expressions": {
+      "named": {
+        "fair": "norm_cdf(signal.delta.delta_bps / (10000 * {{sigma}} * sqrt(signal.window.remaining / 1000)))"
+      }
+    },
+    "triggers": [
+      { "name": "tick",
+        "condition": { "signal": "delta" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "{{requote}}" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["tick"],
+        "body": [
+          { "name": "ride_up",
+            "if": "triggered(tick) and state.prev_fair > 0 and expr.fair - state.prev_fair >= {{step}} and signal.book.ask <= expr.fair and platform.window.remaining_ms > {{cutoff}}",
+            "do": [
+              "set state.prev_fair = expr.fair",
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_up" },
+          { "name": "ride_down",
+            "if": "triggered(tick) and state.prev_fair > 0 and state.prev_fair - expr.fair >= {{step}} and 1 - signal.book.bid <= 1 - expr.fair and platform.window.remaining_ms > {{cutoff}}",
+            "do": [
+              "set state.prev_fair = expr.fair",
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_down" },
+          { "name": "remember",
+            "if": "triggered(tick)",
+            "do": [ "set state.prev_fair = expr.fair" ] }
+        ] },
+      { "name": "holding_up", "resident": true, "arm": ["tick"],
+        "body": [
+          { "name": "flip_down",
+            "if": "triggered(tick) and state.prev_fair - expr.fair >= {{step}} and 1 - signal.book.bid < 0.95",
+            "do": [
+              "set state.prev_fair = expr.fair",
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(platform.position.size, 0) + envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "holding_up", "cancel_ack": "holding_up", "expiry": "holding_up" }
+              } }
+            ],
+            "then": "holding_down" },
+          { "name": "remember",
+            "if": "triggered(tick)",
+            "do": [ "set state.prev_fair = expr.fair" ] }
+        ] },
+      { "name": "holding_down", "resident": true, "arm": ["tick"],
+        "body": [
+          { "name": "flip_up",
+            "if": "triggered(tick) and expr.fair - state.prev_fair >= {{step}} and signal.book.ask < 0.95",
+            "do": [
+              "set state.prev_fair = expr.fair",
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(0 - platform.position.size, 0) + envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "holding_down", "cancel_ack": "holding_down", "expiry": "holding_down" }
+              } }
+            ],
+            "then": "holding_up" },
+          { "name": "remember",
+            "if": "triggered(tick)",
+            "do": [ "set state.prev_fair = expr.fair" ] }
+        ] }
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "source_id": "binance.usdm.btcusdt.premium-index",
+  "version": "1.0.0",
+  "name": "Binance USD-M BTCUSDT perpetual premium index (REST mark/index/funding state)",
+  "description": "Normalized responses from the Binance USD-M REST endpoint GET /fapi/v1/premiumIndex?symbol=BTCUSDT on https://fapi.binance.com, polled once per second (E50). Each poll carries the same perpetual mark price, index price, estimated settle price, funding rate and next funding time the `btcusdt@markPrice@1s` socket carries, but over the REST plane, which the Tokyo box CAN reach - the socket `market` connection cannot (ruling E30). This source exists so the mark-fed derivatives identities (`btc.binance.{funding_state,mark_index_basis_state,open_interest_delta}`) are reachable from Tokyo: the derivatives processor takes its mark state from EITHER the socket `mark-price` event or this premium-index row (same internal mark state), and the socket path stays for a host that can dial `market`. The body carries no venue sequence number: `event_time` (the body `time` field, milliseconds) is the ordering cursor and the poll cadence is the liveness carrier. `estimated_settle_price` is reported as zero outside a settlement window. `last_funding_rate` and `interest_rate` are signed fractions preserved as the venue's decimal text; `last_funding_rate` is the funding-rate input the mark state reads (equivalent to the socket's `funding_rate`). Refusal-gated: Binance redistribution requires written consent (see RIGHTS-LEDGER.md). Documented-not-observed: the wire contract below rests on the venue's `premiumIndex` documentation plus the observed `markPrice` field spellings; it is flipped to observed-with-evidence after the first Tokyo REST capture. `perp_cvd` and `liquidation_pressure` stay unavailable from Tokyo (they read the socket-only `aggTrade` and `forceOrder` families, which have no REST equivalent at trade granularity).",
+  "status": "approved",
+  "transport": "http_poll",
+  "expected_heartbeat_ms": 1000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "mark_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "index_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "estimated_settle_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "last_funding_rate",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "interest_rate",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "next_funding_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time"
+}

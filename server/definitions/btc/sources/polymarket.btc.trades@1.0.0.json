@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "source_id": "polymarket.btc.trades",
+  "version": "1.0.0",
+  "name": "Polymarket BTC trades",
+  "description": "Normalized Polymarket last_trade_price messages for verified BTC outcome tokens. reported_side preserves the provider BUY or SELL value without assigning a stronger maker-or-taker interpretation, and event_time is the provider Unix-millisecond timestamp rendered as RFC 3339.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    { "name": "condition_id", "type": "string", "location": "external" },
+    { "name": "asset_id", "type": "string", "location": "external" },
+    {
+      "name": "outcome",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["up", "down"]
+    },
+    { "name": "price", "type": "decimal", "location": "external" },
+    { "name": "size", "type": "decimal", "location": "external" },
+    { "name": "fee_rate_bps", "type": "decimal", "location": "external" },
+    {
+      "name": "reported_side",
+      "type": "enum",
+      "location": "external",
+      "variants": ["buy", "sell"]
+    },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

@@ -1,0 +1,206 @@
+---
+source: crates/strategy-compiler/tests/emit_program.rs
+expression: program
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_98bbe0477099",
+  "source_hash": "98bbe0477099f01449925628e8548a9b976dadaaed5682c632daf8e0785e677f",
+  "name": "Late Momentum",
+  "description": "On the 2-minute BTC up/down market: at 10 seconds before window close, check how far spot has moved from the window open. If it is up more than 0.08% (0.0008 as a fraction, the window_delta signal's units), buy up; if it is down more than 0.08%, buy down. Runs every window.",
+  "dsl_version": "0.3",
+  "signals": {
+    "delta": "platform.btc_usd.window_delta.v1"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_2m.current"
+  },
+  "subscriptions": [
+    "platform.btc_usd.window_delta.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [],
+  "params": [],
+  "triggers": [
+    {
+      "name": "last_10s",
+      "source": {
+        "kind": "window_clock",
+        "instrument_id": "btc_usd.updown_2m.current",
+        "remaining_ms": 10000
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    }
+  ],
+  "legs": [
+    {
+      "name": "sniping",
+      "resident": true,
+      "arm": [
+        "last_10s"
+      ],
+      "blocks": [
+        {
+          "name": "buy_up",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "triggered",
+              "name": "last_10s"
+            },
+            "rhs": {
+              "op": ">",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "platform.btc_usd.window_delta.v1",
+                "field": "pct"
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "0.0008"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "platform.btc_usd.window_delta.v1",
+              "field": "pct"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "sniping.buy_up.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "momentum",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "buy_down",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "triggered",
+              "name": "last_10s"
+            },
+            "rhs": {
+              "op": "<",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "platform.btc_usd.window_delta.v1",
+                "field": "pct"
+              },
+              "rhs": {
+                "op": "neg",
+                "arg": {
+                  "op": "decimal",
+                  "value": "0.0008"
+                }
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "platform.btc_usd.window_delta.v1",
+              "field": "pct"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "sniping.buy_down.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "momentum",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "initial_leg": "sniping",
+  "intents": {
+    "sniping.buy_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "sniping.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

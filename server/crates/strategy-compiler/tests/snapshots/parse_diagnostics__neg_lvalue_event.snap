@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[invalid-lvalue]: `event` cannot be assigned
+  set event.y = 1
+      ^^^^^
+  = help: only state slots can be assigned: set state.<slot> = ...

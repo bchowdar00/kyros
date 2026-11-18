@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "name": "Break Quoter",
+    "description": "On the NBA moneyline: quote both sides with a tight spread only while play is stopped — quarter breaks and halftime — where the price cannot move but people still want to trade. Place a bid 2 cents under and an ask 2 cents over the home mid when a break starts; the moment play resumes, cancel everything immediately. Never quotes during live play. When a game ends, pull any quotes and wait for the next game's breaks.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "game": "nba.sim.h2h.current"
+  },
+
+  "signals": {
+    "book":  "nba.sim.h2h.current.price.v1",
+    "game_state": "nba.sim.h2h.current.game_state.v1"
+  },
+
+  "state": [],
+
+  "triggers": [
+    { "name": "break_started",
+      "condition": { "any": [
+        { "signal": "game_state", "field": "phase", "comparator": "==", "value": "break" },
+        { "signal": "game_state", "field": "phase", "comparator": "==", "value": "halftime" }
+      ]},
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "play_resumed",
+      "condition": { "signal": "game_state", "field": "phase", "comparator": "==", "value": "live" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "game_over",
+      "condition": { "signal": "game_state", "field": "phase", "comparator": "==", "value": "final" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "watching",
+      "resident": true,
+      "arm": ["break_started"],
+      "body": [
+        { "name": "start_quoting",
+          "if": "triggered(break_started)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "home", "side": "buy",
+                "order_type": "limit", "tif": "gtc",
+                "price": "clamp(signal.book.home - 0.02, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "bid"
+            }},
+            { "place": {
+                "instrument": "game", "outcome": "home", "side": "sell",
+                "order_type": "limit", "tif": "gtc",
+                "price": "clamp(signal.book.home + 0.02, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "ask"
+            }}
+          ],
+          "then": "quoting" }
+      ] },
+
+    { "name": "quoting",
+      "resident": true,
+      "arm": ["play_resumed", "game_over"],
+      "body": [
+        { "name": "pull_on_live",
+          "if": "triggered(play_resumed)",
+          "do": [
+            { "cancel": { "tag": "bid" } },
+            { "cancel": { "tag": "ask" } }
+          ],
+          "then": "watching" },
+
+        { "name": "pull_on_final",
+          "if": "triggered(game_over)",
+          "do": [
+            { "cancel": { "tag": "bid" } },
+            { "cancel": { "tag": "ask" } }
+          ],
+          "then": "watching" }
+      ] }
+  ]
+}

@@ -1,0 +1,219 @@
+---
+source: crates/strategy-compiler/tests/lower_triggers.rs
+expression: lowered.triggers
+---
+[
+    (
+        "opening_line",
+        TriggerRow {
+            source: All(
+                [
+                    Bare {
+                        signal_id: "pinnacle.nba.sim.h2h.current.fair.v1",
+                    },
+                ],
+            ),
+            fire: IfTrue,
+            rearm: Never,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "made_three",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.pbp.v1",
+                        field: "action",
+                        comparator: Eq,
+                        value: Literal(
+                            "three_pointer",
+                        ),
+                    },
+                    Field {
+                        signal_id: "nba.sim.h2h.current.pbp.v1",
+                        field: "result",
+                        comparator: Eq,
+                        value: Literal(
+                            "made",
+                        ),
+                    },
+                ],
+            ),
+            fire: IfTrue,
+            rearm: Immediate,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "home_panic",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.price.v1",
+                        field: "home",
+                        comparator: Lt,
+                        value: Literal(
+                            "0.35",
+                        ),
+                    },
+                    Expr {
+                        expr: Sub {
+                            lhs: Signal {
+                                signal_id: "nba.sim.h2h.current.pbp.v1",
+                                field: "away_score",
+                            },
+                            rhs: Signal {
+                                signal_id: "nba.sim.h2h.current.pbp.v1",
+                                field: "home_score",
+                            },
+                        },
+                        source: "signal.pbp.away_score - signal.pbp.home_score",
+                        comparator: Ge,
+                        value: Literal(
+                            "10",
+                        ),
+                    },
+                    Field {
+                        signal_id: "nba.sim.h2h.current.pbp.v1",
+                        field: "quarter",
+                        comparator: Le,
+                        value: Literal(
+                            "2",
+                        ),
+                    },
+                ],
+            ),
+            fire: IfTrue,
+            rearm: Immediate,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "away_panic",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.price.v1",
+                        field: "away",
+                        comparator: Lt,
+                        value: Literal(
+                            "0.35",
+                        ),
+                    },
+                    Expr {
+                        expr: Sub {
+                            lhs: Signal {
+                                signal_id: "nba.sim.h2h.current.pbp.v1",
+                                field: "home_score",
+                            },
+                            rhs: Signal {
+                                signal_id: "nba.sim.h2h.current.pbp.v1",
+                                field: "away_score",
+                            },
+                        },
+                        source: "signal.pbp.home_score - signal.pbp.away_score",
+                        comparator: Ge,
+                        value: Literal(
+                            "10",
+                        ),
+                    },
+                    Field {
+                        signal_id: "nba.sim.h2h.current.pbp.v1",
+                        field: "quarter",
+                        comparator: Le,
+                        value: Literal(
+                            "2",
+                        ),
+                    },
+                ],
+            ),
+            fire: IfTrue,
+            rearm: Immediate,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "home_recovered",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.price.v1",
+                        field: "home",
+                        comparator: Gt,
+                        value: Literal(
+                            "0.7",
+                        ),
+                    },
+                ],
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "home_dead",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.price.v1",
+                        field: "home",
+                        comparator: Lt,
+                        value: Literal(
+                            "0.15",
+                        ),
+                    },
+                ],
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "away_recovered",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.price.v1",
+                        field: "away",
+                        comparator: Gt,
+                        value: Literal(
+                            "0.7",
+                        ),
+                    },
+                ],
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+    (
+        "away_dead",
+        TriggerRow {
+            source: All(
+                [
+                    Field {
+                        signal_id: "nba.sim.h2h.current.price.v1",
+                        field: "away",
+                        comparator: Lt,
+                        value: Literal(
+                            "0.15",
+                        ),
+                    },
+                ],
+            ),
+            fire: OnCrossing,
+            rearm: FreshCrossing,
+            cooldown_ms: None,
+        },
+    ),
+]

@@ -1,0 +1,12 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_structural.rs
+expression: "common::render(&diagnostics)"
+---
+error[envelope-budget-exceeds-allocation] at envelope.loss_budget: loss budget 2000 exceeds the allocation 1000 — the strategy could lose more than it escrows
+  = help: loss_budget must be at most allocation
+
+error[envelope-fraction-out-of-range] at envelope.max_exposure_fraction: `max_exposure_fraction` is a fraction of 1 — `1.5` is out of range
+  = help: write the fraction in [0, 1]; 0.5 means half
+
+error[envelope-budget-exceeds-allocation] at envelope.round_budget: round budget 1500 exceeds the allocation 1000 — a window could commit more than the strategy escrows
+  = help: round_budget must be at most allocation

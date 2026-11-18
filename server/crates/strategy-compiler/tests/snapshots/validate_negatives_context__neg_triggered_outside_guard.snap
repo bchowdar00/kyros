@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[triggered-outside-guard] at legs[0].body[0].do[0].place.size: triggered() is legal only in a block's `if` guard
+  clamp(if triggered(tick) then envelope.max_order_size else 0, 0, envelope.max_order_size)
+           ^^^^^^^^^^^^^^^
+  = help: move the `triggered(tick)` test into the block's `if`

@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[forbidden-character]: a backslash cannot appear in an expression
+  1 \ 2
+    ^
+  = help: double quotes, backslashes, and newlines are outside the grammar's alphabet; enum variants use single quotes ('missed') and expressions are single-line

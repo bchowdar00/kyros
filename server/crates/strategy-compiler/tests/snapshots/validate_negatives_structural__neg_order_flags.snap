@@ -1,0 +1,24 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[venue-capability-missing] at legs[0].body[0].do[0].place.expire_after: instrument `game` does not support `expire_after` (declared: post_only, reduce_only)
+  = help: drop the flag, or trade an instrument whose registry entry declares it
+
+error[order-flag-misuse] at legs[0].body[0].do[0].place.expire_after: expire_after applies to resting orders — an IOC order never rests
+  = help: drop expire_after, or use tif: gtc
+
+error[order-flag-misuse] at legs[0].body[0].do[0].place.post_only: post_only applies to limit orders — a market order always takes
+  = help: drop post_only, or make the order a limit
+
+error[venue-capability-missing] at legs[0].body[0].do[1].place.expire_after: instrument `game` does not support `expire_after` (declared: post_only, reduce_only)
+  = help: drop the flag, or trade an instrument whose registry entry declares it
+
+error[venue-capability-missing] at legs[0].body[0].do[2].place.post_only: instrument `btc` does not support `post_only` (declared: none)
+  = help: drop the flag, or trade an instrument whose registry entry declares it
+
+error[venue-capability-missing] at legs[0].body[0].do[2].place.reduce_only: instrument `btc` does not support `reduce_only` (declared: none)
+  = help: drop the flag, or trade an instrument whose registry entry declares it
+
+error[venue-capability-missing] at legs[0].body[0].do[3].target_position.reduce_only: instrument `btc` does not support `reduce_only` (declared: none)
+  = help: drop the flag, or trade an instrument whose registry entry declares it

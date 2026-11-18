@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.perp_volatility",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT perpetual mark volatility",
+  "description": "Realized volatility of the Bybit linear BTCUSDT perpetual mark price from the tickers stream (merged partial updates), sampled once per second off the decision clock and converted to simple basis-point returns. volatility_bps_10s, volatility_bps_1m, volatility_bps_5m and volatility_bps_15m are the root mean square of the one-second returns inside the trailing 10-second, 1-minute, 5-minute and 15-minute windows. short_long_ratio is the 10-second value divided by the 15-minute value; when both windows have zero root mean square the ratio is 1 and the regime is stable. regime is contracting when short_long_ratio is at most 0.8, expanding when it is at least 1.2, otherwise stable; the 0.8 and 1.2 boundaries are research-default values. Ready output requires 901 contiguous one-second samples (the longest horizon, 15 minutes) of the mark; each one-second sample holds the venue's latest mark row for up to a 3-second bound (a research default that admits the sub-1 Hz mark cadence, the premium-index poll landing about every 1.3 seconds and Bybit mark prices carrying multi-second gaps), and a mark row 3 seconds or more old — a stalled poll or an absent mark — is a missing observation that breaks continuity and restarts the warm-up (no gap bridging). Warm-up degrades as bybit_warming_up, a stale merged mark as bybit_stale and a mark-missing feed state as bybit_recovery_required. The Bybit linear lane refuses to start (exit 78) unless SIGNALS_ENABLED_VENUES lists bybit; the rights gate is a startup refusal, never an instance status. This identity is reference-free and scale-free: it publishes no price-denominated field, only basis-point returns and their root mean square, so nothing is converted from USDT to USD. There is no usdt_usd_rate, no usdt_usd_rate_age_ms and no usdt_reference_stale gating; returns are quote-neutral by construction. quote_currency is the constant \"usd\". Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.linear.btcusdt.tickers",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "volatility_bps_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "volatility_bps_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "volatility_bps_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "volatility_bps_15m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "short_long_ratio",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "contracting",
+        "stable",
+        "expanding"
+      ]
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

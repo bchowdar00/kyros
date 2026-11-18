@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/backtest-result.schema.json",
+  "title": "BacktestResult",
+  "$comment": "Draft-backtest stage -> editor. Result of materialize-on-replay over recorded raw feeds for a just-compiled strategy. Decision-parity is structural (same code path as live); fills are SIMULATED under a disclosed fill_model -- PnL here is modeled, never promised. PnL summary fields are deliberately omitted: a bare 'would have made $X' is the product's most seductive overclaim and is downstream of the fill model's weakest guarantees. If added later it must be an explicitly-modeled field carrying the fill_model's caveats, never a default.",
+  "type": "object",
+  "required": ["schema_version", "submission_id", "replay_range", "activation_count", "trade_count", "trades", "fill_model"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "submission_id": { "type": "string", "description": "Correlates back to the StrategySubmission, same key VerificationResult uses. Draft backtest runs pre-deploy, before a strategy_id exists." },
+    "replay_range": {
+      "type": "object",
+      "description": "Wall-clock window of recorded feed data replayed. The canonical replay is by sequence number; these bounds are the human-facing framing ('the last 2 hours').",
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "$ref": "common.schema.json#/$defs/Timestamp" },
+        "to": { "$ref": "common.schema.json#/$defs/Timestamp" }
+      },
+      "additionalProperties": false
+    },
+    "activation_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "How many times the strategy woke during the replay."
+    },
+    "trade_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "How many simulated orders it emitted. activation_count >> trade_count signals guard logic that belongs in the trigger; the UI should surface the ratio. Authoritative -- not len(trades), which is display-capped."
+    },
+    "activations_by_trigger": {
+      "type": "array",
+      "description": "Per-trigger wake and trade counts -- tells the user (and the LLM optimizer) WHICH trigger is noisy, not just that noise exists. The mechanical fix (move a discriminating conjunct from guard to trigger) targets a specific trigger, so it needs the per-trigger ratio, not the aggregate.",
+      "items": {
+        "type": "object",
+        "required": ["trigger_id", "activation_count"],
+        "properties": {
+          "trigger_id": { "type": "string" },
+          "activation_count": { "type": "integer", "minimum": 0, "description": "Wakes attributed to this trigger." },
+          "trade_count": { "type": "integer", "minimum": 0, "description": "Simulated orders attributed to this trigger. Pairs with activation_count for the per-trigger wake->trade ratio the optimizer localizes on. NOT derivable by grouping `trades`, which is display-capped -- this is authoritative." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "trades": {
+      "type": "array",
+      "description": "Simulated trades, capped for display (e.g. most recent 100); trade_count is authoritative. Truncation is inferable from len(trades) < trade_count, never silent.",
+      "items": {
+        "type": "object",
+        "required": ["at", "instrument", "side", "size", "price", "trigger_id"],
+        "properties": {
+          "at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+          "instrument": { "type": "string", "description": "Instrument/market ID the simulated order targeted. Same field name as order-request.instrument -- a simulated trade is a modeled order (and avoids colliding with order_type's 'market')." },
+          "side": { "type": "string", "enum": ["buy", "sell"] },
+          "size": { "type": "string", "description": "Decimal-as-string." },
+          "price": { "type": "string", "description": "Decimal-as-string." },
+          "trigger_id": { "type": "string", "description": "Which trigger's firing produced this -- every trade attributable to its cause, in the preview just like in the log." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "fill_model": {
+      "type": "string",
+      "description": "Identifier of the fill-simulation model used, e.g. 'cross_at_touch.v1'. Replay gives structural parity on signal->activation->intent but NOT on fills (historical orders weren't in the book); trades are counterfactuals under this model. Named so the UI discloses it and nobody downstream treats preview PnL as real. Versioned so an improved model doesn't silently change old previews' meaning."
+    }
+  },
+  "additionalProperties": false
+}

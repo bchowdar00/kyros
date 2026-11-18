@@ -1,0 +1,18 @@
+import { render, screen } from '@testing-library/react'
+import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { describe, expect, it } from 'vitest'
+
+import { HomeScreen } from '@/features/home/home-screen'
+
+describe('home page', () => {
+  it('does not render the prototype fixture markets', async () => {
+    const { container } = render(<HomeScreen cards={[]} />)
+
+    expect(screen.queryByRole('link', { name: 'Celtics at Lakers' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'BTC above $118K' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Markets' })).toBeInTheDocument()
+    expect(screen.getByText('No live markets right now.')).toBeInTheDocument()
+
+    await expectNoA11yViolations(container)
+  })
+})

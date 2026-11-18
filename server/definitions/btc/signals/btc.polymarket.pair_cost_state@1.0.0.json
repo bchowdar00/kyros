@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.pair_cost_state",
+  "version": "1.0.0",
+  "name": "Polymarket BTC pair-cost state",
+  "description": "From the bound Polymarket market's two native outcome asks, pair_cost = up_ask + down_ask - 1 is the cost of locking a one-dollar payout across both outcome tokens (negative is gross locked profit). fee_adjusted_pair_cost adds the per-share taker fee on both legs, computed with the fee authority's rate-times-probability-product formula fee = rate * ask * (1 - ask) per contract and its rounding, mirrored from the repo fee authority. state is locked_profit when fee_adjusted_pair_cost is negative, premium when it exceeds premium_threshold, and fair otherwise. A missing outcome ask is a defined not-ready state. Polymarket only. fee_rate defaults to 0.07, fee_rounding defaults to ceil_cent, and premium_threshold defaults to 0.01. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.prediction_quote",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "pair_cost",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "fee_adjusted_pair_cost",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "up_leg_fee",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "down_leg_fee",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "fee_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "fee_rounding",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "none",
+        "ceil_cent",
+        "nearest_cent",
+        "floor_cent",
+        "nearest_five_decimals_with_minimum"
+      ]
+    },
+    {
+      "name": "premium_threshold",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "locked_profit",
+        "fair",
+        "premium"
+      ]
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

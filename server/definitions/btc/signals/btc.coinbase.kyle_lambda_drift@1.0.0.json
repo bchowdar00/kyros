@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.coinbase.kyle_lambda_drift",
+  "version": "1.0.0",
+  "name": "Coinbase BTC/USD Kyle lambda price-impact drift",
+  "description": "Over a rolling window of the last window_trades (N) Coinbase BTC/USD trades, kyle_lambda = sum(mid_change_i * signed_volume_i) / sum(signed_volume_i^2): the least-squares slope through the origin of per-trade midpoint change on signed volume, a form chosen for the exact-decimal idiom because it needs only multiply and divide. Each trade's signed_volume_i (trade size times aggressor sign, positive for a buyer-aggressor) pairs with the Coinbase midpoint change that FOLLOWS it — from the midpoint prevailing at the trade to the next observed Coinbase midpoint update — so the estimator measures price impact rather than anticipation; trades between two midpoint updates share that same forward change, and a trade with no subsequent midpoint update yet has no completed pair. lambda_drift is the current window's lambda minus the previous disjoint window's lambda. Fewer than 2N completed pairs, or a window whose sum of squared signed volume is zero, is a defined not-ready state and never a division by zero. window_trades defaults to 100. This identity is single-venue by construction: the measurement compares one venue's own trades and book against each other, so it reads only Coinbase inputs and is ready whenever the Coinbase book-and-trade join is fresh, independently of the other adopted spot venue. No blended `btc.external.*` variant of this measurement is published: a cross-venue form would have to rule which venue's book prices another venue's trade, and that ruling is deferred pending evidence (ADR 0023 amendment and ADR 0024, both 2026-09-02). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.book-levels", "version": "1.0.0" },
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.trades", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "kyle_lambda", "type": "decimal", "location": "internal" },
+    { "name": "kyle_lambda_previous", "type": "decimal", "location": "internal" },
+    { "name": "lambda_drift", "type": "decimal", "location": "internal" },
+    { "name": "window_trades", "type": "u32", "location": "internal" },
+    { "name": "pair_count", "type": "u32", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

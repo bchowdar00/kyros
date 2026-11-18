@@ -1,0 +1,22 @@
+{
+  "title": "Perp aggressor flow",
+  "description": "Dollars traded by buyers minus sellers who crossed the spread on the perpetual. It shows who is in a hurry with leverage.",
+  "fields": {
+    "signed_notional_usd_10s": {
+      "label": "Net flow 10s",
+      "description": "Buyer-initiated dollars minus seller-initiated dollars over the last ten seconds. Positive means buyers are lifting offers."
+    },
+    "signed_notional_usd_60s": {
+      "label": "Net flow 60s",
+      "description": "The same net dollars over the last minute. Slower, but a run of one sign is a real lean."
+    },
+    "cumulative_volume_delta_base_60s": {
+      "label": "Volume delta 60s",
+      "description": "Net flow over the last minute measured in BTC instead of dollars. Positive means more was bought aggressively than sold."
+    },
+    "flow_direction_10s": {
+      "label": "Flow direction 10s",
+      "description": "The sign of the ten-second flow once it clears a small threshold. Neutral when buyers and sellers are balanced."
+    }
+  }
+}

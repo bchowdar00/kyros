@@ -1,0 +1,10 @@
+{
+  "title": "Strike",
+  "description": "The BTC price captured the moment this round opened. At close, BTC at or above it settles Up and below it settles Down.",
+  "fields": {
+    "price": {
+      "label": "Strike",
+      "description": "The line this round is measured against, in dollars. It does not move until the next round opens."
+    }
+  }
+}

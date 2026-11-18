@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.cfbenchmarks.brti.settlement-window",
+  "version": "1.0.0",
+  "name": "Kalshi CF Benchmarks BRTI quarter-hour final-minute average",
+  "description": "The last_60s_windowed_average_15min object carried on the cfbenchmarks_value channel, split into its own identity because it is present only during the final minute before :00, :15, :30 and :45 and every declared source field is required on every event. This is the settlement computation itself, and it is a RUNNING average, not a single closing figure: OBSERVED over the 2026-09-03 Tokyo hour (ruling E28), which crossed four quarter closes and carried 240 such objects, window_start_ts_ms is FIXED for a whole quarter while window_end_ts_exclusive ADVANCES with every tick and equals that tick's index time. The anchor and per-quarter dedup key is therefore the window START. quarter_close_time is DERIVED as window_start_ts_ms + 60000 and is accepted only when that derived instant lands exactly on a :00/:15/:30/:45 boundary; a frame whose derived close is off-grid is refused rather than published, because a start that is not one minute before a quarter boundary is not a quarter window at all. window_end_inclusive carries that same derived close — the accumulation boundary of the whole quarter — so it and quarter_close_time remain one instant under two semantic names, exactly as before; what changed is that the instant is now derived from the start rather than read from the wire. window_as_of carries the wire's window_end_ts_exclusive verbatim: how far the running average has actually reached on this tick. It advances once per second through the minute and must fall in (window_start_exclusive, quarter_close_time]. A window is COMPLETE when window_as_of equals quarter_close_time; that is the closing tick, it occurs exactly once per quarter, and the 59 events before it are running partials of the same quarter carrying the same quarter_close_time. Completeness is published as that equality rather than as a separate boolean. window_size counts the prints accumulated so far, observed running 1 through 60 across a quarter, and must strictly increase within one derived quarter_close_time; a repeat or a decrease is a state inconsistency that drops the frame. One event is emitted per cfbenchmarks_value message that carries the object, alongside the kalshi.cfbenchmarks.brti.value event for the same tick; index_value is that tick's value, retained so a consumer can reconcile the provider average against a locally recomputed one rather than substituting one for the other. Every print inside a quarter window is load-bearing, so unlike the plain value channel this surface fails closed on a sequence gap: publication pauses and repair is attempted only from the authenticated CF Benchmarks REST passthrough covering the exact missing interval; a repair that does not cover the whole interval leaves the surface paused for the remainder of that quarter. The pause names the withheld quarter by its DERIVED close and the interval a repair must cover, and a consumer carries both in its checkpoint so a restart mid-recovery resumes withholding rather than publishing an average over a window with lost prints. A changed value for an already accepted (index_id, event_time) is a correction, not a lost print: it is reported and dropped and opens no repair interval. NOTE on naming: window_start_exclusive keeps its 1.0.0 name, but the observed accumulation is [start, as_of) with the start INCLUDED; the name is corrected in the next version rather than by a silent change of meaning here. Rights-gated exactly as kalshi.cfbenchmarks.brti.value. The carrying cfbenchmarks_value frame and the quarter object are both OBSERVED (rulings E23, E25, E28), and the evidence is in-tree: the 65-minute kalshi-index captures of 2026-09-03 08:45-09:50Z and 10:01-11:06Z each replay through btc-feeds replay unmodified and each yield 240 settlement-window events over four derived closes (09:00-09:45Z and 10:15-11:00Z), exactly four of them complete per hour, window_size running 1 through 60, with zero adapter errors.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    {
+      "name": "index_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_received_at",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "upstream_sequence",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "index_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "window_average",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "window_size",
+      "type": "u32",
+      "location": "external"
+    },
+    {
+      "name": "window_start_exclusive",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "window_end_inclusive",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "window_as_of",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "quarter_close_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time",
+  "sequence_field": "upstream_sequence"
+}

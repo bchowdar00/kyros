@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[cancel-replace-not-limit] at legs[0].body[0].do[0].cancel_replace.order_type: a cancel-replace places a limit order — market replaces are not supported
+  = help: set order_type to `limit`

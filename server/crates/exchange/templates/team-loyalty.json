@@ -1,0 +1,190 @@
+{
+  "id": "team-loyalty",
+  "title": "Celtics Nation",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-05.jpg" },
+  "series": ["nba-h2h"],
+  "logic": "Whenever Boston plays, it buys the Celtics before tipoff, home or away, and holds to the final. It does nothing on games Boston sits out.",
+  "inverse_logic": "Whenever Boston plays, it buys whoever they are playing before tipoff and holds to the final. It does nothing on games Boston sits out.",
+  "envelope": {
+    "loss_budget_fraction": "1",
+    "order_fraction": "0.1",
+    "max_order_size": "200",
+    "max_open_orders": "1",
+    "max_position_per_market": "200"
+  },
+  "substitutions": {
+    "nba-h2h": { "pregame_left": "240000", "team": "BOS" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Celtics Fan",
+      "description": "While the round is open with more than the pregame mark of time left, if the matchup's home team is the team take Home, and if its away team is the team take Away, with an immediate-or-cancel limit two cents over the ask while it is under 95 cents, once per round, and hold to the final. Rounds without the team are left alone.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "clock": "{{series}}.current.window.v1",
+      "matchup": "{{series}}.current.matchup.v1"
+    },
+    "state": [],
+    "triggers": [
+      {
+        "name": "team_home",
+        "condition": {
+          "all": [
+            { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+            { "signal": "clock", "field": "remaining", "comparator": ">", "value": "{{pregame_left}}" },
+            { "signal": "matchup", "field": "home_team", "comparator": "==", "value": "{{team}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      },
+      {
+        "name": "team_away",
+        "condition": {
+          "all": [
+            { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+            { "signal": "clock", "field": "remaining", "comparator": ">", "value": "{{pregame_left}}" },
+            { "signal": "matchup", "field": "away_team", "comparator": "==", "value": "{{team}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "pregame",
+        "resident": true,
+        "arm": ["team_home", "team_away"],
+        "body": [
+          {
+            "name": "back_home",
+            "if": "triggered(team_home) and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "back_home",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "pregame", "cancel_ack": "pregame", "expiry": "pregame" }
+                }
+              }
+            ],
+            "then": "holding"
+          },
+          {
+            "name": "back_away",
+            "if": "triggered(team_away) and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "back_away",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "pregame", "cancel_ack": "pregame", "expiry": "pregame" }
+                }
+              }
+            ],
+            "then": "holding"
+          }
+        ]
+      },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Bet Against Boston",
+      "description": "While the round is open with more than the pregame mark of time left, if the matchup's home team is the team take Away, and if its away team is the team take Home, with an immediate-or-cancel limit two cents over the ask while it is under 95 cents, once per round, and hold to the final. Rounds without the team are left alone.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "clock": "{{series}}.current.window.v1",
+      "matchup": "{{series}}.current.matchup.v1"
+    },
+    "state": [],
+    "triggers": [
+      {
+        "name": "team_home",
+        "condition": {
+          "all": [
+            { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+            { "signal": "clock", "field": "remaining", "comparator": ">", "value": "{{pregame_left}}" },
+            { "signal": "matchup", "field": "home_team", "comparator": "==", "value": "{{team}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      },
+      {
+        "name": "team_away",
+        "condition": {
+          "all": [
+            { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+            { "signal": "clock", "field": "remaining", "comparator": ">", "value": "{{pregame_left}}" },
+            { "signal": "matchup", "field": "away_team", "comparator": "==", "value": "{{team}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "pregame",
+        "resident": true,
+        "arm": ["team_home", "team_away"],
+        "body": [
+          {
+            "name": "fade_home",
+            "if": "triggered(team_home) and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "fade_home",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "pregame", "cancel_ack": "pregame", "expiry": "pregame" }
+                }
+              }
+            ],
+            "then": "holding"
+          },
+          {
+            "name": "fade_away",
+            "if": "triggered(team_away) and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "fade_away",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "pregame", "cancel_ack": "pregame", "expiry": "pregame" }
+                }
+              }
+            ],
+            "then": "holding"
+          }
+        ]
+      },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-leg] at legs[0].body[0].then: transition names undeclared leg `gone`
+  = help: declared legs: main

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.rsi",
+  "version": "1.0.0",
+  "name": "Bybit BTC/USDT one-minute Wilder RSI(14)",
+  "description": "A causal reading over the fresh Bybit `orderbook.1` displayed best-quote midpoint, sampled once per second on the lane decision clock. Rsi_14 is Wilder's relative strength index over fourteen one-minute bar closes. Each bar-to-bar close change is split into a gain and a loss; the first average gain and average loss are the arithmetic means of the first fourteen, every later one is Wilder's smoothing (previous average plus (current value minus previous average) divided by fourteen), and rsi_14 is one hundred minus one hundred divided by (one plus average gain divided by average loss). A zero average loss yields one hundred. regime is oversold at or below thirty, overbought at or above seventy, and neutral between those boundaries. The fourteen-bar period and the thirty and seventy boundaries are initial research defaults that require empirical calibration; the Wilder smoothing formula is not a heuristic threshold. One-minute bars are closed on the lane decision clock at minute boundaries from the one-second sample series: open is the first sample of the minute, high and low its extrema, close its last sample. A bar that is missing any one-second sample is invalid; the missing sample breaks continuity, every retained bar and every smoothed state derived from them is discarded, and the bar warm-up restarts from the next whole bar. Nothing is bridged across a gap. Ready once fifteen contiguous one-minute bars have closed. Decimal outputs are rounded to eight places using round-half-to-even. Every reading is causal: it reads only samples at or before the decision it is published on. E47 (USD quoting): this identity quotes in USD and publishes no price, notional or quote-denominated cost field \u2014 its outputs are basis-point ratios, indices, counts and timestamps, which are quote-currency neutral \u2014 so nothing is converted and no usdt_usd_rate is published. quote_currency is the constant \"usd\". Bybit inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `bybit`. Adopted in the C3a TA pack (ruling E51, 2026-09-04): the seven technical-analysis identities are published on every price venue we carry, computed from the venue's own one-second sample ring by the shared `crates/btc-signals/src/ta.rs` helper, so every scope runs byte-identical arithmetic and only the sample series differs.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.bbo-levels",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "rsi_14",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "oversold",
+        "neutral",
+        "overbought"
+      ]
+    },
+    {
+      "name": "bar_count",
+      "type": "u16",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

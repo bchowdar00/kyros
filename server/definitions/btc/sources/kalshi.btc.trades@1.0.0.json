@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.btc.trades",
+  "version": "1.0.0",
+  "name": "Kalshi BTC public trades",
+  "description": "Normalized Kalshi public trade messages for one verified KXBTC15M market. The canonical taker_outcome_side and taker_book_side fields are required and cross-checked (yes equals bid; no equals ask); legacy taker_side is not used. event_time is ts_ms rendered as RFC 3339.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    { "name": "trade_id", "type": "string", "location": "external" },
+    { "name": "market_ticker", "type": "string", "location": "external" },
+    { "name": "yes_price", "type": "decimal", "location": "external" },
+    { "name": "no_price", "type": "decimal", "location": "external" },
+    { "name": "count", "type": "decimal", "location": "external" },
+    {
+      "name": "taker_outcome_side",
+      "type": "enum",
+      "location": "external",
+      "variants": ["yes", "no"]
+    },
+    {
+      "name": "taker_book_side",
+      "type": "enum",
+      "location": "external",
+      "variants": ["bid", "ask"]
+    },
+    { "name": "is_block_trade", "type": "bool", "location": "external" },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

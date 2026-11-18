@@ -1,0 +1,6 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_lints.rs
+expression: rendered
+---
+warning[lint-requote-rate] at legs[0].body[0]: block `requote` submits an order on every wake of `tick`, which fires on every frame of `ticks` (about every 50 ms); the runtime will coalesce and rate-limit it, so the strategy trades at the gate's pace, not yours
+  = help: add a `cooldown` to the trigger's rearm (an `if_true` trigger with a cooldown fires at most once per cooldown, with the latest snapshot), or gate on a crossing

@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+warning[empty-on-table] at legs[0].body[0].do[0].place.on: this on table has no keys — omit it (sparse-in: never write a default)
+  = help: absent keys already default to stay

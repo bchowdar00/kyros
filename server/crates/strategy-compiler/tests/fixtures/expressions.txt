@@ -1,0 +1,68 @@
+# Every expression-bearing string in the committed v0.2 corpus, regenerated for the
+# parser's positive-test inventory. One string per line (legal because the grammar's
+# alphabet excludes newlines). Routing: lines starting with `set ` or `push ` parse
+# via parse_stmt; everything else parses via
+# parse_leaf_expr; everything else parses via parse_expr. `#` lines and blank lines
+# are ignored. 46 unique strings; duplicates collapsed, first occurrence wins.
+
+# --- break-quoter.json ---
+triggered(break_started)
+clamp(signal.book.home - 0.02, 0.01, 0.99)
+clamp(envelope.max_order_size, 0, envelope.max_order_size)
+envelope.max_order_size
+clamp(signal.book.home + 0.02, 0.01, 0.99)
+triggered(play_resumed)
+triggered(game_over)
+
+# --- capitulation-fade.json ---
+signal.pbp.away_score - signal.pbp.home_score
+signal.pbp.home_score - signal.pbp.away_score
+triggered(missed_three)
+set state.miss_count[event.team, event.quarter] = state.miss_count[event.team, event.quarter] + 1
+triggered(home_capitulation) and state.miss_count['home', signal.pbp.quarter] >= 6
+clamp(envelope.max_order_size / 2, 0, envelope.max_order_size)
+triggered(away_capitulation) and state.miss_count['away', signal.pbp.quarter] >= 6
+triggered(away_rich)
+clamp(abs(platform.position.size), 0, envelope.max_order_size)
+triggered(away_cheap)
+clamp(abs(platform.position.size) * 2, 0, envelope.max_order_size)
+triggered(home_rich)
+triggered(home_cheap)
+
+# --- curve-discount.json ---
+lookup(table.fair_curve, abs(signal.delta.pct))
+triggered(window_open)
+signal.delta.pct > 0.0002 and expr.fair - signal.book.up >= 0.05
+signal.delta.pct < -0.0002 and expr.fair - signal.book.down >= 0.05
+
+# --- endgame-sweep.json ---
+triggered(last_20s) and signal.book.up >= 0.95
+triggered(last_20s) and signal.book.down >= 0.95
+
+# --- favorite-panic.json ---
+triggered(opening_line)
+set state.favorite = if signal.fair.home > 0.5 then 'home' else 'away'
+triggered(made_three)
+set state.made_threes[event.team, event.quarter] = state.made_threes[event.team, event.quarter] + 1
+triggered(home_panic) and state.favorite == 'home' and state.made_threes['away', signal.pbp.quarter] >= 5
+triggered(away_panic) and state.favorite == 'away' and state.made_threes['home', signal.pbp.quarter] >= 5
+triggered(home_recovered)
+triggered(home_dead)
+triggered(away_recovered)
+triggered(away_dead)
+
+# --- late-momentum.json ---
+triggered(last_10s) and signal.delta.pct > 0.0008
+triggered(last_10s) and signal.delta.pct < -0.0008
+
+# --- momentum-flip.json ---
+triggered(up_rich)
+triggered(down_rich)
+triggered(up_cheap)
+triggered(down_cheap)
+
+# --- pinnacle-bid.json ---
+clamp(signal.fair.home - 0.01, 0.01, 0.99)
+clamp(signal.fair.away - 0.01, 0.01, 0.99)
+triggered(home_fair)
+triggered(away_fair)

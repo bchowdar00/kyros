@@ -1,0 +1,321 @@
+---
+source: crates/strategy-compiler/tests/emit_program.rs
+expression: program
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_1ee8ef1c2415",
+  "source_hash": "1ee8ef1c2415bcc34b3ffb1b8f477dc972d4329dce06cf08aac5a9b65500c10f",
+  "name": "Break Quoter",
+  "description": "On the NBA moneyline: quote both sides with a tight spread only while play is stopped — quarter breaks and halftime — where the price cannot move but people still want to trade. Place a bid 2 cents under and an ask 2 cents over the home mid when a break starts; the moment play resumes, cancel everything immediately. Never quotes during live play. When a game ends, pull any quotes and wait for the next game's breaks.",
+  "dsl_version": "0.3",
+  "signals": {
+    "book": "nba.sim.h2h.current.price.v1",
+    "game_state": "nba.sim.h2h.current.game_state.v1"
+  },
+  "instruments": {
+    "game": "nba.sim.h2h.current"
+  },
+  "subscriptions": [
+    "nba.sim.h2h.current.price.v1",
+    "nba.sim.h2h.current.game_state.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [],
+  "params": [],
+  "triggers": [
+    {
+      "name": "break_started",
+      "source": {
+        "kind": "any",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.game_state.v1",
+            "field": "phase",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "break"
+            }
+          },
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.game_state.v1",
+            "field": "phase",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "halftime"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "play_resumed",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.game_state.v1",
+            "field": "phase",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "live"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "game_over",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.game_state.v1",
+            "field": "phase",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "final"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    }
+  ],
+  "legs": [
+    {
+      "name": "watching",
+      "resident": true,
+      "arm": [
+        "break_started"
+      ],
+      "blocks": [
+        {
+          "name": "start_quoting",
+          "guard": {
+            "op": "triggered",
+            "name": "break_started"
+          },
+          "reads": [
+            {
+              "signal_id": "nba.sim.h2h.current.price.v1",
+              "field": "home"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "watching.start_quoting.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "home",
+                "side": "buy",
+                "order_type": "limit",
+                "tif": "gtc",
+                "tag": "bid",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "price": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "-",
+                      "lhs": {
+                        "op": "signal",
+                        "signal_id": "nba.sim.h2h.current.price.v1",
+                        "field": "home"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "0.02"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0.01"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0.99"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "kind": "place",
+              "intent_id": "watching.start_quoting.1",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "home",
+                "side": "sell",
+                "order_type": "limit",
+                "tif": "gtc",
+                "tag": "ask",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "price": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "+",
+                      "lhs": {
+                        "op": "signal",
+                        "signal_id": "nba.sim.h2h.current.price.v1",
+                        "field": "home"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "0.02"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0.01"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0.99"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "quoting"
+        }
+      ]
+    },
+    {
+      "name": "quoting",
+      "resident": true,
+      "arm": [
+        "play_resumed",
+        "game_over"
+      ],
+      "blocks": [
+        {
+          "name": "pull_on_live",
+          "guard": {
+            "op": "triggered",
+            "name": "play_resumed"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "cancel",
+              "tag": "bid"
+            },
+            {
+              "kind": "cancel",
+              "tag": "ask"
+            }
+          ],
+          "then": "watching"
+        },
+        {
+          "name": "pull_on_final",
+          "guard": {
+            "op": "triggered",
+            "name": "game_over"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "cancel",
+              "tag": "bid"
+            },
+            {
+              "kind": "cancel",
+              "tag": "ask"
+            }
+          ],
+          "then": "watching"
+        }
+      ]
+    }
+  ],
+  "initial_leg": "watching",
+  "intents": {
+    "watching.start_quoting.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "watching.start_quoting.1": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

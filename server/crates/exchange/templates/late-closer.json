@@ -1,0 +1,150 @@
+{
+  "id": "late-closer",
+  "title": "Buzzer Beater",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-03.jpg" },
+  "series": ["btc-2m", "btc-15m"],
+  "logic": "Waits until the round is almost over. If BTC is clearly above the strike it buys Up; clearly below, Down; only while that side costs 92 cents or less. One trade per round, held to the close. The bet is that the last few cents are free once the result is nearly certain.",
+  "inverse_logic": "Waits until the round is almost over and one side is priced above 90 cents. Then buys the other side for a dime or less and holds it. Most tickets expire worthless; the ones that hit pay several times their cost when BTC swings back through the strike at the end.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-2m": { "late_ms": "20000", "margin_bps": "4" },
+    "btc-15m": { "late_ms": "90000", "margin_bps": "8" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Lock In the Winner",
+      "description": "Once the round clock is inside the late window, take the side the live BTC price favors by at least the margin in basis points from the strike: Up above it, Down below it, with an immediate-or-cancel limit at the ask plus two cents, capped at the maximum price, once per round, and hold to settlement.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "clock": "{{series}}.current.window.v1",
+      "delta": "{{series}}.current.delta.v1"
+    },
+    "state": [],
+    "params": [
+      { "name": "max_price", "type": "decimal", "default": "0.92" }
+    ],
+    "triggers": [
+      { "name": "decided_up",
+        "condition": { "all": [
+          { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+          { "signal": "clock", "field": "remaining", "comparator": "<=", "value": "{{late_ms}}" },
+          { "signal": "delta", "field": "delta_bps", "comparator": ">=", "value": "{{margin_bps}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "decided_down",
+        "condition": { "all": [
+          { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+          { "signal": "clock", "field": "remaining", "comparator": "<=", "value": "{{late_ms}}" },
+          { "signal": "delta", "field": "delta_bps", "comparator": "<=", "value": "-{{margin_bps}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } }
+    ],
+    "legs": [
+      { "name": "waiting", "resident": true, "arm": ["decided_up", "decided_down"],
+        "body": [
+          { "name": "take_up",
+            "if": "triggered(decided_up) and signal.book.ask <= param.max_price",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(min(signal.book.ask + 0.02, param.max_price), 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_up",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "waiting", "cancel_ack": "waiting", "expiry": "waiting" }
+              } }
+            ],
+            "then": "holding" },
+          { "name": "take_down",
+            "if": "triggered(decided_down) and 1 - signal.book.bid <= param.max_price",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(min((1 - signal.book.bid) + 0.02, param.max_price), 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_down",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "waiting", "cancel_ack": "waiting", "expiry": "waiting" }
+              } }
+            ],
+            "then": "holding" }
+        ] },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Last-Second Lottery",
+      "description": "Once the round clock is inside the late window and the book prices one side at ninety cents or more, buy the other side with an immediate-or-cancel limit at its ask plus one cent, capped at ten cents, for half the usual stake, once per round, and hold to settlement.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "clock": "{{series}}.current.window.v1"
+    },
+    "state": [],
+    "params": [
+      { "name": "ticket_price", "type": "decimal", "default": "0.1" }
+    ],
+    "triggers": [
+      { "name": "up_decided",
+        "condition": { "all": [
+          { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+          { "signal": "clock", "field": "remaining", "comparator": "<=", "value": "{{late_ms}}" },
+          { "signal": "book", "field": "bid", "comparator": ">=", "value": "0.9" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "down_decided",
+        "condition": { "all": [
+          { "signal": "clock", "field": "phase", "comparator": "==", "value": "open" },
+          { "signal": "clock", "field": "remaining", "comparator": "<=", "value": "{{late_ms}}" },
+          { "signal": "book", "field": "ask", "comparator": "<=", "value": "0.1" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } }
+    ],
+    "legs": [
+      { "name": "waiting", "resident": true, "arm": ["up_decided", "down_decided"],
+        "body": [
+          { "name": "ticket_down",
+            "if": "triggered(up_decided) and 1 - signal.book.bid <= param.ticket_price",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(min((1 - signal.book.bid) + 0.01, param.ticket_price), 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} * 0.5 / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "ticket_down",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "waiting", "cancel_ack": "waiting", "expiry": "waiting" }
+              } }
+            ],
+            "then": "holding" },
+          { "name": "ticket_up",
+            "if": "triggered(down_decided) and signal.book.ask <= param.ticket_price",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(min(signal.book.ask + 0.01, param.ticket_price), 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} * 0.5 / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "ticket_up",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "waiting", "cancel_ack": "waiting", "expiry": "waiting" }
+              } }
+            ],
+            "then": "holding" }
+        ] },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

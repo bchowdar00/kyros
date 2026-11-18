@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.aggressor_flow",
+  "version": "1.0.0",
+  "name": "Bybit BTC/USDT signed aggressor flow",
+  "description": "Each verified buyer-aggressed Bybit BTC/USDT trade contributes positive price-times-size notional and positive base size; each seller-aggressed trade contributes negative values. Outputs sum those contributions over causal 1-, 10-, and 60-second receipt-time windows of (window close minus duration, window close]. Ready output requires 60 seconds of uninterrupted Bybit observation and Bybit demonstrably alive. A trade-quiet but live Bybit connection — any admitted Bybit input event within staleness_bound_ms — contributes truthful zeros (flow_direction_10s = \"flat\"); no admitted Bybit input within that bound keeps degrading as trade_venue_stale_or_missing. This identity is single-venue: it reads only Bybit inputs and is ready whenever Bybit is warmed and alive, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Bybit sibling of `btc.coinbase.aggressor_flow@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Bybit spot BTCUSDT; at decision time every price-level field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio fields (basis points, imbalances, ratios, counts) are quote-currency neutral. Bybit inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `bybit`, which the deployment sets only after that row clears. The Bybit trade input is the `publicTrade.BTCUSDT` stream: one message carries up to 1024 individual fills, each with its own `event_time`, `aggressor_side` and provider `trade_id`. `cross_sequence` is a relative-ordering token only, with no documented gap semantics, so no gap logic reads it and no valid trade is ever discarded on its account. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: every price-denominated field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio, basis-point, base-size and count fields are quote-currency neutral. The signed_notional_usd_1s, signed_notional_usd_10s, signed_notional_usd_60s and gross_notional_usd_60s field names are retained unchanged so the family's field set stays identical across all venues; for this venue their values are USDT notional, as quote_currency declares. E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (signed_notional_usd_1s, signed_notional_usd_10s, signed_notional_usd_60s, gross_notional_usd_60s) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.trades",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "signed_notional_usd_1s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "signed_notional_usd_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "signed_notional_usd_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "cumulative_volume_delta_base_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "cumulative_volume_delta_base_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "gross_notional_usd_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "trade_count_60s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "flow_direction_10s",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "sell",
+        "flat",
+        "buy"
+      ]
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

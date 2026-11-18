@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "source_id": "coinbase.exchange.btc-usd.ticker",
+  "version": "1.0.0",
+  "name": "Coinbase Exchange BTC-USD ticker",
+  "description": "Normalized Coinbase Exchange BTC-USD ticker updates carrying the latest trade, displayed best bid and ask, and provider rolling-market statistics. This is a reference stream, not a substitute for the gap-recovered trade or level-two streams.",
+  "status": "approved",
+  "transport": "websocket",
+  "expected_heartbeat_ms": 1000,
+  "fields": [
+    { "name": "instrument", "type": "string", "location": "external" },
+    { "name": "trade_id", "type": "u64", "location": "external" },
+    { "name": "price", "type": "decimal", "location": "external" },
+    { "name": "last_size", "type": "decimal", "location": "external" },
+    { "name": "best_bid", "type": "decimal", "location": "external" },
+    { "name": "best_bid_size", "type": "decimal", "location": "external" },
+    { "name": "best_ask", "type": "decimal", "location": "external" },
+    { "name": "best_ask_size", "type": "decimal", "location": "external" },
+    { "name": "open_24h", "type": "decimal", "location": "external" },
+    { "name": "volume_24h", "type": "decimal", "location": "external" },
+    { "name": "low_24h", "type": "decimal", "location": "external" },
+    { "name": "high_24h", "type": "decimal", "location": "external" },
+    { "name": "volume_30d", "type": "decimal", "location": "external" },
+    { "name": "event_time", "type": "timestamp", "location": "external" },
+    { "name": "source_sequence", "type": "u64", "location": "external" }
+  ],
+  "event_time_field": "event_time",
+  "sequence_field": "source_sequence"
+}

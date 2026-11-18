@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[trailing-input]: unexpected input after a complete expression
+  1 + 2 3
+        ^
+  = expected end of input, found number `3`

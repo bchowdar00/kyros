@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-instrument-id] at instruments.game: instrument id `nba.sim.h2h` is not a market or series in the registry
+  = help: series instruments are referenced as `nba.sim.h2h.current`

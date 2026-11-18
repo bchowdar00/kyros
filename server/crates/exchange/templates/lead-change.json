@@ -1,0 +1,334 @@
+{
+  "id": "lead-change",
+  "title": "Lead Change",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-01.jpg" },
+  "series": ["nba-h2h"],
+  "logic": "Every time the lead changes hands, it sells what it holds and buys the team that just took the lead, a fixed amount each time, so each flip banks the gain on the side it is leaving. Once the fourth quarter starts it makes one last flip to the leader and holds to the final.",
+  "inverse_logic": "Every time the lead changes hands, it buys the team that just fell behind, a fixed amount, and sells it the moment it retakes the lead to buy the new trailer. In the fourth quarter it stops flipping and holds whichever side is leading to the final.",
+  "envelope": {
+    "loss_budget_fraction": "1",
+    "order_fraction": "0.05",
+    "max_order_size": "300",
+    "max_open_orders": "1",
+    "max_position_per_market": "300"
+  },
+  "substitutions": {
+    "nba-h2h": {}
+  },
+  "primary": {
+    "meta": {
+      "name": "Back the Leader",
+      "description": "While the game is in play, whenever the score margin crosses zero, take the side that now leads with an immediate-or-cancel limit two cents over its ask, sized to close the current position plus the stake. From the fourth quarter on, one last flip to the leader, then hold to the final.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "margin": "nba.sim.margin.v1",
+      "pbp": "nba.sim.pbp.v1"
+    },
+    "state": [],
+    "triggers": [
+      {
+        "name": "home_leads",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "margin", "field": "value", "comparator": ">", "value": "0" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      },
+      {
+        "name": "away_leads",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "margin", "field": "value", "comparator": "<", "value": "0" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "hunting",
+        "resident": true,
+        "arm": ["home_leads", "away_leads"],
+        "body": [
+          {
+            "name": "take_home",
+            "if": "triggered(home_leads) and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_home", "partial": "holding_home", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+                }
+              }
+            ],
+            "then": "holding_home"
+          },
+          {
+            "name": "take_away",
+            "if": "triggered(away_leads) and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_away", "partial": "holding_away", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+                }
+              }
+            ],
+            "then": "holding_away"
+          }
+        ]
+      },
+      {
+        "name": "holding_home",
+        "resident": true,
+        "arm": ["away_leads"],
+        "body": [
+          {
+            "name": "flip_away",
+            "if": "triggered(away_leads) and signal.pbp.quarter < 4 and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(platform.position.size, 0) + envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_away", "partial": "holding_away", "reject": "holding_home", "cancel_ack": "holding_home", "expiry": "holding_home" }
+                }
+              }
+            ],
+            "then": "holding_away"
+          },
+          {
+            "name": "last_flip_away",
+            "if": "triggered(away_leads) and signal.pbp.quarter >= 4 and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(platform.position.size, 0) + envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "last_flip",
+                  "on": { "fill": "locked", "partial": "locked", "reject": "holding_home", "cancel_ack": "holding_home", "expiry": "holding_home" }
+                }
+              }
+            ],
+            "then": "locked"
+          }
+        ]
+      },
+      {
+        "name": "holding_away",
+        "resident": true,
+        "arm": ["home_leads"],
+        "body": [
+          {
+            "name": "flip_home",
+            "if": "triggered(home_leads) and signal.pbp.quarter < 4 and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(0 - platform.position.size, 0) + envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_home", "partial": "holding_home", "reject": "holding_away", "cancel_ack": "holding_away", "expiry": "holding_away" }
+                }
+              }
+            ],
+            "then": "holding_home"
+          },
+          {
+            "name": "last_flip_home",
+            "if": "triggered(home_leads) and signal.pbp.quarter >= 4 and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(0 - platform.position.size, 0) + envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "last_flip",
+                  "on": { "fill": "locked", "partial": "locked", "reject": "holding_away", "cancel_ack": "holding_away", "expiry": "holding_away" }
+                }
+              }
+            ],
+            "then": "locked"
+          }
+        ]
+      },
+      { "name": "locked", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Back the Trailer",
+      "description": "While the game is in play, whenever the score margin crosses zero, take the side that just fell behind with an immediate-or-cancel limit two cents over its ask, sized to close the current position plus the stake. From the fourth quarter on, a lead change means the held side now leads, so stop and hold to the final.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "margin": "nba.sim.margin.v1",
+      "pbp": "nba.sim.pbp.v1"
+    },
+    "state": [],
+    "triggers": [
+      {
+        "name": "home_leads",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "margin", "field": "value", "comparator": ">", "value": "0" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      },
+      {
+        "name": "away_leads",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "margin", "field": "value", "comparator": "<", "value": "0" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "hunting",
+        "resident": true,
+        "arm": ["home_leads", "away_leads"],
+        "body": [
+          {
+            "name": "take_away",
+            "if": "triggered(home_leads) and signal.pbp.quarter < 4 and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_away", "partial": "holding_away", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+                }
+              }
+            ],
+            "then": "holding_away"
+          },
+          {
+            "name": "take_home",
+            "if": "triggered(away_leads) and signal.pbp.quarter < 4 and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_home", "partial": "holding_home", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+                }
+              }
+            ],
+            "then": "holding_home"
+          }
+        ]
+      },
+      {
+        "name": "holding_away",
+        "resident": true,
+        "arm": ["away_leads"],
+        "body": [
+          {
+            "name": "flip_home",
+            "if": "triggered(away_leads) and signal.pbp.quarter < 4 and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(0 - platform.position.size, 0) + envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_home", "partial": "holding_home", "reject": "holding_away", "cancel_ack": "holding_away", "expiry": "holding_away" }
+                }
+              }
+            ],
+            "then": "holding_home"
+          },
+          {
+            "name": "lock",
+            "if": "triggered(away_leads) and signal.pbp.quarter >= 4",
+            "do": [],
+            "then": "locked"
+          }
+        ]
+      },
+      {
+        "name": "holding_home",
+        "resident": true,
+        "arm": ["home_leads"],
+        "body": [
+          {
+            "name": "flip_away",
+            "if": "triggered(home_leads) and signal.pbp.quarter < 4 and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(platform.position.size, 0) + envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_away", "partial": "holding_away", "reject": "holding_home", "cancel_ack": "holding_home", "expiry": "holding_home" }
+                }
+              }
+            ],
+            "then": "holding_away"
+          },
+          {
+            "name": "lock",
+            "if": "triggered(home_leads) and signal.pbp.quarter >= 4",
+            "do": [],
+            "then": "locked"
+          }
+        ]
+      },
+      { "name": "locked", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "name": "Late Momentum",
+    "description": "On the 2-minute BTC up/down market: at 10 seconds before window close, check how far spot has moved from the window open. If it is up more than 0.08% (0.0008 as a fraction, the window_delta signal's units), buy up; if it is down more than 0.08%, buy down. Runs every window.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_2m.current"
+  },
+
+  "signals": {
+    "delta": "platform.btc_usd.window_delta.v1"
+  },
+
+  "state": [],
+
+  "triggers": [
+    { "name": "last_10s",
+      "timer": { "kind": "window_clock", "instrument": "market", "remaining": "10s" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "sniping",
+      "resident": true,
+      "arm": ["last_10s"],
+      "body": [
+        { "name": "buy_up",
+          "if": "triggered(last_10s) and signal.delta.pct > 0.0008",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "momentum"
+            }}
+          ] },
+
+        { "name": "buy_down",
+          "if": "triggered(last_10s) and signal.delta.pct < -0.0008",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "down", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "momentum"
+            }}
+          ] }
+      ] }
+  ]
+}

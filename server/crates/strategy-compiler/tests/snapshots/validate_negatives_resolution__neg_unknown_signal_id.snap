@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-signal-id] at signals.pbp: signal id `nba.sim.h2h.current.pbp.v9` is not in the registry
+  = help: check the id against the registry's signal list; own-order signals are not yet supported

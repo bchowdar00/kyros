@@ -1,0 +1,14 @@
+{
+  "title": "Fair probability",
+  "description": "A model's odds that BTC finishes above this venue's strike, from the current price, recent volatility and the time left. A yardstick to hold the venue's own price against.",
+  "fields": {
+    "probability": {
+      "label": "Fair odds of Up",
+      "description": "The modelled chance the round settles Up, as a percentage. Compare it with the venue's Up price to see who is optimistic."
+    },
+    "moneyness": {
+      "label": "Moneyness",
+      "description": "How far BTC is from the strike in units of the move volatility says is plausible in the time left. Near zero is a coin flip; beyond two is nearly decided."
+    }
+  }
+}

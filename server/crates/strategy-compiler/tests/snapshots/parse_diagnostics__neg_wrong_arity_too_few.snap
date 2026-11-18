@@ -1,0 +1,7 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[wrong-arity]: `min` expects 2 arguments, found 1
+  min(1)
+  ^^^^^^

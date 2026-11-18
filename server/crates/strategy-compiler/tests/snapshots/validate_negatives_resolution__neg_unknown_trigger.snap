@@ -1,0 +1,11 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-trigger] at legs[0].arm[1]: arm list names undeclared trigger `nope`
+  = help: declared triggers: tick
+
+error[unknown-trigger] at legs[0].body[0].if: reference to undeclared trigger `gone`
+  triggered(gone)
+            ^^^^
+  = help: declared triggers: tick

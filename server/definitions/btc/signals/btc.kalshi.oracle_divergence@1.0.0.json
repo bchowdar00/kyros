@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.oracle_divergence",
+  "version": "1.0.0",
+  "name": "Kalshi BTC oracle-versus-spot divergence",
+  "description": "The Kalshi twin of btc.polymarket.oracle_divergence, on the same formula and the same field set. divergence_bps = (anchor - spot_reference_mid) / spot_reference_mid in signed basis points, comparing the bound Kalshi market's settlement anchor — the CF Benchmarks BRTI trailing sixty-second average relayed by cfbenchmarks_value (source kalshi.cfbenchmarks.brti.value, field avg_60s_value) — to the composite spot reference midpoint (btc.external.spot_reference reference_price, carried here as spot_reference_mid). It is computed per bound market inside the Kalshi prediction process and published under that market's scope, so an unbound, still-warming or closed market fails it closed; observation_time is the decision instant the reading was evaluated at. Three settlement-window fields carry the completeness KXBTC15M locks on, read from the source kalshi.cfbenchmarks.brti.settlement-window (E28/E37): quarter_close_time is the derived close on the fifteen-minute grid, window_as_of is how far the final-minute average has actually reached, and settlement_window_complete is true exactly when window_as_of equals quarter_close_time with the full sixty-print window, four times an hour. They inform completeness but do not gate readiness (E37a). At the grid close the twin publishes exactly one final ready decision carrying settlement_window_complete true and window_as_of equal to quarter_close_time before the next decision goes market_closed (E37b). If a scheduled rollover beats the completing frame, that one final ready decision is instead retained and published up to five seconds later, scoped to the departed market, when the completing settlement-window frame for its quarter arrives, or the pending slot expires unpublished and is counted in feed health (ruling E37c). state is aligned when the absolute divergence is strictly below diverged_threshold_bps and diverged otherwise. A thin anchor window (avg_60s_window_size below the declared full window) degrades with cfbrti_anchor_window_thin rather than being compared as a sixty-sample average. Mechanical caveat: the anchor is a sixty-second average of an index whose constituents are not the composite's two venues, so nonzero divergence during a spot move is expected averaging lag plus constituent mix, not an anomaly — this contextualizes oracle-versus-spot positioning and leaves the judgment to consumers. A zero or invalid spot midpoint is a defined not-ready state (reference_unavailable), never a division; not ready until both inputs have emitted. Instance-status reasons: oracle_rights_gated, cfbrti_warming_up, cfbrti_stale, cfbrti_anchor_window_thin, cfbrti_disconnected, cfbrti_subscription_rejected, cfbrti_entitlement_denied, cfbrti_value_invalid, cfbrti_anchor_missing, market_contract_warming_up, market_rollover, reference_unavailable. diverged_threshold_bps defaults to 10. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "kalshi.cfbenchmarks.brti.value",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kalshi.cfbenchmarks.brti.settlement-window",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.external.spot_reference",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "divergence_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "anchor_price",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "spot_reference_mid",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "aligned",
+        "diverged"
+      ]
+    },
+    {
+      "name": "diverged_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "quarter_close_time",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "window_as_of",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "settlement_window_complete",
+      "type": "bool",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

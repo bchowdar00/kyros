@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-table] at legs[0].body[0].if: reference to undeclared table `curve`
+  lookup(table.curve, signal.price.home) > 0
+               ^^^^^
+  = help: declared tables: (none)

@@ -1,0 +1,22 @@
+{
+  "title": "Liquidations",
+  "description": "Forced closes of leveraged positions on this venue in the last minute. Clusters of them push the price one way and often mark the end of a move.",
+  "fields": {
+    "clustering_state": {
+      "label": "Cluster state",
+      "description": "Quiet, elevated or cascading, from how bunched recent liquidations are. Cascading means one forced close is triggering the next."
+    },
+    "notional_usd_60s": {
+      "label": "Liquidated 60s",
+      "description": "Dollars of positions force-closed in the last minute. Big numbers mean leverage is being flushed."
+    },
+    "side_skew_60s": {
+      "label": "Side skew 60s",
+      "description": "Longs liquidated minus shorts over the total, from minus one to plus one. Positive means longs are the ones being flushed."
+    },
+    "count_60s": {
+      "label": "Count 60s",
+      "description": "How many liquidations printed in the last minute. Many small ones read differently from one large one."
+    }
+  }
+}

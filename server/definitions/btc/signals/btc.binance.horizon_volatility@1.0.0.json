@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.horizon_volatility",
+  "version": "1.0.0",
+  "name": "Binance BTC/USDT one-, five-, and fifteen-minute realized volatility",
+  "description": "One-second causal observations of the fresh Binance displayed best-quote midpoint are converted to simple basis-point returns. volatility_bps_1m, volatility_bps_5m, and volatility_bps_15m are the root mean square of the one-second returns inside the trailing one-, five-, and fifteen-minute windows. short_long_ratio is the one-minute value divided by the fifteen-minute value; when both windows have zero root-mean-square volatility, the ratio is defined as 1 and regime is stable. Regime is contracting at or below 0.8, expanding at or above 1.2, and stable between those boundaries. The 0.8 and 1.2 regime boundaries are initial research thresholds that require empirical calibration; the return and root-mean-square formulas are not heuristic thresholds. Any missing or non-ready one-second observation breaks continuity and restarts the fifteen-minute warm-up; the identity is ready only once the ring holds 901 contiguous one-second samples (the longest horizon, 15 minutes). This never widens the existing realized_volatility contract (SME contract stability). Decimal outputs are rounded to eight places using round-half-to-even. This identity is single-venue: it reads only Binance inputs and is ready whenever the Binance midpoint ring holds 901 contiguous one-second samples, independently of the other adopted spot venues. The blended btc.external.* reading of the same measurement keeps its every-venue AND-gate and stays the reference layer (ADR 0024). Binance inputs are rights-gated (signals/knowledge/RIGHTS-LEDGER.md): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list SIGNALS_ENABLED_VENUES names binance. E47 (USD quoting): this identity publishes no price-, notional- or quote-denominated field \u2014 its outputs are basis-point returns, their root mean square, a ratio, a direction word and a sample count, all scale-free \u2014 so nothing is converted, no usdt_usd_rate is published, and it never goes usdt_reference_stale; quote_currency is the constant \"usd\".",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.spot.btcusdt.book-ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "volatility_bps_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "volatility_bps_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "volatility_bps_15m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "short_long_ratio",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "contracting",
+        "stable",
+        "expanding"
+      ]
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

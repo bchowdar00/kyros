@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.spot_microprice",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD microprice",
+  "description": "For each fresh reconstructed Kraken level-two book, microprice is (ask times bid size plus bid times ask size) divided by total touch size. microprice_deviation_bps is (microprice minus the book midpoint) divided by that midpoint times 10000, so a positive value indicates touch-size pressure toward the ask. Ready output requires a complete positive uncrossed Kraken book no more than 10 seconds old. This identity is single-venue: it reads only Kraken inputs and is ready whenever the Kraken book is complete, uncrossed, and inside the staleness bound, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "kraken.spot.btc-usd.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "microprice", "type": "decimal", "location": "internal" },
+    { "name": "book_midpoint", "type": "decimal", "location": "internal" },
+    { "name": "microprice_deviation_bps", "type": "decimal", "location": "internal" },
+    { "name": "book_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

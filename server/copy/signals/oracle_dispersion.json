@@ -1,0 +1,22 @@
+{
+  "title": "Oracle disagreement",
+  "description": "How far Pyth, Chainlink and the CF benchmark are from each other on BTC. They rarely agree to the cent, and a wide gap usually means one is stale.",
+  "fields": {
+    "state": {
+      "label": "Oracle state",
+      "description": "Aligned when the oracles agree within a threshold, divergent when they do not. Divergent means the settlement price is uncertain."
+    },
+    "dispersion_bps": {
+      "label": "Oracle gap",
+      "description": "The gap between the highest and lowest oracle as a share of price, in basis points. Bigger means more disagreement."
+    },
+    "leading_oracle": {
+      "label": "Leading",
+      "description": "The oracle that moved first on the latest move. The others are expected to follow."
+    },
+    "lagging_oracle": {
+      "label": "Lagging",
+      "description": "The oracle furthest behind the latest move. If it settles a venue, that venue is briefly mispriced."
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Recent rounds",
+  "description": "How the last rounds on this venue settled. A long streak one way says something about the trend, and about how the crowd will lean next.",
+  "fields": {
+    "streak_direction": {
+      "label": "Streak direction",
+      "description": "Whether the current run of settlements is Up or Down. None right after the streak breaks."
+    },
+    "streak_length": {
+      "label": "Streak length",
+      "description": "How many rounds in a row have settled the same way. Long streaks draw momentum bets and contrarian bets alike."
+    },
+    "up_share_8": {
+      "label": "Up in last 8",
+      "description": "The share of the last eight rounds that settled Up, as a percentage. Fifty is balanced."
+    }
+  }
+}

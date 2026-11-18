@@ -1,0 +1,148 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Logic {
+        op: And,
+        lhs: Spanned {
+            node: Cmp {
+                op: Lt,
+                lhs: Spanned {
+                    node: Ref(
+                        Ref {
+                            namespace: Signal,
+                            path: [
+                                Spanned {
+                                    node: "delta",
+                                    span: Span {
+                                        start: 7,
+                                        end: 12,
+                                    },
+                                },
+                                Spanned {
+                                    node: "pct",
+                                    span: Span {
+                                        start: 13,
+                                        end: 16,
+                                    },
+                                },
+                            ],
+                            index: None,
+                        },
+                    ),
+                    span: Span {
+                        start: 0,
+                        end: 16,
+                    },
+                },
+                rhs: Spanned {
+                    node: Unary {
+                        op: Neg,
+                        operand: Spanned {
+                            node: Literal(
+                                Decimal(
+                                    "0.0002",
+                                ),
+                            ),
+                            span: Span {
+                                start: 20,
+                                end: 26,
+                            },
+                        },
+                    },
+                    span: Span {
+                        start: 19,
+                        end: 26,
+                    },
+                },
+            },
+            span: Span {
+                start: 0,
+                end: 26,
+            },
+        },
+        rhs: Spanned {
+            node: Cmp {
+                op: Ge,
+                lhs: Spanned {
+                    node: Arith {
+                        op: Sub,
+                        lhs: Spanned {
+                            node: Ref(
+                                Ref {
+                                    namespace: Expr,
+                                    path: [
+                                        Spanned {
+                                            node: "fair",
+                                            span: Span {
+                                                start: 36,
+                                                end: 40,
+                                            },
+                                        },
+                                    ],
+                                    index: None,
+                                },
+                            ),
+                            span: Span {
+                                start: 31,
+                                end: 40,
+                            },
+                        },
+                        rhs: Spanned {
+                            node: Ref(
+                                Ref {
+                                    namespace: Signal,
+                                    path: [
+                                        Spanned {
+                                            node: "book",
+                                            span: Span {
+                                                start: 50,
+                                                end: 54,
+                                            },
+                                        },
+                                        Spanned {
+                                            node: "down",
+                                            span: Span {
+                                                start: 55,
+                                                end: 59,
+                                            },
+                                        },
+                                    ],
+                                    index: None,
+                                },
+                            ),
+                            span: Span {
+                                start: 43,
+                                end: 59,
+                            },
+                        },
+                    },
+                    span: Span {
+                        start: 31,
+                        end: 59,
+                    },
+                },
+                rhs: Spanned {
+                    node: Literal(
+                        Decimal(
+                            "0.05",
+                        ),
+                    ),
+                    span: Span {
+                        start: 63,
+                        end: 67,
+                    },
+                },
+            },
+            span: Span {
+                start: 31,
+                end: 67,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 67,
+    },
+}

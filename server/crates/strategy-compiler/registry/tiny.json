@@ -1,0 +1,103 @@
+{
+  "markets": [],
+  "series": [
+    {
+      "series_id": "btc_usd.updown_1m",
+      "structure": "outcome",
+      "cadence": "1m",
+      "outcomes": ["up", "down"],
+      "quote": { "tick": "0.001", "range": ["0.001", "0.999"] },
+      "capabilities": { "post_only": true, "gtd": true, "reduce_only": true },
+      "metadata": {
+        "base": "btc",
+        "quote_ccy": "usd",
+        "venue": "tiny",
+        "description": "One-minute BTC up/down. The strike is the BTC spot print when the window opens; at close the spot print decides up (at or above the strike) or down. The book quotes the up side; down is its complement.",
+        "_capabilities_note": "post_only, gtd (expire_after) and reduce_only are the engine additions the venue adapter ships with the automation runtime (agent_docs/automation-implementation.md §3.8.6); flip a flag off here and the compiler refuses the order flag.",
+        "_runtime_note": "The exchange's book is a non-uniform tick grid (0.1c at the extremes, 1c in the middle). Limit prices are snapped to the nearest venue tick at placement; the registry tick is the finest grid a price expression may name."
+      }
+    }
+  ],
+  "signals": [
+    {
+      "signal_id": "coinbase.btc_usd.spot.v1",
+      "version": "1",
+      "location": "external",
+      "description": "Coinbase BTC-USD spot ticks. Event-driven: publishes on each tick; last is the traded price in USD.",
+      "fields": [
+        { "name": "last", "type": "decimal" }
+      ],
+      "metadata": { "venue": "coinbase", "pair": "btc_usd" }
+    },
+    {
+      "signal_id": "btc_usd.updown_1m.current.strike.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "The strike of the active btc_usd up/down window: the spot print captured at window open, in USD. Publishes once per window, at open.",
+      "fields": [
+        { "name": "price", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_1m" }
+    },
+    {
+      "signal_id": "btc_usd.updown_1m.current.price.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Market state for the active btc_usd up/down window. Event-driven: publishes on book change. Per-outcome implied probabilities (up, down — mid-based complements). bid/ask/last quote the up side of the book. Resets at window rollover.",
+      "fields": [
+        { "name": "up", "type": "decimal" },
+        { "name": "down", "type": "decimal" },
+        { "name": "bid", "type": "decimal" },
+        { "name": "ask", "type": "decimal" },
+        { "name": "last", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_1m", "quotes_outcome": "up", "outcome_fields": { "up": "up", "down": "down" } }
+    },
+    {
+      "signal_id": "btc_usd.updown_1m.current.window.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Window lifecycle for the active btc_usd up/down window. Level, not edge: phase is the current lifecycle state, published on each phase change and on every clock tick while open; seq increments once per window and never repeats; remaining is the time to close in milliseconds (0 once locked).",
+      "fields": [
+        { "name": "phase", "type": "enum", "variants": ["open", "locked", "settled"] },
+        { "name": "seq", "type": "u32" },
+        { "name": "remaining", "type": "duration_ms" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_1m", "role": "state" }
+    },
+    {
+      "signal_id": "btc_usd.updown_1m.current.trades.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "The trade tape of the active btc_usd up/down window. Event-driven: publishes once per fill. taker is the aggressing account's address; side is the taker's side on the up book; price is the fill price on the up side; size is the filled quantity in tokens.",
+      "fields": [
+        { "name": "taker", "type": "string" },
+        { "name": "side", "type": "enum", "variants": ["buy", "sell"] },
+        { "name": "price", "type": "decimal" },
+        { "name": "size", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_1m", "quotes_outcome": "up" }
+    },
+    {
+      "signal_id": "platform.btc_usd.window_delta.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed (spot - strike) / strike for the active btc_usd up/down window. Recomputed on each spot tick; resets at window rollover. Fraction, not percent: 0.0008 = 0.08%.",
+      "fields": [
+        { "name": "pct", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_1m", "inputs": ["coinbase.btc_usd.spot.v1", "btc_usd.updown_1m.current.strike.v1"] }
+    },
+    {
+      "signal_id": "platform.btc_usd.updown_1m.current.fair.v1",
+      "version": "1",
+      "location": "internal",
+      "description": "Platform-computed fair probabilities for the active btc_usd up/down window from spot, strike and time remaining (the exchange's own fair-value model). Recomputed on each spot tick and clock tick. Per-outcome fields (up, down). Resets at window rollover.",
+      "fields": [
+        { "name": "up", "type": "decimal" },
+        { "name": "down", "type": "decimal" }
+      ],
+      "metadata": { "series_id": "btc_usd.updown_1m", "outcome_fields": { "up": "up", "down": "down" }, "inputs": ["coinbase.btc_usd.spot.v1", "btc_usd.updown_1m.current.strike.v1", "btc_usd.updown_1m.current.window.v1"] }
+    }
+  ]
+}

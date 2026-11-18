@@ -1,0 +1,185 @@
+{
+  "id": "absorption-fade",
+  "title": "Brick Wall",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": null },
+  "series": ["btc-2m"],
+  "logic": "When heavy selling hits the market but the price will not budge, someone big is soaking it up. It bets the sellers give up first and buys Up; heavy buying that goes nowhere means Down. One trade per round, held to the close.",
+  "inverse_logic": "When heavy buying is actually moving the price, it buys Up; heavy selling that is moving it, Down. If the market starts soaking up that pressure and the price stalls, it closes and switches sides. Otherwise holds to the close.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-2m": { "cutoff": "20s" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Bet on the Wall",
+      "description": "When the blended absorption state reads absorbing with a ten-second flow direction of sell, take Up with an immediate-or-cancel limit two cents over the ask; when it reads absorbing with a flow direction of buy, take Down the same way. Once per round, held to settlement. No entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "soak": "btc.external.absorption_state.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "absorbed_selling",
+        "condition": { "all": [
+          { "signal": "soak", "field": "state", "comparator": "==", "value": "absorbing" },
+          { "signal": "soak", "field": "flow_direction", "comparator": "==", "value": "sell" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "absorbed_buying",
+        "condition": { "all": [
+          { "signal": "soak", "field": "state", "comparator": "==", "value": "absorbing" },
+          { "signal": "soak", "field": "flow_direction", "comparator": "==", "value": "buy" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["absorbed_selling", "absorbed_buying"],
+        "body": [
+          { "name": "take_up",
+            "if": "triggered(absorbed_selling) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_up",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" },
+          { "name": "take_down",
+            "if": "triggered(absorbed_buying) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_down",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" }
+        ] },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Ride the Pressure",
+      "description": "When the blended absorption state reads price_responsive with a ten-second flow direction of buy, take Up with an immediate-or-cancel limit two cents over the ask; with a flow direction of sell, take Down. While holding, the state turning to absorbing against that same flow flips the position: close it and take the same dollars on the other side. Held to settlement otherwise; no entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "soak": "btc.external.absorption_state.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "buying_works",
+        "condition": { "all": [
+          { "signal": "soak", "field": "state", "comparator": "==", "value": "price_responsive" },
+          { "signal": "soak", "field": "flow_direction", "comparator": "==", "value": "buy" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "selling_works",
+        "condition": { "all": [
+          { "signal": "soak", "field": "state", "comparator": "==", "value": "price_responsive" },
+          { "signal": "soak", "field": "flow_direction", "comparator": "==", "value": "sell" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "buying_absorbed",
+        "condition": { "all": [
+          { "signal": "soak", "field": "state", "comparator": "==", "value": "absorbing" },
+          { "signal": "soak", "field": "flow_direction", "comparator": "==", "value": "buy" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "selling_absorbed",
+        "condition": { "all": [
+          { "signal": "soak", "field": "state", "comparator": "==", "value": "absorbing" },
+          { "signal": "soak", "field": "flow_direction", "comparator": "==", "value": "sell" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["buying_works", "selling_works"],
+        "body": [
+          { "name": "ride_up",
+            "if": "triggered(buying_works) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_up" },
+          { "name": "ride_down",
+            "if": "triggered(selling_works) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_down" }
+        ] },
+      { "name": "holding_up", "resident": true, "arm": ["buying_absorbed"],
+        "body": [
+          { "name": "flip_down",
+            "if": "triggered(buying_absorbed) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(platform.position.size, 0) + envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "holding_up", "cancel_ack": "holding_up", "expiry": "holding_up" }
+              } }
+            ],
+            "then": "holding_down" }
+        ] },
+      { "name": "holding_down", "resident": true, "arm": ["selling_absorbed"],
+        "body": [
+          { "name": "flip_up",
+            "if": "triggered(selling_absorbed) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(0 - platform.position.size, 0) + envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "holding_down", "cancel_ack": "holding_down", "expiry": "holding_down" }
+              } }
+            ],
+            "then": "holding_up" }
+        ] }
+    ]
+  }
+}

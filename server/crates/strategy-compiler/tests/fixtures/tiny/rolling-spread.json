@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "name": "Rolling Spread",
+    "description": "On the one-minute BTC up/down: record fair minus ask on every book change into a rolling window of the last 20 readings. Once at least 10 readings are in, buy up at market when the average discount is over 3 cents, the readings are tight (range under 2 cents), at least 3 of them exceeded 5 cents, and the discount is not shrinking (newest at least the oldest). Once per window.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1"
+  },
+
+  "state": [
+    { "name": "spreads", "kind": "window", "value_type": "decimal", "capacity": 20 }
+  ],
+
+  "params": [
+    { "name": "mid", "type": "decimal", "default": "0.05" }
+  ],
+
+  "triggers": [
+    { "name": "book_tick",
+      "condition": { "signal": "book" },
+      "fire": "if_true", "rearm": { "mode": "immediate" } }
+  ],
+
+  "legs": [
+    { "name": "sampling",
+      "resident": true,
+      "arm": ["book_tick"],
+      "body": [
+        { "name": "record",
+          "if": "triggered(book_tick)",
+          "do": ["push state.spreads = signal.fair.up - signal.book.ask"] },
+
+        { "name": "buy_up",
+          "if": "count(state.spreads) >= 10 and sum(state.spreads) / count(state.spreads) > 0.03 and max_of(state.spreads) - min_of(state.spreads) < 0.02 and count_where(state.spreads, abs(entry.value - param.mid) > 0.05) >= 3 and count_where(state.spreads, if entry.value > 0 then true else false) >= 1 and newest(state.spreads) >= oldest(state.spreads)",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry",
+                "on": { "reject": "sampling" }
+            }}
+          ],
+          "then": "done" }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

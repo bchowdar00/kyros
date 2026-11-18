@@ -1,0 +1,363 @@
+---
+source: crates/strategy-compiler/tests/emit_program.rs
+expression: program
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_f93286bd377f",
+  "source_hash": "f93286bd377f9ed6e52319f6c90dcf64d6a34841443285bf199c5814d0f13410",
+  "name": "Curve Discount",
+  "description": "On the 2-minute BTC up/down market, trade only the last 30 seconds. A hand-fitted fair-value curve maps the absolute move from window open to the leading side's worth: 0.02% moved is about 55 cents, 0.05% about 65, 0.10% about 80, 0.15% or more about 92. During the last 30 seconds, whenever the leading side trades at least 5 cents below the curve, buy it — once per window. At window rollover, reset and wait for the next window's endgame.",
+  "dsl_version": "0.3",
+  "signals": {
+    "book": "btc_usd.updown_2m.current.price.v1",
+    "delta": "platform.btc_usd.window_delta.v1",
+    "window": "btc_usd.updown_2m.current.window.v1"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_2m.current"
+  },
+  "subscriptions": [
+    "btc_usd.updown_2m.current.price.v1",
+    "platform.btc_usd.window_delta.v1",
+    "btc_usd.updown_2m.current.window.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [],
+  "params": [],
+  "triggers": [
+    {
+      "name": "last_30s",
+      "source": {
+        "kind": "window_clock",
+        "instrument_id": "btc_usd.updown_2m.current",
+        "remaining_ms": 30000
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "book_tick",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "always",
+            "signal_id": "btc_usd.updown_2m.current.price.v1"
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    },
+    {
+      "name": "window_open",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_2m.current.window.v1",
+            "field": "phase",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "open"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    }
+  ],
+  "legs": [
+    {
+      "name": "waiting",
+      "resident": true,
+      "arm": [
+        "last_30s"
+      ],
+      "blocks": [
+        {
+          "name": "enter_endgame",
+          "reads": [],
+          "items": [],
+          "then": "endgame"
+        }
+      ]
+    },
+    {
+      "name": "endgame",
+      "resident": true,
+      "arm": [
+        "book_tick",
+        "window_open"
+      ],
+      "blocks": [
+        {
+          "name": "rollover_reset",
+          "guard": {
+            "op": "triggered",
+            "name": "window_open"
+          },
+          "reads": [],
+          "items": [],
+          "then": "waiting"
+        },
+        {
+          "name": "buy_up",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": ">",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "platform.btc_usd.window_delta.v1",
+                "field": "pct"
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "0.0002"
+              }
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "-",
+                "lhs": {
+                  "op": "lookup",
+                  "table": "fair_curve",
+                  "key": {
+                    "op": "call",
+                    "builtin": "abs",
+                    "args": [
+                      {
+                        "op": "signal",
+                        "signal_id": "platform.btc_usd.window_delta.v1",
+                        "field": "pct"
+                      }
+                    ]
+                  }
+                },
+                "rhs": {
+                  "op": "signal",
+                  "signal_id": "btc_usd.updown_2m.current.price.v1",
+                  "field": "up"
+                }
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "0.05"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "btc_usd.updown_2m.current.price.v1",
+              "field": "up"
+            },
+            {
+              "signal_id": "platform.btc_usd.window_delta.v1",
+              "field": "pct"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "endgame.buy_up.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "value_buy",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "filled"
+        },
+        {
+          "name": "buy_down",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "<",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "platform.btc_usd.window_delta.v1",
+                "field": "pct"
+              },
+              "rhs": {
+                "op": "neg",
+                "arg": {
+                  "op": "decimal",
+                  "value": "0.0002"
+                }
+              }
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "-",
+                "lhs": {
+                  "op": "lookup",
+                  "table": "fair_curve",
+                  "key": {
+                    "op": "call",
+                    "builtin": "abs",
+                    "args": [
+                      {
+                        "op": "signal",
+                        "signal_id": "platform.btc_usd.window_delta.v1",
+                        "field": "pct"
+                      }
+                    ]
+                  }
+                },
+                "rhs": {
+                  "op": "signal",
+                  "signal_id": "btc_usd.updown_2m.current.price.v1",
+                  "field": "down"
+                }
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "0.05"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "btc_usd.updown_2m.current.price.v1",
+              "field": "down"
+            },
+            {
+              "signal_id": "platform.btc_usd.window_delta.v1",
+              "field": "pct"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "endgame.buy_down.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "value_buy",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "filled"
+        }
+      ]
+    },
+    {
+      "name": "filled",
+      "resident": true,
+      "arm": [
+        "window_open"
+      ],
+      "blocks": [
+        {
+          "name": "rollover_reset",
+          "reads": [],
+          "items": [],
+          "then": "waiting"
+        }
+      ]
+    }
+  ],
+  "initial_leg": "waiting",
+  "intents": {
+    "endgame.buy_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "endgame.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {
+    "fair_curve": {
+      "keys": [
+        "0.0002",
+        "0.0005",
+        "0.001",
+        "0.0015"
+      ],
+      "values": [
+        "0.55",
+        "0.65",
+        "0.8",
+        "0.92"
+      ],
+      "interpolation": "linear"
+    }
+  }
+}

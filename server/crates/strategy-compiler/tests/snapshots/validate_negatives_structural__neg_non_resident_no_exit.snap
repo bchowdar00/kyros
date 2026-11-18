@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[non-resident-no-exit] at legs[0]: leg `probing` is not resident but has no transition out
+  = help: add a `then` or an on-table route to another leg, or declare the leg resident

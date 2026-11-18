@@ -1,0 +1,845 @@
+---
+source: crates/strategy-compiler/tests/emit_program.rs
+expression: program
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_b8c1d409b72e",
+  "source_hash": "b8c1d409b72ecc7cb1fa461fa6a81509680cde6eab899896fc08a23f1d5d2c51",
+  "name": "Favorite Panic",
+  "description": "On the NBA moneyline: the pregame Pinnacle line decides who the favorite is. First half only — if the favorite is down by 10 or more, the opponent has made 5 or more threes in the current quarter, and the favorite's price is under 35 cents, buy the favorite (the deficit is hot-shooting variance and usually comes back). After entry: sell if the favorite recovers past 70 cents; if it keeps dying and drops under 15 cents, sell anyway and eat the loss.",
+  "dsl_version": "0.3",
+  "signals": {
+    "fair": "pinnacle.nba.sim.h2h.current.fair.v1",
+    "pbp": "nba.sim.h2h.current.pbp.v1",
+    "price": "nba.sim.h2h.current.price.v1"
+  },
+  "instruments": {
+    "game": "nba.sim.h2h.current"
+  },
+  "subscriptions": [
+    "pinnacle.nba.sim.h2h.current.fair.v1",
+    "nba.sim.h2h.current.pbp.v1",
+    "nba.sim.h2h.current.price.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [
+    {
+      "kind": "scalar",
+      "name": "favorite",
+      "default": {
+        "op": "variant",
+        "value": "unknown"
+      }
+    },
+    {
+      "kind": "map",
+      "name": "made_threes",
+      "key_arity": 2,
+      "default": {
+        "op": "decimal",
+        "value": "0"
+      },
+      "max_keys": 16,
+      "overflow": "refuse_update"
+    }
+  ],
+  "params": [],
+  "triggers": [
+    {
+      "name": "opening_line",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "always",
+            "signal_id": "pinnacle.nba.sim.h2h.current.fair.v1"
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "never"
+    },
+    {
+      "name": "made_three",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.pbp.v1",
+            "field": "action",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "three_pointer"
+            }
+          },
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.pbp.v1",
+            "field": "result",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "made"
+            }
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    },
+    {
+      "name": "home_panic",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "home",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.35"
+            }
+          },
+          {
+            "kind": "expr",
+            "expr": {
+              "op": "-",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "nba.sim.h2h.current.pbp.v1",
+                "field": "away_score"
+              },
+              "rhs": {
+                "op": "signal",
+                "signal_id": "nba.sim.h2h.current.pbp.v1",
+                "field": "home_score"
+              }
+            },
+            "comparator": ">=",
+            "value": {
+              "kind": "literal",
+              "value": "10"
+            }
+          },
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.pbp.v1",
+            "field": "quarter",
+            "comparator": "<=",
+            "value": {
+              "kind": "literal",
+              "value": "2"
+            }
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    },
+    {
+      "name": "away_panic",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "away",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.35"
+            }
+          },
+          {
+            "kind": "expr",
+            "expr": {
+              "op": "-",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "nba.sim.h2h.current.pbp.v1",
+                "field": "home_score"
+              },
+              "rhs": {
+                "op": "signal",
+                "signal_id": "nba.sim.h2h.current.pbp.v1",
+                "field": "away_score"
+              }
+            },
+            "comparator": ">=",
+            "value": {
+              "kind": "literal",
+              "value": "10"
+            }
+          },
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.pbp.v1",
+            "field": "quarter",
+            "comparator": "<=",
+            "value": {
+              "kind": "literal",
+              "value": "2"
+            }
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    },
+    {
+      "name": "home_recovered",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "home",
+            "comparator": ">",
+            "value": {
+              "kind": "literal",
+              "value": "0.7"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "home_dead",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "home",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.15"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "away_recovered",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "away",
+            "comparator": ">",
+            "value": {
+              "kind": "literal",
+              "value": "0.7"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "away_dead",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "away",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.15"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    }
+  ],
+  "legs": [
+    {
+      "name": "hunting",
+      "resident": true,
+      "arm": [
+        "opening_line",
+        "made_three",
+        "home_panic",
+        "away_panic"
+      ],
+      "blocks": [
+        {
+          "name": "capture_favorite",
+          "guard": {
+            "op": "triggered",
+            "name": "opening_line"
+          },
+          "reads": [
+            {
+              "signal_id": "pinnacle.nba.sim.h2h.current.fair.v1",
+              "field": "home"
+            }
+          ],
+          "items": [
+            {
+              "kind": "set",
+              "slot": "favorite",
+              "value": {
+                "op": "if",
+                "arms": [
+                  {
+                    "condition": {
+                      "op": ">",
+                      "lhs": {
+                        "op": "signal",
+                        "signal_id": "pinnacle.nba.sim.h2h.current.fair.v1",
+                        "field": "home"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "0.5"
+                      }
+                    },
+                    "value": {
+                      "op": "variant",
+                      "value": "home"
+                    }
+                  }
+                ],
+                "else": {
+                  "op": "variant",
+                  "value": "away"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "count_threes",
+          "guard": {
+            "op": "triggered",
+            "name": "made_three"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "set",
+              "slot": "made_threes",
+              "keys": [
+                {
+                  "op": "event",
+                  "field": "team"
+                },
+                {
+                  "op": "event",
+                  "field": "quarter"
+                }
+              ],
+              "value": {
+                "op": "+",
+                "lhs": {
+                  "op": "state_map",
+                  "slot": "made_threes",
+                  "keys": [
+                    {
+                      "op": "event",
+                      "field": "team"
+                    },
+                    {
+                      "op": "event",
+                      "field": "quarter"
+                    }
+                  ]
+                },
+                "rhs": {
+                  "op": "decimal",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "buy_home_favorite",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "and",
+              "lhs": {
+                "op": "triggered",
+                "name": "home_panic"
+              },
+              "rhs": {
+                "op": "==",
+                "lhs": {
+                  "op": "state",
+                  "slot": "favorite"
+                },
+                "rhs": {
+                  "op": "variant",
+                  "value": "home"
+                }
+              }
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "state_map",
+                "slot": "made_threes",
+                "keys": [
+                  {
+                    "op": "variant",
+                    "value": "away"
+                  },
+                  {
+                    "op": "signal",
+                    "signal_id": "nba.sim.h2h.current.pbp.v1",
+                    "field": "quarter"
+                  }
+                ]
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "5"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "nba.sim.h2h.current.pbp.v1",
+              "field": "quarter"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "hunting.buy_home_favorite.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "home",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "entry",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_home"
+        },
+        {
+          "name": "buy_away_favorite",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "and",
+              "lhs": {
+                "op": "triggered",
+                "name": "away_panic"
+              },
+              "rhs": {
+                "op": "==",
+                "lhs": {
+                  "op": "state",
+                  "slot": "favorite"
+                },
+                "rhs": {
+                  "op": "variant",
+                  "value": "away"
+                }
+              }
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "state_map",
+                "slot": "made_threes",
+                "keys": [
+                  {
+                    "op": "variant",
+                    "value": "home"
+                  },
+                  {
+                    "op": "signal",
+                    "signal_id": "nba.sim.h2h.current.pbp.v1",
+                    "field": "quarter"
+                  }
+                ]
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "5"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "nba.sim.h2h.current.pbp.v1",
+              "field": "quarter"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "hunting.buy_away_favorite.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "away",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "entry",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_away"
+        }
+      ]
+    },
+    {
+      "name": "holding_home",
+      "resident": true,
+      "arm": [
+        "home_recovered",
+        "home_dead"
+      ],
+      "blocks": [
+        {
+          "name": "take_profit",
+          "guard": {
+            "op": "triggered",
+            "name": "home_recovered"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_home.take_profit.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "home",
+                "side": "sell",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "exit",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "call",
+                      "builtin": "abs",
+                      "args": [
+                        {
+                          "op": "platform",
+                          "read": "position_size"
+                        }
+                      ]
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "done"
+        },
+        {
+          "name": "cut_loss",
+          "guard": {
+            "op": "triggered",
+            "name": "home_dead"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_home.cut_loss.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "home",
+                "side": "sell",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "stop",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "call",
+                      "builtin": "abs",
+                      "args": [
+                        {
+                          "op": "platform",
+                          "read": "position_size"
+                        }
+                      ]
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "done"
+        }
+      ]
+    },
+    {
+      "name": "holding_away",
+      "resident": true,
+      "arm": [
+        "away_recovered",
+        "away_dead"
+      ],
+      "blocks": [
+        {
+          "name": "take_profit",
+          "guard": {
+            "op": "triggered",
+            "name": "away_recovered"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_away.take_profit.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "away",
+                "side": "sell",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "exit",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "call",
+                      "builtin": "abs",
+                      "args": [
+                        {
+                          "op": "platform",
+                          "read": "position_size"
+                        }
+                      ]
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "done"
+        },
+        {
+          "name": "cut_loss",
+          "guard": {
+            "op": "triggered",
+            "name": "away_dead"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_away.cut_loss.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "away",
+                "side": "sell",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "stop",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "call",
+                      "builtin": "abs",
+                      "args": [
+                        {
+                          "op": "platform",
+                          "read": "position_size"
+                        }
+                      ]
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "done"
+        }
+      ]
+    },
+    {
+      "name": "done",
+      "resident": true,
+      "arm": [],
+      "blocks": []
+    }
+  ],
+  "initial_leg": "hunting",
+  "intents": {
+    "holding_away.cut_loss.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_away",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "holding_away.take_profit.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_away",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "holding_home.cut_loss.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_home",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "holding_home.take_profit.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_home",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "hunting.buy_away_favorite.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "hunting.buy_home_favorite.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

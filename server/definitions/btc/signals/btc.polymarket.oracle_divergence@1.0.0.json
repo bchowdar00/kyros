@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.oracle_divergence",
+  "version": "1.0.0",
+  "name": "Polymarket BTC oracle-versus-spot divergence",
+  "description": "divergence_bps = (anchor - spot_reference_mid) / spot_reference_mid in signed basis points, comparing the bound Polymarket market's resolving Chainlink BTC/USD 60-second TWAP settlement anchor to the composite spot reference midpoint. It is computed per bound market inside the Polymarket prediction process and published under that market's scope, so an unbound, still-warming or closed market fails it closed; observation_time is the decision instant the reading was evaluated at. state is aligned when the absolute divergence is strictly below diverged_threshold_bps and diverged otherwise. Mechanical caveat: the anchor is a 60-second average, so nonzero divergence during a spot move is expected averaging lag, not an anomaly — this contextualizes oracle-versus-spot positioning and leaves the judgment to consumers. A zero or invalid spot midpoint is a defined not-ready state; not ready until both inputs have emitted. diverged_threshold_bps defaults to 10. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "polymarket.rtds.btc-usd.twap-60s",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.external.spot_reference",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "divergence_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "anchor_price",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "spot_reference_mid",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "aligned",
+        "diverged"
+      ]
+    },
+    {
+      "name": "diverged_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

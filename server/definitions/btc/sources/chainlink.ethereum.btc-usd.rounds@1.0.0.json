@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "source_id": "chainlink.ethereum.btc-usd.rounds",
+  "version": "1.0.0",
+  "name": "Chainlink Ethereum mainnet BTC/USD aggregator rounds",
+  "description": "Chainlink BTC/USD Data Feed rounds read from the EACAggregatorProxy at 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c on Ethereum mainnet by a keyless JSON-RPC eth_call of AggregatorV3Interface.latestRoundData() at the latest block, polled once per 60 seconds over an ordered list of at least two public HTTPS endpoints with failover. One event is emitted per NEW proxy round only: the poll deliberately over-samples a feed whose documented on-chain triggers are a 0.5 percent deviation threshold and a 3600-second heartbeat (both taken from Chainlink's published feed parameters and not independently measured on chain), so a repeated roundId is the expected steady state and is collapsed silently. latestRoundData returns only the newest round, so a poll interval spanning two on-chain rounds skips the intermediate round permanently: this feed is lossy by design, the skip is not a gap and is never backfilled in this version. round_id is the proxy round as a base-10 string because it is a u80; phase_id (round_id >> 64) and aggregator_round_id (round_id & 0xFFFFFFFFFFFFFFFF) are the documented decomposition, derived locally, and phase_id increments when the underlying aggregator implementation is swapped while the proxy round_id stays monotonic. answer is the int256 on-chain answer scaled by the feed's own decimals() = 8 and rendered exactly as a fixed 8-decimal string in USD per BTC by integer arithmetic, never binary floating point; a zero or negative answer is rejected, and the runner refuses to start if decimals() is not 8 or description() is not \"BTC / USD\". started_at and updated_at are the on-chain unix SECONDS fields converted to RFC 3339 and validated through the shared event-time plausibility window, which fails a value already expressed in milliseconds or microseconds closed. answered_in_round is the deprecated u80 carried verbatim as a string with no staleness logic attached. event_time is updated_at, the chain-side round publication instant, and event_time_basis records that basis; received_at on the envelope is the local poll receipt. A decrease in round_id is a provider or chain-reorganisation anomaly: it is noticed, emits nothing, and leaves the cursor unchanged. This is a read of public chain state under no contract with Chainlink; retention, derived use and redistribution are recorded as open in knowledge/RIGHTS-LEDGER.md.",
+  "status": "approved",
+  "transport": "http_poll",
+  "expected_heartbeat_ms": 3600000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "internal"
+    },
+    {
+      "name": "round_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "phase_id",
+      "type": "u64",
+      "location": "internal"
+    },
+    {
+      "name": "aggregator_round_id",
+      "type": "u64",
+      "location": "internal"
+    },
+    {
+      "name": "answer",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "started_at",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "answered_in_round",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "event_time_basis",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "source"
+      ]
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "event_time"
+}

@@ -1,0 +1,14 @@
+{
+  "title": "Activity",
+  "description": "How busy this venue is against its own recent pace. A jump in activity often comes just before a move.",
+  "fields": {
+    "velocity_ratio": {
+      "label": "Pace vs baseline",
+      "description": "Trades in the last ten seconds against the pace of the last half minute, as a change. Positive means busier than usual."
+    },
+    "trades_10s": {
+      "label": "Trades in 10s",
+      "description": "How many trades printed on this venue in the last ten seconds. The raw count behind the pace ratio."
+    }
+  }
+}

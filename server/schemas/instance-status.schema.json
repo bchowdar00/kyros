@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Instance Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "schema_version",
+    "publisher_epoch",
+    "sequence",
+    "produced_at",
+    "signal_id",
+    "signal_version",
+    "scope",
+    "state",
+    "reasons",
+    "effective_time",
+    "last_decision_sequence"
+  ],
+  "properties": {
+    "type": { "const": "instance_status" },
+    "schema_version": { "const": 3 },
+    "publisher_epoch": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "sequence": { "type": "integer", "minimum": 0 },
+    "produced_at": { "type": "string", "format": "date-time" },
+    "signal_id": { "$ref": "#/$defs/id" },
+    "signal_version": { "$ref": "#/$defs/version" },
+    "scope": { "$ref": "#/$defs/scope" },
+    "state": { "enum": ["warming_up", "degraded", "unavailable", "invalidated"] },
+    "reasons": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/reason" }
+    },
+    "effective_time": { "type": "string", "format": "date-time" },
+    "last_decision_sequence": { "type": ["integer", "null"], "minimum": 0 }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "scope": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": { "type": { "const": "global" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "market_id", "market_generation"],
+          "properties": {
+            "type": { "const": "market" },
+            "market_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9]([A-Za-z0-9._:-]{0,254}[A-Za-z0-9])?$"
+            },
+            "market_generation": { "type": "integer", "minimum": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "legs", "window"],
+          "properties": {
+            "type": { "const": "multi_market" },
+            "legs": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "description": "Ascending by (venue, market_id) byte order; an unsorted array is rejected, never re-sorted. The whole array plus the window is the instance key. At most two legs, because legs are on distinct market-scope venues and there are two.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["venue", "market_id", "market_generation"],
+                "properties": {
+                  "venue": { "enum": ["polymarket", "kalshi"] },
+                  "market_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9]([A-Za-z0-9._:-]{0,254}[A-Za-z0-9])?$"
+                  },
+                  "market_generation": { "type": "integer", "minimum": 1 }
+                }
+              }
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "RFC 3339 bounds with open strictly before close, compared as instants. The whole serialized scope object is bounded at 1024 bytes.",
+              "required": ["open", "close"],
+              "properties": {
+                "open": { "type": "string", "format": "date-time" },
+                "close": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "reason": {
+      "enum": [
+        "book_flow_history_warming_up",
+        "book_history_warming_up",
+        "coinbase_book_invalid",
+        "kraken_book_invalid",
+        "trade_history_warming_up",
+        "trade_venue_stale_or_missing",
+        "reference_unavailable",
+        "reference_constituents_unavailable",
+        "reference_history_warming_up",
+        "trade_window_empty",
+        "book_snapshot_stale_or_missing",
+        "upstream_measurement_unavailable",
+        "coinbase_venue_unavailable",
+        "kraken_venue_unavailable",
+        "coinbase_stale",
+        "coinbase_warming_up",
+        "coinbase_invalid_quote",
+        "coinbase_midpoint_unrepresentable",
+        "coinbase_disconnected",
+        "coinbase_recovery_required",
+        "coinbase_subscription_rejected",
+        "kraken_stale",
+        "kraken_warming_up",
+        "kraken_invalid_quote",
+        "kraken_midpoint_unrepresentable",
+        "kraken_disconnected",
+        "kraken_recovery_required",
+        "kraken_subscription_rejected",
+        "cross_venue_dispersion_exceeded",
+        "reference_arithmetic_unrepresentable",
+        "market_closed",
+        "opening_strike_unavailable",
+        "probe_depth_insufficient",
+        "trade_stale_or_missing",
+        "model_domain_exceeded",
+        "model_denominator_zero",
+        "volatility_warming_up",
+        "volatility_zero",
+        "market_contract_warming_up",
+        "market_clock_unrepresentable",
+        "last_trade_missing",
+        "last_trade_stale",
+        "book_stale",
+        "book_snapshot_missing",
+        "book_one_sided",
+        "book_crossed_or_invalid",
+        "negative_book_stale",
+        "negative_book_snapshot_missing",
+        "negative_book_one_sided",
+        "negative_book_crossed_or_invalid",
+        "kalshi_complement_invalid",
+        "affirmative_quote_missing",
+        "affirmative_quote_crossed_or_invalid",
+        "affirmative_quote_stale",
+        "negative_quote_missing",
+        "negative_quote_crossed_or_invalid",
+        "negative_quote_stale",
+        "market_rollover",
+        "market_discovery_unreachable",
+        "next_market_unlisted",
+        "market_discovery_invalid",
+        "market_open_gap",
+        "provider_lifecycle_change",
+        "basis_history_warming_up",
+        "binance_band_exceeds_captured_depth",
+        "binance_book_invalid",
+        "binance_disconnected",
+        "binance_invalid_quote",
+        "binance_midpoint_unrepresentable",
+        "binance_recovery_required",
+        "binance_stale",
+        "binance_subscription_rejected",
+        "binance_venue_unavailable",
+        "binance_warming_up",
+        "bybit_book_invalid",
+        "bybit_disconnected",
+        "bybit_invalid_quote",
+        "bybit_midpoint_unrepresentable",
+        "bybit_recovery_required",
+        "bybit_stale",
+        "bybit_subscription_rejected",
+        "bybit_venue_unavailable",
+        "bybit_warming_up",
+        "cfbrti_anchor_missing",
+        "cfbrti_anchor_window_thin",
+        "cfbrti_disconnected",
+        "cfbrti_entitlement_denied",
+        "cfbrti_stale",
+        "cfbrti_subscription_rejected",
+        "cfbrti_unavailable",
+        "cfbrti_value_invalid",
+        "cfbrti_warming_up",
+        "chainlink_reorg_detected",
+        "chainlink_round_invalid",
+        "chainlink_rpc_unavailable",
+        "chainlink_stale",
+        "chainlink_warming_up",
+        "counterparty_venue_unavailable",
+        "derivatives_constituents_unavailable",
+        "funding_info_missing",
+        "funding_interval_mismatch",
+        "funding_unavailable",
+        "leg_market_closed",
+        "leg_market_unbound",
+        "liquidation_burst_not_observed",
+        "liquidation_side_unconfirmed",
+        "open_interest_history_warming_up",
+        "open_interest_unavailable",
+        "oracle_constituents_unavailable",
+        "oracle_rights_gated",
+        "perp_venue_stale",
+        "pyth_disconnected",
+        "pyth_gap",
+        "pyth_stale",
+        "pyth_warming_up",
+        "window_alignment_mismatch",
+        "usdt_reference_stale",
+        "no_qualifying_move",
+        "flat_window",
+        "chainlink_rounds_sparse"
+      ]
+    }
+  }
+}

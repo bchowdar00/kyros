@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "source_id": "polymarket.btc.quotes",
+  "version": "1.0.0",
+  "name": "Polymarket BTC best bid and ask",
+  "description": "Normalized two-sided best bid and ask from Polymarket book snapshots, price_change rows carrying both best fields, and best_bid_ask messages for verified BTC outcome tokens. A ready event requires both sides; one-sided or empty books remain unavailable rather than using a numeric sentinel. event_time is the provider Unix-millisecond timestamp rendered as RFC 3339.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    { "name": "condition_id", "type": "string", "location": "external" },
+    { "name": "asset_id", "type": "string", "location": "external" },
+    {
+      "name": "outcome",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["up", "down"]
+    },
+    { "name": "best_bid", "type": "decimal", "location": "external" },
+    { "name": "best_ask", "type": "decimal", "location": "external" },
+    { "name": "spread", "type": "decimal", "location": "internal" },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@tiny/postcss-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./postcss.config": "./postcss.config.mjs"
+  },
+  "scripts": {
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "catalog:",
+    "postcss": "catalog:"
+  }
+}

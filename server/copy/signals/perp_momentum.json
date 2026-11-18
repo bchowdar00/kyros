@@ -1,0 +1,22 @@
+{
+  "title": "Perp momentum",
+  "description": "How the perpetual's mark price has moved over the last one, five and fifteen minutes. Leverage often moves ahead of spot.",
+  "fields": {
+    "return_bps_1m": {
+      "label": "Return 1m",
+      "description": "The change in mark price over the last minute, in basis points. Positive means the perp has been rising."
+    },
+    "return_bps_5m": {
+      "label": "Return 5m",
+      "description": "The change in mark price over the last five minutes, in basis points. The window most fifteen-minute rounds care about."
+    },
+    "return_bps_15m": {
+      "label": "Return 15m",
+      "description": "The change in mark price over the last fifteen minutes, in basis points. The slow trend behind the shorter reads."
+    },
+    "direction_5m": {
+      "label": "Move direction 5m",
+      "description": "Up or down once the five-minute return clears a small threshold, otherwise flat. The one-word version of the return."
+    }
+  }
+}

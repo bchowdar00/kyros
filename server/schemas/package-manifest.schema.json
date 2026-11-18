@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTC Signal Package Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "product", "package_version", "package_id", "committed_at",
+    "publisher_epoch", "sequence", "time", "stream_schema_version", "producer",
+    "rights_class", "limits", "files"
+  ],
+  "properties": {
+    "schema_version": { "const": "btc.signals.package-manifest/v1" },
+    "product": { "const": "btc.signals" },
+    "package_version": { "const": 1 },
+    "package_id": { "$ref": "#/$defs/sha256" },
+    "committed_at": { "type": "string", "format": "date-time" },
+    "publisher_epoch": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "sequence": { "$ref": "#/$defs/sequenceRange" },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first_produced_at", "last_produced_at"],
+      "properties": {
+        "first_produced_at": { "type": "string", "format": "date-time" },
+        "last_produced_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "stream_schema_version": { "const": 3 },
+    "producer": { "$ref": "#/$defs/producer" },
+    "rights_class": { "enum": ["synthetic_public", "research_only_unapproved", "owner_only"] },
+    "revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supersedes_package_id", "reason"],
+      "properties": {
+        "supersedes_package_id": { "$ref": "#/$defs/sha256" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maximum_manifest_bytes", "maximum_sidecar_bytes", "maximum_compressed_bytes",
+        "maximum_uncompressed_bytes", "maximum_record_bytes", "maximum_records"
+      ],
+      "properties": {
+        "maximum_manifest_bytes": { "type": "integer", "minimum": 1 },
+        "maximum_sidecar_bytes": { "type": "integer", "minimum": 1 },
+        "maximum_compressed_bytes": { "type": "integer", "minimum": 1 },
+        "maximum_uncompressed_bytes": { "type": "integer", "minimum": 1 },
+        "maximum_record_bytes": { "type": "integer", "minimum": 1 },
+        "maximum_records": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": { "$ref": "#/$defs/file" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "sequenceRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first", "last"],
+      "properties": {
+        "first": { "type": "integer", "minimum": 0 },
+        "last": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implementation", "implementation_version", "build", "commit"],
+      "properties": {
+        "implementation": { "type": "string", "minLength": 1, "pattern": "^\\S+$" },
+        "implementation_version": { "type": "string", "minLength": 1, "pattern": "^\\S+$" },
+        "build": { "type": "string", "minLength": 1, "pattern": "^\\S+$" },
+        "commit": { "type": "string", "minLength": 1, "pattern": "^\\S+$" }
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path", "media_type", "compression", "sha256", "bytes", "schema_version"
+      ],
+      "properties": {
+        "path": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$" },
+        "media_type": { "type": "string", "minLength": 1 },
+        "compression": { "enum": ["none", "zstd"] },
+        "compression_level": { "type": "integer" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "uncompressed_sha256": { "$ref": "#/$defs/sha256" },
+        "uncompressed_bytes": { "type": "integer", "minimum": 1 },
+        "record_count": { "type": "integer", "minimum": 0 },
+        "schema_version": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [{
+        "if": { "properties": { "path": { "const": "signals.jsonl.zst" } }, "required": ["path"] },
+        "then": { "required": ["compression_level", "uncompressed_sha256", "uncompressed_bytes", "record_count"] },
+        "else": {
+          "not": {
+            "anyOf": [
+              { "required": ["compression_level"] },
+              { "required": ["uncompressed_sha256"] },
+              { "required": ["uncompressed_bytes"] },
+              { "required": ["record_count"] }
+            ]
+          }
+        }
+      }]
+    }
+  }
+}

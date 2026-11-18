@@ -1,0 +1,8 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_context.rs
+expression: "common::render(&diagnostics)"
+---
+error[bare-identifier] at triggers[0].condition.expr: `ask` is not a reference — bare identifiers do not exist
+  signal.fair.home - ask
+                     ^^^
+  = help: references must start with a namespace: event., signal., state., platform., legs., expr., table., entry., envelope., or param.

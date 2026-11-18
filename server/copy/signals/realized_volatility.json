@@ -1,0 +1,18 @@
+{
+  "title": "Volatility",
+  "description": "How much the price has been moving in the last minute, from one-second returns. The fastest read on whether things are heating up.",
+  "fields": {
+    "volatility_bps_15s": {
+      "label": "Volatility 15s",
+      "description": "The spread of one-second returns over the last fifteen seconds, in basis points. Bigger means the price is swinging more right now."
+    },
+    "volatility_bps_60s": {
+      "label": "Volatility 60s",
+      "description": "The spread of one-second returns over the last minute, in basis points. The baseline the fifteen-second read is compared with."
+    },
+    "regime": {
+      "label": "Volatility regime",
+      "description": "Rising when the last fifteen seconds are hotter than the minute, falling when calmer, steady in between. Rising volatility widens the range of likely closes."
+    }
+  }
+}

@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: "common::render(&diagnostics)"
+---
+error[unexpected-eof] at expressions.named.sz: expression ended unexpectedly
+  clamp(envelope.max_order_size, 0,
+                                   ^
+  = expected a value, found end of input

@@ -1,0 +1,754 @@
+---
+source: crates/strategy-compiler/tests/emit_program.rs
+expression: program
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_a265e47910b6",
+  "source_hash": "a265e47910b697a011996b766dcdadd8b57b6d0147da1e361718493170beadb7",
+  "name": "Capitulation Fade",
+  "description": "On the NBA moneyline: when a team has missed 6 or more threes in the current quarter, is down by 10 or more points, and its price is under 40 cents, buy the other team at half max size. While holding: if the held side rises above 80 cents, sell the position to lock in the profit and stop. If it falls below 30 cents instead, dump it and buy the original team in one order (the unified book flips the position). The exits apply to whichever side is currently held.",
+  "dsl_version": "0.3",
+  "signals": {
+    "pbp": "nba.sim.h2h.current.pbp.v1",
+    "price": "nba.sim.h2h.current.price.v1"
+  },
+  "instruments": {
+    "game": "nba.sim.h2h.current"
+  },
+  "subscriptions": [
+    "nba.sim.h2h.current.pbp.v1",
+    "nba.sim.h2h.current.price.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [
+    {
+      "kind": "map",
+      "name": "miss_count",
+      "key_arity": 2,
+      "default": {
+        "op": "decimal",
+        "value": "0"
+      },
+      "max_keys": 16,
+      "overflow": "refuse_update"
+    }
+  ],
+  "params": [],
+  "triggers": [
+    {
+      "name": "missed_three",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.pbp.v1",
+            "field": "action",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "three_pointer"
+            }
+          },
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.pbp.v1",
+            "field": "result",
+            "comparator": "==",
+            "value": {
+              "kind": "literal",
+              "value": "missed"
+            }
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    },
+    {
+      "name": "home_capitulation",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "home",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.4"
+            }
+          },
+          {
+            "kind": "expr",
+            "expr": {
+              "op": "-",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "nba.sim.h2h.current.pbp.v1",
+                "field": "away_score"
+              },
+              "rhs": {
+                "op": "signal",
+                "signal_id": "nba.sim.h2h.current.pbp.v1",
+                "field": "home_score"
+              }
+            },
+            "comparator": ">=",
+            "value": {
+              "kind": "literal",
+              "value": "10"
+            }
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    },
+    {
+      "name": "away_capitulation",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "away",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.4"
+            }
+          },
+          {
+            "kind": "expr",
+            "expr": {
+              "op": "-",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "nba.sim.h2h.current.pbp.v1",
+                "field": "home_score"
+              },
+              "rhs": {
+                "op": "signal",
+                "signal_id": "nba.sim.h2h.current.pbp.v1",
+                "field": "away_score"
+              }
+            },
+            "comparator": ">=",
+            "value": {
+              "kind": "literal",
+              "value": "10"
+            }
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    },
+    {
+      "name": "home_rich",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "home",
+            "comparator": ">",
+            "value": {
+              "kind": "literal",
+              "value": "0.8"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "away_rich",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "away",
+            "comparator": ">",
+            "value": {
+              "kind": "literal",
+              "value": "0.8"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "home_cheap",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "home",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.3"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "away_cheap",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "nba.sim.h2h.current.price.v1",
+            "field": "away",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.3"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    }
+  ],
+  "legs": [
+    {
+      "name": "hunting",
+      "resident": true,
+      "arm": [
+        "missed_three",
+        "home_capitulation",
+        "away_capitulation"
+      ],
+      "blocks": [
+        {
+          "name": "count_miss",
+          "guard": {
+            "op": "triggered",
+            "name": "missed_three"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "set",
+              "slot": "miss_count",
+              "keys": [
+                {
+                  "op": "event",
+                  "field": "team"
+                },
+                {
+                  "op": "event",
+                  "field": "quarter"
+                }
+              ],
+              "value": {
+                "op": "+",
+                "lhs": {
+                  "op": "state_map",
+                  "slot": "miss_count",
+                  "keys": [
+                    {
+                      "op": "event",
+                      "field": "team"
+                    },
+                    {
+                      "op": "event",
+                      "field": "quarter"
+                    }
+                  ]
+                },
+                "rhs": {
+                  "op": "decimal",
+                  "value": "1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "fade_home",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "triggered",
+              "name": "home_capitulation"
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "state_map",
+                "slot": "miss_count",
+                "keys": [
+                  {
+                    "op": "variant",
+                    "value": "home"
+                  },
+                  {
+                    "op": "signal",
+                    "signal_id": "nba.sim.h2h.current.pbp.v1",
+                    "field": "quarter"
+                  }
+                ]
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "6"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "nba.sim.h2h.current.pbp.v1",
+              "field": "quarter"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "hunting.fade_home.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "away",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "entry",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "/",
+                      "lhs": {
+                        "op": "envelope",
+                        "field": "max_order_size",
+                        "value": "100"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "2"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_away"
+        },
+        {
+          "name": "fade_away",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "triggered",
+              "name": "away_capitulation"
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "state_map",
+                "slot": "miss_count",
+                "keys": [
+                  {
+                    "op": "variant",
+                    "value": "away"
+                  },
+                  {
+                    "op": "signal",
+                    "signal_id": "nba.sim.h2h.current.pbp.v1",
+                    "field": "quarter"
+                  }
+                ]
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "6"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "nba.sim.h2h.current.pbp.v1",
+              "field": "quarter"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "hunting.fade_away.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "home",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "entry",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "/",
+                      "lhs": {
+                        "op": "envelope",
+                        "field": "max_order_size",
+                        "value": "100"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "2"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_home"
+        }
+      ]
+    },
+    {
+      "name": "holding_away",
+      "resident": true,
+      "arm": [
+        "away_rich",
+        "away_cheap"
+      ],
+      "blocks": [
+        {
+          "name": "take_profit",
+          "guard": {
+            "op": "triggered",
+            "name": "away_rich"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_away.take_profit.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "away",
+                "side": "sell",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "exit",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "call",
+                      "builtin": "abs",
+                      "args": [
+                        {
+                          "op": "platform",
+                          "read": "position_size"
+                        }
+                      ]
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "done"
+        },
+        {
+          "name": "stop_flip",
+          "guard": {
+            "op": "triggered",
+            "name": "away_cheap"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_away.stop_flip.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "home",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "flip",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "*",
+                      "lhs": {
+                        "op": "call",
+                        "builtin": "abs",
+                        "args": [
+                          {
+                            "op": "platform",
+                            "read": "position_size"
+                          }
+                        ]
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "2"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_home"
+        }
+      ]
+    },
+    {
+      "name": "holding_home",
+      "resident": true,
+      "arm": [
+        "home_rich",
+        "home_cheap"
+      ],
+      "blocks": [
+        {
+          "name": "take_profit",
+          "guard": {
+            "op": "triggered",
+            "name": "home_rich"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_home.take_profit.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "home",
+                "side": "sell",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "exit",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "call",
+                      "builtin": "abs",
+                      "args": [
+                        {
+                          "op": "platform",
+                          "read": "position_size"
+                        }
+                      ]
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "done"
+        },
+        {
+          "name": "stop_flip",
+          "guard": {
+            "op": "triggered",
+            "name": "home_cheap"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_home.stop_flip.0",
+              "order": {
+                "instrument_id": "nba.sim.h2h.current",
+                "outcome": "away",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "flip",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "*",
+                      "lhs": {
+                        "op": "call",
+                        "builtin": "abs",
+                        "args": [
+                          {
+                            "op": "platform",
+                            "read": "position_size"
+                          }
+                        ]
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "2"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_away"
+        }
+      ]
+    },
+    {
+      "name": "done",
+      "resident": true,
+      "arm": [],
+      "blocks": []
+    }
+  ],
+  "initial_leg": "hunting",
+  "intents": {
+    "holding_away.stop_flip.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_away",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "holding_away.take_profit.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_away",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "holding_home.stop_flip.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_home",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "holding_home.take_profit.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_home",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "hunting.fade_away.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "hunting.fade_home.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

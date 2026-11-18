@@ -1,0 +1,19 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Triggered {
+        name: Spanned {
+            node: "up_cheap",
+            span: Span {
+                start: 10,
+                end: 18,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 19,
+    },
+}

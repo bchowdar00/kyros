@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.pyth.oracle_reference",
+  "version": "1.0.0",
+  "name": "Pyth BTC/USD oracle reference",
+  "description": "Tier-1 single-venue oracle reading for the Pyth Network BTC/USD aggregate (feed id e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43, Crypto.BTC/USD), read from source pyth.hermes.btc-usd.price on the oracle lane. This is the reviewed correction of the 1.0.0 contract (S-RULINGS E56, amended: the ruling's \"move to 1.1.0\" is applied as an in-place replace-in-place correction of the sole pre-release V1, per docs/CONTRACTS.md and definitions/btc/README.md, because the registry projection admits only N.0.0 / 0.N.0). The prior 1.0.0 read the Kalshi pyth_value relay (kalshi.pyth.btc-usd.value), which carried a deduplicated price and its source timestamp only; the Hermes source is keyed and adopted (A2 R1 evidence) and carries the Pyth-specific quantities the relay could not, so this contract adds them additively to the shared oracle_reference core. value is the latest accepted Pyth aggregate price, the provider integer already rescaled by 10^expo by the source and re-rounded to eight places. confidence is the aggregate confidence interval (the +/- uncertainty band) at the same scale; ema_price and ema_conf are the exponentially weighted aggregate price and its confidence, all four rounded to eight places using round-half-to-even. update_kind mirrors the source discriminator (stream for the SSE price stream, latest for a REST anchor probe) so a consumer can exclude anchor rows. publish_time is the Pyth aggregate publish time carried by the source's event_time; observation_time is the decision instant; staleness_ms = observation_time - publish_time, floored at zero; freshness is fresh when staleness_ms is at or within staleness_threshold_ms and stale otherwise. update_interval_ms is the elapsed time between this observation's publish time and the previous accepted one, and is zero before a second observation exists. Reads only the Pyth Hermes source and predicts nothing: it reports the oracle's own value, confidence and age, does no probability or volatility modeling, and compares nothing to spot. It is ready whenever its own input alone is warmed, fresh and valid, independently of the other oracle venues (the ADR 0024 per-venue rule). freshness stale is a published measurement, not a quality state: an observation that is old but inside staleness_bound_ms still publishes as a ready decision. There is no backfill on this source, so a detected gap discards the observation state and re-warms rather than fetching. Not ready until the first observation is accepted (pyth_warming_up); a lost connection is pyth_disconnected. staleness_threshold_ms defaults to 5000 (the source's continuous ~1 Hz cadence plus margin; the source's expected reconnect heartbeat is 30000 ms). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "pyth.hermes.btc-usd.price", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "value", "type": "decimal", "location": "internal" },
+    { "name": "confidence", "type": "decimal", "location": "internal" },
+    { "name": "ema_price", "type": "decimal", "location": "internal" },
+    { "name": "ema_conf", "type": "decimal", "location": "internal" },
+    {
+      "name": "update_kind",
+      "type": "enum",
+      "location": "external",
+      "variants": ["stream", "latest"]
+    },
+    { "name": "publish_time", "type": "timestamp", "location": "external" },
+    { "name": "staleness_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "update_interval_ms", "type": "duration_ms", "location": "internal" },
+    {
+      "name": "freshness",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["fresh", "stale"]
+    },
+    { "name": "staleness_threshold_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "observation_time"
+}

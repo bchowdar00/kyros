@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Signal Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "signal_id",
+    "version",
+    "name",
+    "description",
+    "status",
+    "approximate_interval_ms",
+    "staleness_bound_ms",
+    "inputs",
+    "fields",
+    "event_time_field"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "signal_id": { "$ref": "#/$defs/id" },
+    "version": { "$ref": "#/$defs/version" },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": ["draft", "experimental", "approved", "deprecated"]
+    },
+    "approximate_interval_ms": { "type": "integer", "minimum": 1 },
+    "staleness_bound_ms": { "type": "integer", "minimum": 1 },
+    "inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/input" }
+    },
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/field" }
+    },
+    "event_time_field": { "$ref": "#/$defs/fieldName" },
+    "scope_kind": {
+      "enum": ["global", "market", "multi_market"],
+      "description": "Required on the `multi` venue segment, where it CHOOSES the scope (`global` for a blend over global constituents, `multi_market` for a blend over bound markets) because the segment cannot derive it. Optional on every other segment, where the segment derives the scope and this must agree with it. `market` is never valid on `multi`."
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "fieldName": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "version"],
+      "properties": {
+        "kind": { "enum": ["source", "signal"] },
+        "id": { "$ref": "#/$defs/id" },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "location"],
+      "properties": {
+        "name": { "$ref": "#/$defs/fieldName" },
+        "type": {
+          "enum": [
+            "bool",
+            "string",
+            "decimal",
+            "u8",
+            "u16",
+            "u32",
+            "u64",
+            "i64",
+            "timestamp",
+            "duration_ms",
+            "enum"
+          ]
+        },
+        "location": { "enum": ["external", "internal"] },
+        "variants": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable label for a card showing this field. Presentation only: the exchange registry reads it, processors never do."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "enum" } } },
+          "then": {
+            "required": ["variants"],
+            "properties": { "variants": { "minItems": 1 } }
+          },
+          "else": { "properties": { "variants": { "maxItems": 0 } } }
+        }
+      ]
+    }
+  }
+}

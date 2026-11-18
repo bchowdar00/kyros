@@ -1,0 +1,18 @@
+{
+  "title": "Funding",
+  "description": "What longs and shorts are paying each other on this venue's perpetual. Positive funding means longs pay shorts, which happens when the crowd is leaning long.",
+  "fields": {
+    "funding_rate_bps": {
+      "label": "Funding rate",
+      "description": "The rate charged at the next funding interval, in basis points. Positive means longs are paying to stay in."
+    },
+    "annualised_rate_bps": {
+      "label": "Annualised",
+      "description": "The funding rate scaled to a year, in basis points. Easier to compare with borrowing costs."
+    },
+    "sign_regime": {
+      "label": "Who pays",
+      "description": "Longs when funding is positive, shorts when negative, flat near zero. A crowded side is the one paying."
+    }
+  }
+}

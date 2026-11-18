@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "source_id": "bybit.linear.btcusdt.funding-history",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT funding-rate settlement history",
+  "description": "Bounded poll of GET /v5/market/funding/history with category=linear, symbol=BTCUSDT and limit=1, issued once every 3600000 ms. One event per returned list row: funding_rate is the provider fundingRate string as a period rate (not annualized, not a percentage), preserved verbatim, and event_time is fundingRateTimestamp, the instant that rate settled. retrieved_at is the local receipt time of the bounded body read. The hourly cadence covers any settlement interval the venue may run down to one hour without needing the interval declared in advance; rows are deduplicated on event_time, so a poll that returns an already-admitted settlement is a Duplicate notice with no event. A response whose retCode is non-zero, whose result.list is empty, or whose result.symbol is not BTCUSDT is refused. startTime alone is a documented provider error and is never sent. This identity carries settled history only: the live funding reading and the next settlement instant come from bybit.linear.btcusdt.tickers. Responses are a bounded rolling window and are never retained beyond it. expected_heartbeat_ms is 7200000, two missed 3600000 ms polls. Rights-gated: the Bybit row in knowledge/RIGHTS-LEDGER.md is unverified and the lane refuses to start unless SIGNALS_ENABLED_VENUES lists bybit.",
+  "status": "approved",
+  "transport": "http_poll",
+  "expected_heartbeat_ms": 7200000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "funding_rate",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "retrieved_at",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "event_time"
+}

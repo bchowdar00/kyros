@@ -1,0 +1,26 @@
+{
+  "title": "Round activity",
+  "description": "How much has traded in this round so far. Everything here resets when the next round opens.",
+  "fields": {
+    "volume": {
+      "label": "Volume",
+      "description": "The dollar value of every fill this round. It only goes up until the round settles."
+    },
+    "collateral": {
+      "label": "Open interest",
+      "description": "Dollars locked behind positions still open in this round. Each open contract locks one dollar between its two sides."
+    },
+    "trades": {
+      "label": "Trades",
+      "description": "How many fills have happened this round. A fill that crosses several orders counts once per order."
+    },
+    "traders": {
+      "label": "Traders",
+      "description": "How many distinct accounts have traded this round, counting a user and their strategies as one."
+    },
+    "largest_trade": {
+      "label": "Largest trade",
+      "description": "The biggest single fill this round, in contracts. A jump here usually means a bot or a whale stepped in."
+    }
+  }
+}

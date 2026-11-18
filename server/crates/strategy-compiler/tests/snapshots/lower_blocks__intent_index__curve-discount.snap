@@ -1,0 +1,26 @@
+---
+source: crates/compiler/tests/lower_blocks.rs
+expression: lowered.intent_index
+---
+{
+    "endgame.buy_down.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "stay",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "endgame.buy_up.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "stay",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+}

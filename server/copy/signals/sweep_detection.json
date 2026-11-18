@@ -1,0 +1,18 @@
+{
+  "title": "Sweeps",
+  "description": "Large orders that clear several price levels at once. A sweep says someone wanted size now and paid up for it.",
+  "fields": {
+    "detection_state": {
+      "label": "Sweep state",
+      "description": "Quiet until one aggressive order clears three or more levels, then sweep. It returns to quiet once the book has settled."
+    },
+    "direction": {
+      "label": "Sweep direction",
+      "description": "Which side got swept, buy when asks were cleared and sell when bids were. None when the book is quiet."
+    },
+    "swept_size": {
+      "label": "Size swept",
+      "description": "How much BTC the last sweep cleared. Zero when nothing has been swept lately."
+    }
+  }
+}

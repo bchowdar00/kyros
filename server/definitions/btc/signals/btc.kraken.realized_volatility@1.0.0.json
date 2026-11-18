@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.realized_volatility",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD short-horizon realized volatility",
+  "description": "One-second causal observations of the fresh Kraken displayed best-quote midpoint are converted to simple basis-point returns. volatility_bps_15s and volatility_bps_60s are the root mean square of the latest 15 and 60 returns. short_long_ratio is the 15-return value divided by the 60-return value; when both windows have zero root-mean-square volatility, the ratio is defined as 1 and regime is stable. Regime is contracting at or below 0.8, expanding at or above 1.2, and stable between those boundaries. The 0.8 and 1.2 regime boundaries are initial research thresholds that require empirical calibration; the return and root-mean-square formulas are not heuristic thresholds. Any missing or stale one-second Kraken midpoint observation breaks continuity and restarts the 60-return warm-up. This identity is single-venue: it reads only Kraken inputs and is ready whenever the Kraken midpoint ring holds 61 contiguous one-second samples, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "kraken.spot.btc-usd.ticker", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "volatility_bps_15s", "type": "decimal", "location": "internal" },
+    { "name": "volatility_bps_60s", "type": "decimal", "location": "internal" },
+    { "name": "short_long_ratio", "type": "decimal", "location": "internal" },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["contracting", "stable", "expanding"]
+    },
+    { "name": "return_count", "type": "u16", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

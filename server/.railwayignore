@@ -1,0 +1,7 @@
+# `railway up` uploads this directory; keep local build output, the lanes'
+# file generations (hundreds of GB locally) and secrets out of the bundle.
+target/
+signals-data/
+.env
+registry.json
+registry.json.tmp

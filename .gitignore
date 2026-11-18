@@ -1,0 +1,20 @@
+node_modules/
+dist/
+server/target/
+*.log
+.DS_Store
+
+.env
+*/.env
+
+agent_docs/
+ignore-old-frontend/
+.claude/worktrees/
+
+# BTC signal producer output (per-lane file generations)
+signals-data/
+
+# Venue registry generated at server start-up
+server/registry.json
+registry.json.tmp
+.vercel/

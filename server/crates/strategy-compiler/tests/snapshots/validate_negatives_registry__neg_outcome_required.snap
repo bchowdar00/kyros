@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_registry.rs
+expression: rendered
+---
+error[outcome-required] at legs[0].body[0].do[0].place.outcome: instrument `game` is outcome-structured — the intent must name an outcome
+  = help: outcomes: home, away

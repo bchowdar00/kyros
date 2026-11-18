@@ -1,0 +1,203 @@
+---
+source: crates/strategy-compiler/tests/emit_program.rs
+expression: program
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_ba5f4e2b7ffe",
+  "source_hash": "ba5f4e2b7ffe6379c6d1e9d1fc562aaa7bf557c22665cc253cb27e5d2e987587",
+  "name": "Endgame Sweep",
+  "description": "On the 2-minute BTC up/down market: at 20 seconds before window close, if either side is trading at 95 cents or more, buy that side at the market and let it resolve. Runs every window; positions settle at expiry and the next window's check is the next wake.",
+  "dsl_version": "0.3",
+  "signals": {
+    "book": "btc_usd.updown_2m.current.price.v1"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_2m.current"
+  },
+  "subscriptions": [
+    "btc_usd.updown_2m.current.price.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [],
+  "params": [],
+  "triggers": [
+    {
+      "name": "last_20s",
+      "source": {
+        "kind": "window_clock",
+        "instrument_id": "btc_usd.updown_2m.current",
+        "remaining_ms": 20000
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    }
+  ],
+  "legs": [
+    {
+      "name": "sweeping",
+      "resident": true,
+      "arm": [
+        "last_20s"
+      ],
+      "blocks": [
+        {
+          "name": "buy_up",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "triggered",
+              "name": "last_20s"
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "btc_usd.updown_2m.current.price.v1",
+                "field": "up"
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "0.95"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "btc_usd.updown_2m.current.price.v1",
+              "field": "up"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "sweeping.buy_up.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "sweep",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "buy_down",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "triggered",
+              "name": "last_20s"
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "btc_usd.updown_2m.current.price.v1",
+                "field": "down"
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "0.95"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "btc_usd.updown_2m.current.price.v1",
+              "field": "down"
+            }
+          ],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "sweeping.buy_down.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "sweep",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "initial_leg": "sweeping",
+  "intents": {
+    "sweeping.buy_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "sweeping.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

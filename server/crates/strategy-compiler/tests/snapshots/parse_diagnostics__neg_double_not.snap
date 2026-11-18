@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[unexpected-token]: expected a value
+  not not signal.a.b
+      ^^^
+  = expected a value, found `not`

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.perp_cvd",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT perpetual perpetual signed aggressor flow",
+  "description": "Signed aggressor flow on the Bybit linear BTCUSDT perpetual tape, the formulas of btc.coinbase.aggressor_flow@1.0.0 applied to the perpetual: each buyer-aggressed trade contributes positive price times size notional and positive base size, each seller-aggressed trade contributes the negative of both, summed over causal receipt-time windows of (window close minus duration, window close] at 1, 10 and 60 seconds. flow_direction_10s is the sign of signed_notional_usd_10s with flat at exactly zero. gross_notional_usd_60s sums absolute notional and trade_count_60s counts admitted trades. Ready output requires 60 seconds of uninterrupted observation, degrading as trade_history_warming_up while warming. A trade-quiet but live connection - any admitted input from this venue within staleness_bound_ms - contributes truthful zeros with flow_direction_10s = flat; nothing admitted within that bound degrades as trade_venue_stale_or_missing. This identity is single-venue and reads only this venue's perpetual tape; the perpetual-versus-spot divergence is a separate tier-3 identity. Notional is converted from USDT to USD via the Kraken USDT/USD mid; base sizes, counts, ratios and durations are quote-currency neutral; quote_currency is \"usd\" for this instrument. Ready output requires 60 seconds of uninterrupted Bybit linear observation and an admitted input no older than staleness_bound_ms; warm-up degrades as bybit_warming_up, a lapsed bound as bybit_stale, a closed socket as bybit_disconnected, a recovery-required feed state as bybit_recovery_required, a refused subscription as bybit_subscription_rejected and a venue outage as bybit_venue_unavailable. Decimal outputs are rounded to eight places using round-half-to-even. The Bybit linear lane refuses to start (exit 78) unless SIGNALS_ENABLED_VENUES lists bybit; the rights gate is a startup refusal, never an instance status. E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (signed_notional_usd_1s, signed_notional_usd_10s, signed_notional_usd_60s, gross_notional_usd_60s) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.linear.btcusdt.trades",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "signed_notional_usd_1s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "signed_notional_usd_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "signed_notional_usd_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "cumulative_volume_delta_base_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "cumulative_volume_delta_base_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "gross_notional_usd_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "trade_count_60s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "flow_direction_10s",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "sell",
+        "flat",
+        "buy"
+      ]
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

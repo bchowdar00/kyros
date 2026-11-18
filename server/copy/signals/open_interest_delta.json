@@ -1,0 +1,26 @@
+{
+  "title": "Open interest",
+  "description": "Whether perp positions are being opened or closed, read together with price. Rising interest on a rising price means new longs; falling interest on a rising price means shorts covering.",
+  "fields": {
+    "quadrant": {
+      "label": "Open interest read",
+      "description": "The four-way read of open interest against price: new longs, new shorts, longs closing or shorts covering. New positions push a move; closing ones end it."
+    },
+    "delta_pct_1m": {
+      "label": "Change 1m",
+      "description": "How much open interest changed over the last minute, as a percentage. Positive means positions are being opened."
+    },
+    "delta_pct_5m": {
+      "label": "Change 5m",
+      "description": "How much open interest changed over the last five minutes, as a percentage. Slower, but a run of one sign is a real build."
+    },
+    "open_interest_notional_usd": {
+      "label": "Open interest",
+      "description": "The dollar value of all perp contracts outstanding on this venue. The base the percentage changes are measured against."
+    },
+    "divergence": {
+      "label": "Divergence",
+      "description": "Whether open interest and price are moving in opposite directions. Divergence often marks a move running out of new money."
+    }
+  }
+}

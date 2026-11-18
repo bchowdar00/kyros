@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Signal Update",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "signal_id",
+    "signal_version",
+    "publisher_epoch",
+    "sequence",
+    "event_time",
+    "produced_at",
+    "valid_from",
+    "valid_until",
+    "quality",
+    "values",
+    "scope"
+  ],
+  "properties": {
+    "schema_version": { "const": 3 },
+    "signal_id": { "$ref": "#/$defs/id" },
+    "signal_version": { "$ref": "#/$defs/version" },
+    "publisher_epoch": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Per-signal sequence scoped to publisher_epoch, signal_id, and signal_version."
+    },
+    "event_time": { "type": "string", "format": "date-time" },
+    "produced_at": { "type": "string", "format": "date-time" },
+    "valid_from": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Same instant as produced_at."
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "produced_at plus the signal definition's staleness_bound_ms."
+    },
+    "quality": { "$ref": "#/$defs/quality" },
+    "values": { "type": "object" },
+    "scope": { "$ref": "#/$defs/scope" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasons"],
+      "properties": {
+        "state": { "const": "ready" },
+        "reasons": { "type": "array", "const": [] }
+      }
+    },
+    "scope": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": { "type": { "const": "global" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "market_id", "market_generation"],
+          "properties": {
+            "type": { "const": "market" },
+            "market_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9]([A-Za-z0-9._:-]{0,254}[A-Za-z0-9])?$"
+            },
+            "market_generation": { "type": "integer", "minimum": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "legs", "window"],
+          "properties": {
+            "type": { "const": "multi_market" },
+            "legs": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "description": "Ascending by (venue, market_id) byte order; an unsorted array is rejected, never re-sorted. The whole array plus the window is the instance key. At most two legs, because legs are on distinct market-scope venues and there are two.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["venue", "market_id", "market_generation"],
+                "properties": {
+                  "venue": { "enum": ["polymarket", "kalshi"] },
+                  "market_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9]([A-Za-z0-9._:-]{0,254}[A-Za-z0-9])?$"
+                  },
+                  "market_generation": { "type": "integer", "minimum": 1 }
+                }
+              }
+            },
+            "window": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "RFC 3339 bounds with open strictly before close, compared as instants. The whole serialized scope object is bounded at 1024 bytes.",
+              "required": ["open", "close"],
+              "properties": {
+                "open": { "type": "string", "format": "date-time" },
+                "close": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

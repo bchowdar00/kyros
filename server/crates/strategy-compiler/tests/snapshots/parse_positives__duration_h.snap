@@ -1,0 +1,52 @@
+---
+source: crates/compiler/tests/parse_positives.rs
+expression: ast
+---
+Spanned {
+    node: Cmp {
+        op: Lt,
+        lhs: Spanned {
+            node: Ref(
+                Ref {
+                    namespace: Signal,
+                    path: [
+                        Spanned {
+                            node: "book",
+                            span: Span {
+                                start: 7,
+                                end: 11,
+                            },
+                        },
+                        Spanned {
+                            node: "age",
+                            span: Span {
+                                start: 12,
+                                end: 15,
+                            },
+                        },
+                    ],
+                    index: None,
+                },
+            ),
+            span: Span {
+                start: 0,
+                end: 15,
+            },
+        },
+        rhs: Spanned {
+            node: Literal(
+                DurationMs(
+                    7200000,
+                ),
+            ),
+            span: Span {
+                start: 18,
+                end: 20,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 20,
+    },
+}

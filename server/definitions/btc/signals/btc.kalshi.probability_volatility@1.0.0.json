@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.probability_volatility",
+  "version": "1.0.0",
+  "name": "Kalshi BTC probability volatility",
+  "description": "One-second causal observations of the bound Kalshi market's own btc.kalshi.prediction_quote affirmative_midpoint (a probability in [0,1]) are converted to probability-point returns, one hundred times the one-second change in probability. volatility_pp_10s, volatility_pp_1m, and volatility_pp_5m are the root mean square of the one-second probability-point returns inside the trailing ten-second, one-minute, and five-minute windows. short_long_ratio is the ten-second value divided by the five-minute value; when both windows have zero root-mean-square volatility the ratio is defined as 1 and regime is stable. Regime is contracting at or below 0.8, expanding at or above 1.2, and stable between those boundaries. The 0.8 and 1.2 regime boundaries are initial research thresholds that require empirical calibration; the return and root-mean-square formulas are not heuristic thresholds. The ring is scoped to one market_generation: a window or generation roll resets it and restarts the warm-up, because a new market is a new series. Any missing or non-ready one-second observation breaks continuity and restarts the warm-up; the identity is ready only once the ring holds 301 contiguous one-second samples (the longest horizon, five minutes). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.prediction_quote",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "volatility_pp_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "volatility_pp_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "volatility_pp_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "short_long_ratio",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "contracting",
+        "stable",
+        "expanding"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

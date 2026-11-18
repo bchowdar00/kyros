@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/strategy-registration.schema.json",
+  "title": "StrategyRegistration",
+  "$comment": "Runner -> engine. A full desired-interest doc keyed by (strategy_id, epoch). Source: mmarkets.excalidraw 'strategy registration'.",
+  "type": "object",
+  "required": ["schema_version", "strategy_id", "addr", "epoch", "signals", "triggers"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "strategy_id": { "type": "string" },
+    "addr": { "type": "string", "description": "Callback address the engine partitions activations to, e.g. '255.0.0.5:5523'." },
+    "epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "$comment": "RESERVED mechanism for Q1 (dynamic subscription). MVP registers once at deploy. Later: a higher epoch idempotently REPLACES the interest set and the engine re-indexes. Contract unchanged."
+    },
+    "signals": { "type": "array", "items": { "type": "string" } },
+    "triggers": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/Trigger" }
+    }
+  },
+  "additionalProperties": false
+}

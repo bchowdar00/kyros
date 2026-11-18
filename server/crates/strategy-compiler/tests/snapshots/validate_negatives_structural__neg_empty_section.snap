@@ -1,0 +1,12 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[empty-section] at instruments: `instruments` is empty
+  = help: a strategy declares at least one entry here
+
+error[empty-section] at expressions.named: `expressions.named` is present but empty
+  = help: omit an empty section entirely (sparse-in)
+
+error[empty-section] at triggers: `triggers` is empty
+  = help: a strategy declares at least one entry here

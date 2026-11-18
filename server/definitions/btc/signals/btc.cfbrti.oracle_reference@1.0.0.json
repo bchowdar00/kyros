@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.cfbrti.oracle_reference",
+  "version": "1.0.0",
+  "name": "CF Benchmarks BRTI oracle reference",
+  "description": "Tier-1 single-venue oracle reading for the CF Benchmarks Bitcoin Real-Time Index (BRTI) as relayed by Kalshi's authenticated cfbenchmarks_value channel (source kalshi.cfbenchmarks.brti.value). value is the latest accepted raw index observation (index_value). avg_60s_value is the relay-supplied trailing per-tick average over [source_ts_ms - 60000, source_ts_ms), carried verbatim because it is the quantity Kalshi KXBTC15M settles on when sampled at window close, and it is never recomputed locally from a proxy; avg_60s_window_size is the provider-stated count of prior ticks in that average and is carried so a consumer can tell a full sixty-sample average from the documented one-sample fallback. publish_time is the CF Benchmarks index time; observation_time is the decision instant; staleness_ms = observation_time - publish_time, floored at zero; freshness is fresh when staleness_ms is at or within staleness_threshold_ms and stale otherwise. update_interval_ms is the elapsed time between this observation's index time and the previous accepted one. The identity is globally scoped like every other oracle and spot identity: it is the index, not a Kalshi market measurement, which is why it is named btc.cfbrti and not btc.kalshi. It is published from the kalshi lane, which owns the authenticated socket. Reads only the BRTI relay and predicts nothing. A stale index is a published value (freshness stale), not a status; a missing one is a status. Not ready until the first observation is accepted. Instance-status reasons: oracle_rights_gated, cfbrti_warming_up, cfbrti_disconnected, cfbrti_subscription_rejected, cfbrti_entitlement_denied, cfbrti_anchor_missing, cfbrti_value_invalid. staleness_threshold_ms defaults to 5000. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "kalshi.cfbenchmarks.brti.value",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "value",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "avg_60s_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "avg_60s_window_size",
+      "type": "u32",
+      "location": "external"
+    },
+    {
+      "name": "index_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "publish_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "staleness_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "update_interval_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "freshness",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "fresh",
+        "stale"
+      ]
+    },
+    {
+      "name": "staleness_threshold_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

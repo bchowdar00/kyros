@@ -1,0 +1,217 @@
+---
+source: crates/compiler/tests/parse_positives.rs
+expression: ast
+---
+Spanned {
+    node: If {
+        arms: [
+            IfArm {
+                condition: Spanned {
+                    node: Cmp {
+                        op: Gt,
+                        lhs: Spanned {
+                            node: Ref(
+                                Ref {
+                                    namespace: Signal,
+                                    path: [
+                                        Spanned {
+                                            node: "d",
+                                            span: Span {
+                                                start: 10,
+                                                end: 11,
+                                            },
+                                        },
+                                        Spanned {
+                                            node: "pct",
+                                            span: Span {
+                                                start: 12,
+                                                end: 15,
+                                            },
+                                        },
+                                    ],
+                                    index: None,
+                                },
+                            ),
+                            span: Span {
+                                start: 3,
+                                end: 15,
+                            },
+                        },
+                        rhs: Spanned {
+                            node: Literal(
+                                Decimal(
+                                    "0",
+                                ),
+                            ),
+                            span: Span {
+                                start: 18,
+                                end: 19,
+                            },
+                        },
+                    },
+                    span: Span {
+                        start: 3,
+                        end: 19,
+                    },
+                },
+                value: Spanned {
+                    node: Literal(
+                        Decimal(
+                            "1",
+                        ),
+                    ),
+                    span: Span {
+                        start: 25,
+                        end: 26,
+                    },
+                },
+            },
+            IfArm {
+                condition: Spanned {
+                    node: Cmp {
+                        op: Lt,
+                        lhs: Spanned {
+                            node: Ref(
+                                Ref {
+                                    namespace: Signal,
+                                    path: [
+                                        Spanned {
+                                            node: "d",
+                                            span: Span {
+                                                start: 42,
+                                                end: 43,
+                                            },
+                                        },
+                                        Spanned {
+                                            node: "pct",
+                                            span: Span {
+                                                start: 44,
+                                                end: 47,
+                                            },
+                                        },
+                                    ],
+                                    index: None,
+                                },
+                            ),
+                            span: Span {
+                                start: 35,
+                                end: 47,
+                            },
+                        },
+                        rhs: Spanned {
+                            node: Literal(
+                                Decimal(
+                                    "0",
+                                ),
+                            ),
+                            span: Span {
+                                start: 50,
+                                end: 51,
+                            },
+                        },
+                    },
+                    span: Span {
+                        start: 35,
+                        end: 51,
+                    },
+                },
+                value: Spanned {
+                    node: Unary {
+                        op: Neg,
+                        operand: Spanned {
+                            node: Literal(
+                                Decimal(
+                                    "1",
+                                ),
+                            ),
+                            span: Span {
+                                start: 58,
+                                end: 59,
+                            },
+                        },
+                    },
+                    span: Span {
+                        start: 57,
+                        end: 59,
+                    },
+                },
+            },
+            IfArm {
+                condition: Spanned {
+                    node: Cmp {
+                        op: Gt,
+                        lhs: Spanned {
+                            node: Ref(
+                                Ref {
+                                    namespace: Signal,
+                                    path: [
+                                        Spanned {
+                                            node: "d",
+                                            span: Span {
+                                                start: 75,
+                                                end: 76,
+                                            },
+                                        },
+                                        Spanned {
+                                            node: "vol",
+                                            span: Span {
+                                                start: 77,
+                                                end: 80,
+                                            },
+                                        },
+                                    ],
+                                    index: None,
+                                },
+                            ),
+                            span: Span {
+                                start: 68,
+                                end: 80,
+                            },
+                        },
+                        rhs: Spanned {
+                            node: Literal(
+                                Decimal(
+                                    "1",
+                                ),
+                            ),
+                            span: Span {
+                                start: 83,
+                                end: 84,
+                            },
+                        },
+                    },
+                    span: Span {
+                        start: 68,
+                        end: 84,
+                    },
+                },
+                value: Spanned {
+                    node: Literal(
+                        Decimal(
+                            "2",
+                        ),
+                    ),
+                    span: Span {
+                        start: 90,
+                        end: 91,
+                    },
+                },
+            },
+        ],
+        else_value: Spanned {
+            node: Literal(
+                Decimal(
+                    "0",
+                ),
+            ),
+            span: Span {
+                start: 97,
+                end: 98,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 98,
+    },
+}

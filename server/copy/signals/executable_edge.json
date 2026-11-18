@@ -1,0 +1,26 @@
+{
+  "title": "Executable edge",
+  "description": "Fair odds against what this venue will actually fill at, after fees. Positive edge on a side means the venue is underpricing it.",
+  "fields": {
+    "probability": {
+      "label": "Fair odds of Up",
+      "description": "The modelled chance the round settles Up, as a percentage. The yardstick the edges are measured from."
+    },
+    "edge_up": {
+      "label": "Edge on Up",
+      "description": "Fair odds minus the price you can buy Up at right now, in cents. Positive means Up is cheap on this venue."
+    },
+    "edge_down": {
+      "label": "Edge on Down",
+      "description": "Fair odds of Down minus the price you can buy Down at right now, in cents. Positive means Down is cheap on this venue."
+    },
+    "executable_up_price": {
+      "label": "Up fills at",
+      "description": "The price a buy of Up would actually fill at on this venue, fees included. What the edge is measured against."
+    },
+    "executable_down_price": {
+      "label": "Down fills at",
+      "description": "The price a buy of Down would actually fill at on this venue, fees included. What the edge is measured against."
+    }
+  }
+}

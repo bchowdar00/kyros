@@ -1,0 +1,12 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[window-shape] at state[0].capacity: a window's capacity is 1 to 4096; 0 is out of range
+  = help: the runtime allocates the ring buffer up front; keep windows small
+
+error[window-shape] at state[1].capacity: a window's capacity is 1 to 4096; 5000 is out of range
+  = help: the runtime allocates the ring buffer up front; keep windows small
+
+error[window-shape] at state[2].value_type: a window holds numbers — its value_type is u8 or decimal
+  = help: keep symbolic values in a scalar or map slot

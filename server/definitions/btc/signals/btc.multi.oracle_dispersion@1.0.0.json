@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.multi.oracle_dispersion",
+  "version": "1.0.0",
+  "name": "Pyth, Chainlink and CF BRTI oracle dispersion",
+  "scope_kind": "global",
+  "description": "Equal-weight comparison of the three adopted BTC/USD oracle references: Pyth (btc.pyth.oracle_reference@1.0.0, sourced in wave A from the Kalshi Pyth relay and from Hermes only when a paid key exists), the Chainlink on-chain AggregatorV3 answer (btc.chainlink.oracle_reference@1.0.0) and CF Benchmarks BRTI relayed by Kalshi (btc.cfbrti.oracle_reference@1.0.0). Each constituent is that identity's published value field, and each constituent's own published freshness enum decides whether it counts as fresh: this identity never redeclares a staleness threshold, because the three cadences differ by three orders of magnitude (Pyth continuous, BRTI about 1 Hz, Chainlink on-chain deviation-and-heartbeat, with a documented 0.5 percent deviation trigger and a heartbeat interval that is not yet confirmed on an official page). The per-constituent staleness_ms values are republished here so a consumer sees how old the slow constituent is instead of inferring it. mean_value is the equal-weight arithmetic mean of the three values at full internal precision. dispersion_absolute is max_value minus min_value and dispersion_bps divides it by mean_value times ten thousand. The three signed pairwise readings are each (first named minus second named) divided by mean_value times ten thousand. leading_oracle is the strict argmax and lagging_oracle the strict argmin; an exact tie at either extreme publishes tied. state is aligned when dispersion_bps is at or below aligned_threshold_bps, dispersed when above it and at or below divergent_threshold_bps, and divergent above that; aligned_threshold_bps defaults to 5 and divergent_threshold_bps defaults to 25. This is a tier-2 blend on the oracle kind: it publishes over the constituents that are ready and each publishes freshness fresh, requiring at least two. constituents_available is that count and constituents_missing names the absent constituents as a comma-separated list (empty when all three contribute), and every dispersion statistic — mean_value, max_value, min_value, dispersion_absolute, dispersion_bps, the three pairwise readings, leading_oracle and lagging_oracle — is computed over the available set only. The Pyth relay is the constituent expected to be absent until the Hermes feed is wired into a lane (ruling E48, wave 3): while it is acknowledged-but-silent (ruling E25(c)) constituents_missing carries pyth and the blend runs on Chainlink and CF BRTI, publishing with the absent constituent's reason (its own value, staleness and pairwise fields are omitted from that reading). Fewer than two ready constituents is a non-ready evaluation with the oracle constituent reasons and no values. It keeps no rolling history, so it has no warm-up beyond each constituent's first ready value. Mechanical caveat carried on every update: the Chainlink on-chain answer only moves on deviation or heartbeat, so a nonzero dispersion during a spot move is expected publication lag, not an oracle fault. This identity is global-scoped: the multi segment carries no market legs here. Decimal outputs are rounded to eight places using round-half-to-even; guards evaluate at full internal precision before rounding.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.pyth.oracle_reference",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.chainlink.oracle_reference",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.cfbrti.oracle_reference",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "pyth_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "chainlink_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "cfbrti_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "constituents_available",
+      "type": "u8",
+      "location": "internal"
+    },
+    {
+      "name": "constituents_missing",
+      "type": "string",
+      "location": "internal"
+    },
+    {
+      "name": "mean_value",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "max_value",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "min_value",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "dispersion_absolute",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "dispersion_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "pyth_minus_chainlink_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "pyth_minus_cfbrti_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "chainlink_minus_cfbrti_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "leading_oracle",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "pyth",
+        "chainlink",
+        "cfbrti",
+        "tied"
+      ]
+    },
+    {
+      "name": "lagging_oracle",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "pyth",
+        "chainlink",
+        "cfbrti",
+        "tied"
+      ]
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "aligned",
+        "dispersed",
+        "divergent"
+      ]
+    },
+    {
+      "name": "aligned_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "divergent_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "pyth_staleness_ms",
+      "type": "duration_ms",
+      "location": "external"
+    },
+    {
+      "name": "chainlink_staleness_ms",
+      "type": "duration_ms",
+      "location": "external"
+    },
+    {
+      "name": "cfbrti_staleness_ms",
+      "type": "duration_ms",
+      "location": "external"
+    },
+    {
+      "name": "max_input_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

@@ -1,0 +1,14 @@
+{
+  "title": "Oracle vs spot",
+  "description": "How far the oracle that settles this venue is from the blended spot price. Near settlement, that gap is the difference between winning and losing.",
+  "fields": {
+    "state": {
+      "label": "Divergence state",
+      "description": "Aligned when the oracle sits within a threshold of spot, diverged when it does not. Diverged means the venue may settle away from where spot says."
+    },
+    "divergence_bps": {
+      "label": "Oracle gap",
+      "description": "Oracle price minus blended spot as a share of price, in basis points. Positive means the oracle is reading higher than spot."
+    }
+  }
+}

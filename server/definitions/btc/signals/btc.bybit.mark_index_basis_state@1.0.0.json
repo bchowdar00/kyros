@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.mark_index_basis_state",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT perpetual mark-index basis state",
+  "description": "Basis of the Bybit linear BTCUSDT perpetual contract against its own venue index: basis_bps is (mark_price minus index_price) divided by index_price times 10000. basis_bps_change_10s and basis_bps_change_60s subtract the basis of the latest admitted reading with event time at or before observation_time minus 10 and 60 seconds. regime is premium when basis_bps is greater than neutral_band_bps, discount when it is below the negated band, otherwise neutral; neutral_band_bps is 2 and is published. basis_stress is true when the absolute value of basis_bps_change_60s is at least stress_change_bps, which is 20 and is published. An index_price of zero or below is refused, never substituted. Prices are converted from USDT to USD via the Kraken USDT/USD mid; the basis, base sizes, counts, ratios and durations are quote-currency neutral; quote_currency is \"usd\" for this instrument. The reading history is bounded at 60 seconds and 6000 entries per venue; exceeding it refuses as a resource limit. Ready output requires 60 seconds of uninterrupted Bybit linear observation and an admitted input no older than staleness_bound_ms; warm-up degrades as bybit_warming_up, a lapsed bound as bybit_stale, a closed socket as bybit_disconnected, a recovery-required feed state as bybit_recovery_required, a refused subscription as bybit_subscription_rejected and a venue outage as bybit_venue_unavailable. Decimal outputs are rounded to eight places using round-half-to-even. The Bybit linear lane refuses to start (exit 78) unless SIGNALS_ENABLED_VENUES lists bybit; the rights gate is a startup refusal, never an instance status. E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (mark_price, index_price) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.linear.btcusdt.tickers",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "mark_price",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "index_price",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "basis_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "basis_bps_change_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "basis_bps_change_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "discount",
+        "neutral",
+        "premium"
+      ]
+    },
+    {
+      "name": "neutral_band_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "stress_change_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "basis_stress",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

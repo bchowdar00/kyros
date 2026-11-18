@@ -1,0 +1,87 @@
+---
+source: crates/compiler/tests/parse_positives.rs
+expression: index
+---
+Spanned {
+    node: Cmp {
+        op: Ge,
+        lhs: Spanned {
+            node: Ref(
+                Ref {
+                    namespace: State,
+                    path: [
+                        Spanned {
+                            node: "miss_count",
+                            span: Span {
+                                start: 6,
+                                end: 16,
+                            },
+                        },
+                    ],
+                    index: Some(
+                        [
+                            Spanned {
+                                node: Literal(
+                                    Variant(
+                                        "BOS",
+                                    ),
+                                ),
+                                span: Span {
+                                    start: 17,
+                                    end: 22,
+                                },
+                            },
+                            Spanned {
+                                node: Ref(
+                                    Ref {
+                                        namespace: Signal,
+                                        path: [
+                                            Spanned {
+                                                node: "pbp",
+                                                span: Span {
+                                                    start: 31,
+                                                    end: 34,
+                                                },
+                                            },
+                                            Spanned {
+                                                node: "quarter",
+                                                span: Span {
+                                                    start: 35,
+                                                    end: 42,
+                                                },
+                                            },
+                                        ],
+                                        index: None,
+                                    },
+                                ),
+                                span: Span {
+                                    start: 24,
+                                    end: 42,
+                                },
+                            },
+                        ],
+                    ),
+                },
+            ),
+            span: Span {
+                start: 0,
+                end: 43,
+            },
+        },
+        rhs: Spanned {
+            node: Literal(
+                Decimal(
+                    "6",
+                ),
+            ),
+            span: Span {
+                start: 47,
+                end: 48,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 48,
+    },
+}

@@ -1,0 +1,270 @@
+{
+  "id": "trend-rider",
+  "title": "Trend Line",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-08.jpg" },
+  "series": ["btc-15m"],
+  "logic": "Early in the round, when BTC's one-minute and thirty-second moves both point the same way, it buys that side and holds. If the trade goes ten cents against it, it cuts the loss and sits out the rest of the round. Otherwise holds to the close.",
+  "inverse_logic": "Waits for a trend to run, then for the last thirty seconds to turn against it. Buys the side the trend left behind. Sells out after a four-cent gain. If the trend comes back, it closes and switches sides to go with it.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-15m": { "early": "600s", "cutoff": "90s", "min_1m_bps": "8", "min_30s_bps": "3", "turn_bps": "3", "gain": "0.04", "stop_check": "2s", "patience": "120s" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Ride the Trend",
+      "description": "While more than the early threshold remains in the round and the blended one-minute and thirty-second returns both point up by at least their thresholds, take Up with an immediate-or-cancel limit two cents over the ask; when both point down, take Down. While holding, if the bid on that side falls to the stop below the entry price, flatten with a market order and sit out the round; otherwise hold to settlement.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "horizon": "btc.external.horizon_momentum.v1",
+      "mom": "btc.external.micro_momentum.v1"
+    },
+    "state": [],
+    "params": [
+      { "name": "stop", "type": "decimal", "default": "0.1" }
+    ],
+    "triggers": [
+      { "name": "trend_up",
+        "condition": { "all": [
+          { "expr": "signal.horizon.return_bps_1m", "comparator": ">=", "value": "{{min_1m_bps}}" },
+          { "expr": "signal.mom.return_bps_30s", "comparator": ">=", "value": "{{min_30s_bps}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "trend_down",
+        "condition": { "all": [
+          { "expr": "0 - signal.horizon.return_bps_1m", "comparator": ">=", "value": "{{min_1m_bps}}" },
+          { "expr": "0 - signal.mom.return_bps_30s", "comparator": ">=", "value": "{{min_30s_bps}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "tick",
+        "condition": { "signal": "book" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "{{stop_check}}" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["trend_up", "trend_down"],
+        "body": [
+          { "name": "take_up",
+            "if": "triggered(trend_up) and platform.window.remaining_ms > {{early}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_up",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_up" },
+          { "name": "take_down",
+            "if": "triggered(trend_down) and platform.window.remaining_ms > {{early}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_down",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_down" }
+        ] },
+      { "name": "holding_up", "resident": true, "arm": ["tick"],
+        "body": [
+          { "name": "stop_out",
+            "if": "triggered(tick) and platform.position.size > 0 and signal.book.bid <= legs.hunting.tag.take_up.fill_price - param.stop",
+            "do": [
+              { "target_position": {
+                  "instrument": "market", "outcome": "up", "reduce_only": true,
+                  "size": "clamp(0, 0, envelope.max_position_per_market)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flat",
+                  "on": { "fill": "done", "partial": "holding_up", "reject": "holding_up" }
+              } }
+            ],
+            "then": "done" }
+        ] },
+      { "name": "holding_down", "resident": true, "arm": ["tick"],
+        "body": [
+          { "name": "stop_out",
+            "if": "triggered(tick) and platform.position.size < 0 and 1 - signal.book.ask <= legs.hunting.tag.take_down.fill_price - param.stop",
+            "do": [
+              { "target_position": {
+                  "instrument": "market", "outcome": "down", "reduce_only": true,
+                  "size": "clamp(0, 0, envelope.max_position_per_market)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flat",
+                  "on": { "fill": "done", "partial": "holding_down", "reject": "holding_down" }
+              } }
+            ],
+            "then": "done" }
+        ] },
+      { "name": "done", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Catch the Reversal",
+      "description": "While more than the early threshold remains: once the blended one-minute return has shown a trend of at least its threshold, wait for the thirty-second return to turn against it by the turn threshold, then take the side the trend was leaving behind with an immediate-or-cancel limit two cents over the ask. Sell out with an immediate-or-cancel once that side's bid is the gain above the entry. If the one-minute and thirty-second returns both point back with the trend while holding, flip: close the position and take the same dollars with the trend. A trend that does not turn within the patience window is abandoned.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "horizon": "btc.external.horizon_momentum.v1",
+      "mom": "btc.external.micro_momentum.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "trend_up",
+        "condition": { "expr": "signal.horizon.return_bps_1m", "comparator": ">=", "value": "{{min_1m_bps}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "trend_down",
+        "condition": { "expr": "0 - signal.horizon.return_bps_1m", "comparator": ">=", "value": "{{min_1m_bps}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "turns_down",
+        "condition": { "expr": "0 - signal.mom.return_bps_30s", "comparator": ">=", "value": "{{turn_bps}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "turns_up",
+        "condition": { "expr": "signal.mom.return_bps_30s", "comparator": ">=", "value": "{{turn_bps}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "reasserts_up",
+        "condition": { "all": [
+          { "expr": "signal.horizon.return_bps_1m", "comparator": ">=", "value": "{{min_1m_bps}}" },
+          { "expr": "signal.mom.return_bps_30s", "comparator": ">=", "value": "{{min_30s_bps}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "reasserts_down",
+        "condition": { "all": [
+          { "expr": "0 - signal.horizon.return_bps_1m", "comparator": ">=", "value": "{{min_1m_bps}}" },
+          { "expr": "0 - signal.mom.return_bps_30s", "comparator": ">=", "value": "{{min_30s_bps}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "gave_up",
+        "timer": { "kind": "after", "elapsed": "{{patience}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "tick",
+        "condition": { "signal": "book" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "{{stop_check}}" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["trend_up", "trend_down"],
+        "body": [
+          { "name": "saw_up", "if": "triggered(trend_up) and platform.window.remaining_ms > {{early}}", "do": [], "then": "trended_up" },
+          { "name": "saw_down", "if": "triggered(trend_down) and platform.window.remaining_ms > {{early}}", "do": [], "then": "trended_down" }
+        ] },
+      { "name": "trended_up", "resident": true, "arm": ["turns_down", "gave_up"],
+        "body": [
+          { "name": "reverse_down",
+            "if": "triggered(turns_down) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "reverse_down",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_down" },
+          { "name": "abandon", "if": "triggered(gave_up)", "do": [], "then": "hunting" }
+        ] },
+      { "name": "trended_down", "resident": true, "arm": ["turns_up", "gave_up"],
+        "body": [
+          { "name": "reverse_up",
+            "if": "triggered(turns_up) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "reverse_up",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_up" },
+          { "name": "abandon", "if": "triggered(gave_up)", "do": [], "then": "hunting" }
+        ] },
+      { "name": "holding_down", "resident": true, "arm": ["tick", "reasserts_up"],
+        "body": [
+          { "name": "take_profit",
+            "if": "triggered(tick) and platform.position.size <= -1 and 1 - signal.book.ask >= legs.trended_up.tag.reverse_down.fill_price + {{gain}}",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "done", "partial": "holding_down", "reject": "holding_down", "cancel_ack": "holding_down", "expiry": "holding_down" }
+              } }
+            ],
+            "then": "done" },
+          { "name": "flip_up",
+            "if": "triggered(reasserts_up) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(0 - platform.position.size, 0) + envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "done", "partial": "done", "reject": "holding_down", "cancel_ack": "holding_down", "expiry": "holding_down" }
+              } }
+            ],
+            "then": "done" }
+        ] },
+      { "name": "holding_up", "resident": true, "arm": ["tick", "reasserts_down"],
+        "body": [
+          { "name": "take_profit",
+            "if": "triggered(tick) and platform.position.size >= 1 and signal.book.bid >= legs.trended_down.tag.reverse_up.fill_price + {{gain}}",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(platform.position.size, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "done", "partial": "holding_up", "reject": "holding_up", "cancel_ack": "holding_up", "expiry": "holding_up" }
+              } }
+            ],
+            "then": "done" },
+          { "name": "flip_down",
+            "if": "triggered(reasserts_down) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(platform.position.size, 0) + envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "done", "partial": "done", "reject": "holding_up", "cancel_ack": "holding_up", "expiry": "holding_up" }
+              } }
+            ],
+            "then": "done" }
+        ] },
+      { "name": "done", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

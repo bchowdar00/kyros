@@ -1,0 +1,14 @@
+{
+  "title": "Venue disagreement",
+  "description": "How far Coinbase and Kraken are from each other on BTC. The two rarely quote the same midpoint, and the one that moves first usually leads.",
+  "fields": {
+    "dispersion_bps": {
+      "label": "Venue gap",
+      "description": "The gap between the two venues' midpoints as a share of price, in basis points. A wide gap means one venue is repricing ahead of the other."
+    },
+    "leading_venue": {
+      "label": "Leading venue",
+      "description": "Which venue moved first on the latest move. The other is expected to follow."
+    }
+  }
+}

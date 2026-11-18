@@ -1,0 +1,7 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[type-mismatch] at legs[0].body[0].if: the two sides of this comparison are different kinds of value
+  signal.price.home == true
+  ^^^^^^^^^^^^^^^^^^^^^^^^^

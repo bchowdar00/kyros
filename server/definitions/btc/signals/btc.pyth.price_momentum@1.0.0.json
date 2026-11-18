@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.pyth.price_momentum",
+  "version": "1.0.0",
+  "name": "Pyth BTC/USD price momentum",
+  "description": "Momentum of the Pyth Network BTC/USD aggregate price on the oracle lane, from the Hermes stream source pyth.hermes.btc-usd.price. Pyth publishes at roughly one hertz, so this identity samples the aggregate price one-second causal. return_bps_1s, return_bps_10s, return_bps_30s, return_bps_1m, return_bps_5m, and return_bps_15m are simple basis-point returns of the newest aggregate price against the price one, ten, thirty, sixty, three-hundred, and nine-hundred seconds back on the causal ring. direction_5m is down, flat, or up from the full-precision five-minute return, with flat exactly zero. Any missing or stale one-second observation breaks continuity and restarts the fifteen-minute warm-up; the identity is ready only once the ring holds the fifteen-minute window of contiguous samples. This definition ships approved but refuse-closed today, on the same precedent as btc.pyth.oracle_reference: no processor consumes pyth.hermes.btc-usd.price on the oracle lane yet, so the identity publishes no ready values and refuses at start-up. It begins publishing once the Pyth Hermes stream is wired as a lane input (slice C4). Reads only Pyth and predicts nothing. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "pyth.hermes.btc-usd.price", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "return_bps_1s", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_10s", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_30s", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_1m", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_5m", "type": "decimal", "location": "internal" },
+    { "name": "return_bps_15m", "type": "decimal", "location": "internal" },
+    {
+      "name": "direction_5m",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["down", "flat", "up"]
+    },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

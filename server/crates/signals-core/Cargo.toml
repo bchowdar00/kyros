@@ -1,0 +1,30 @@
+[package]
+name = "signals-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+chrono.workspace = true
+rust_decimal.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+jsonschema.workspace = true
+proptest.workspace = true
+serde_json.workspace = true
+
+# Lints carried over from the signals prototype workspace (not this
+# workspace's table, which is tuned for the exchange and compiler).
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"

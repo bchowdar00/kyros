@@ -1,0 +1,10 @@
+{
+  "title": "Distance to strike",
+  "description": "How far BTC is from this venue's strike, as a share of price. The plain version of moneyness, without the volatility adjustment.",
+  "fields": {
+    "delta_bps": {
+      "label": "Distance to strike",
+      "description": "Reference price minus the venue's strike as a share of price, in basis points. Positive means above the strike and Up is winning."
+    }
+  }
+}

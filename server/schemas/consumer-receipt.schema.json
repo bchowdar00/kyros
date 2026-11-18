@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTC Signal Reference Consumer Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "package_id", "publisher_epoch", "last_sequence",
+    "verified_manifest_sha256"
+  ],
+  "properties": {
+    "schema_version": { "const": "btc.signals.consumer-receipt/v1" },
+    "package_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "publisher_epoch": { "type": "string", "minLength": 1 },
+    "last_sequence": { "type": "integer", "minimum": 0 },
+    "verified_manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

@@ -1,0 +1,11 @@
+---
+source: crates/compiler/tests/validate_negatives_registry.rs
+expression: rendered
+---
+error[unknown-field] at triggers[0].condition.field: signal `price` has no field `hom`
+  = help: declared fields: home, away, bid, ask, last
+
+error[unknown-field] at legs[0].body[0].if: signal `price` has no field `hom`
+  signal.price.hom > 0.5
+               ^^^
+  = help: declared fields: home, away, bid, ask, last

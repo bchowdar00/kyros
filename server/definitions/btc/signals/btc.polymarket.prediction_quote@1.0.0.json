@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.prediction_quote",
+  "version": "1.0.0",
+  "name": "Polymarket BTC executable outcome quote",
+  "description": "Full-replacement executable best bid, ask, midpoint, and most recent trade for both native Polymarket outcome tokens in one bound market generation. No cross-market value survives a market_transition boundary. Ready output requires a ready rules card, two-sided native quotes for both Up and Down, and a most recent trade; it never substitutes complements or values for a missing native outcome book. While the venue is alive — any book, quote, trade, or contract input admitted within staleness_bound_ms (10000 ms) — an unchanged resting book republishes its held quote values and stays ready, while a genuinely silent venue and every integrity fault (crossed or invalid quote, missing outcome book, market-boundary rule) still degrade unchanged. quote age uses monotonic receipt time. Decimal values are rounded to at most eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.polymarket.market_contract", "version": "1.0.0" },
+    { "kind": "source", "id": "polymarket.btc.quotes", "version": "1.0.0" },
+    { "kind": "source", "id": "polymarket.btc.trades", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "market_id", "type": "string", "location": "external" },
+    { "name": "market_generation", "type": "u64", "location": "internal" },
+    { "name": "affirmative_bid", "type": "decimal", "location": "external" },
+    { "name": "affirmative_ask", "type": "decimal", "location": "external" },
+    { "name": "affirmative_midpoint", "type": "decimal", "location": "internal" },
+    { "name": "negative_bid", "type": "decimal", "location": "external" },
+    { "name": "negative_ask", "type": "decimal", "location": "external" },
+    { "name": "negative_midpoint", "type": "decimal", "location": "internal" },
+    { "name": "last_trade_outcome", "type": "enum", "location": "external", "variants": ["up", "down"] },
+    { "name": "last_trade_price", "type": "decimal", "location": "external" },
+    { "name": "last_trade_size", "type": "decimal", "location": "external" },
+    { "name": "max_quote_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "quote_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "quote_time"
+}

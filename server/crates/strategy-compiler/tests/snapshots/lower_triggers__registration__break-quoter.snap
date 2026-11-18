@@ -1,0 +1,44 @@
+---
+source: crates/compiler/tests/lower_triggers.rs
+expression: registration
+---
+(
+    (
+        "subscriptions",
+        [
+            "nba.sim.h2h.current.price.v1",
+            "nba.sim.h2h.current.game_state.v1",
+        ],
+    ),
+    (
+        "legs",
+        [
+            (
+                "watching",
+                [
+                    "break_started",
+                ],
+            ),
+            (
+                "quoting",
+                [
+                    "play_resumed",
+                    "game_over",
+                ],
+            ),
+        ],
+    ),
+    (
+        "initial_leg",
+        "watching",
+    ),
+    (
+        "envelope_consts",
+        [
+            (
+                MaxOrderSize,
+                "100",
+            ),
+        ],
+    ),
+)

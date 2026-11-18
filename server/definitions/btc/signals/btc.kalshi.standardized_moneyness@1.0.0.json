@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.standardized_moneyness",
+  "version": "1.0.0",
+  "name": "Kalshi BTC standardized moneyness",
+  "description": "The standardized moneyness statistic d for the bound Kalshi market: d equals the natural logarithm of reference over strike divided by sigma_per_second times the square root of tau_seconds, all in pinned exact-decimal arithmetic with no floating point. sigma_per_second is volatility_bps_15s divided by ten thousand; tau_seconds is the remaining time to the rules-card close. The realized volatility and window delta are computed inside this process by their identical published code paths and are pinned here as signal-kind inputs alongside the market_contract rules card. The update is non-ready with a distinct reason when volatility is warming or zero, when tau_seconds is not positive, or when reference over strike leaves the model domain of 0.25 to 4.0 (model_domain_exceeded). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.kalshi.window_delta", "version": "1.0.0" },
+    { "kind": "signal", "id": "btc.external.realized_volatility", "version": "1.0.0" },
+    { "kind": "signal", "id": "btc.kalshi.market_contract", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "moneyness", "type": "decimal", "location": "internal" },
+    { "name": "sigma_per_second", "type": "decimal", "location": "internal" },
+    { "name": "tau_seconds", "type": "decimal", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

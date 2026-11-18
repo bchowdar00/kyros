@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[event-in-named-expr] at expressions.named.next_q: named expressions cannot read event.* — they substitute into arbitrary blocks, and the triggering event differs per block
+  event.quarter + 1
+  ^^^^^^^^^^^^^
+  = help: read the event field directly in the block that pins the trigger

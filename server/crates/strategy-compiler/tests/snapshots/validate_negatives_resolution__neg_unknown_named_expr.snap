@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-named-expr] at legs[0].body[0].if: reference to undeclared expression `edge`
+  expr.edge > 0
+       ^^^^
+  = help: declared expressions: (none)

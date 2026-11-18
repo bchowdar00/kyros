@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.prediction_trade_flow",
+  "version": "1.0.0",
+  "name": "Kalshi BTC taker trade flow",
+  "description": "Market-generation-scoped signed Kalshi taker flow over causal monotonic-receipt windows of (close minus duration, close]. Canonical YES takers contribute positive YES-price notional and NO takers contribute negative NO-price notional. flow_semantics is verified_taker_outcome because the adapter cross-checks canonical taker outcome and book sides. Ready output requires sixty seconds of uninterrupted observation while the venue is alive; a quiet window with zero in-window trades then publishes truthful zeros rather than degrading, where alive means any book, quote, trade, or contract input admitted within staleness_bound_ms (10000 ms), and no admitted venue input inside that bound degrades trade_stale_or_missing. A market_transition clears every flow window. Decimal values are rounded to at most eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.kalshi.market_contract", "version": "1.0.0" },
+    { "kind": "source", "id": "kalshi.btc.trades", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "market_id", "type": "string", "location": "external" },
+    { "name": "market_generation", "type": "u64", "location": "internal" },
+    { "name": "flow_semantics", "type": "enum", "location": "internal", "variants": ["verified_taker_outcome"] },
+    { "name": "signed_notional_1s", "type": "decimal", "location": "internal" },
+    { "name": "signed_notional_10s", "type": "decimal", "location": "internal" },
+    { "name": "signed_notional_60s", "type": "decimal", "location": "internal" },
+    { "name": "gross_notional_60s", "type": "decimal", "location": "internal" },
+    { "name": "signed_units_10s", "type": "decimal", "location": "internal" },
+    { "name": "signed_units_60s", "type": "decimal", "location": "internal" },
+    { "name": "trade_count_60s", "type": "u32", "location": "internal" },
+    { "name": "flow_direction_10s", "type": "enum", "location": "internal", "variants": ["negative", "flat", "positive"] },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

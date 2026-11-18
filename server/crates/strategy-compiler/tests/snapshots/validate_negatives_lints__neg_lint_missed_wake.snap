@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_lints.rs
+expression: rendered
+---
+warning[lint-missed-wake] at legs[0].body[1].if: `buy` gates on edge-fired trigger `cheap` but reads state `n` written by other blocks — the state can cross its threshold on a wake where the trigger did not fire, and this block silently never runs
+  = help: use fire: if_true on the trigger (the fire-mode idiom), or drop triggered() for a plain condition guard

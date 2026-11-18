@@ -1,0 +1,22 @@
+{
+  "title": "Absorption",
+  "description": "Whether heavy flow is moving the price or being soaked up. Flow that fails to move the price is being absorbed by patient liquidity.",
+  "fields": {
+    "state": {
+      "label": "Absorption state",
+      "description": "Absorbing when strong flow has barely moved the price, responding when it has, and quiet when there is little flow. Absorbing flow often reverses."
+    },
+    "flow_direction": {
+      "label": "Flow direction",
+      "description": "Which way the recent aggressive flow is pointed, buy or sell. Read it with the state to see whether that flow is winning."
+    },
+    "flow_to_depth_ratio": {
+      "label": "Flow vs depth",
+      "description": "Signed flow over ten seconds against the depth it hit. Above one means flow was bigger than the book could hold."
+    },
+    "price_response_bps_10s": {
+      "label": "Price response 10s",
+      "description": "How far the price moved over the same ten seconds, in basis points. Small against big flow means absorption."
+    }
+  }
+}

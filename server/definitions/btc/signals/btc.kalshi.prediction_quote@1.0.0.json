@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.prediction_quote",
+  "version": "1.0.0",
+  "name": "Kalshi BTC executable outcome quote",
+  "description": "Full-replacement executable quote and most recent trade for one bound Kalshi market generation. The feed's YES bid and ask are preserved; NO bid equals one minus YES ask and NO ask equals one minus YES bid under the pinned binary-contract price axis. No cross-market value survives a market_transition boundary. Ready output requires a ready rules card plus two-sided ticker and trade inputs. While the venue is alive — any book, quote, trade, or contract input admitted within staleness_bound_ms (10000 ms) — an unchanged resting book republishes its held quote values and stays ready, while a genuinely silent venue and every integrity fault (crossed or invalid quote, missing input, market-boundary rule) still degrade unchanged. Quote age uses monotonic receipt time. Decimal values are rounded to at most eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.kalshi.market_contract", "version": "1.0.0" },
+    { "kind": "source", "id": "kalshi.btc.quotes", "version": "1.0.0" },
+    { "kind": "source", "id": "kalshi.btc.trades", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "market_id", "type": "string", "location": "external" },
+    { "name": "market_generation", "type": "u64", "location": "internal" },
+    { "name": "affirmative_bid", "type": "decimal", "location": "external" },
+    { "name": "affirmative_ask", "type": "decimal", "location": "external" },
+    { "name": "affirmative_midpoint", "type": "decimal", "location": "internal" },
+    { "name": "negative_bid", "type": "decimal", "location": "internal" },
+    { "name": "negative_ask", "type": "decimal", "location": "internal" },
+    { "name": "negative_midpoint", "type": "decimal", "location": "internal" },
+    { "name": "last_trade_outcome", "type": "enum", "location": "external", "variants": ["yes", "no"] },
+    { "name": "last_trade_price", "type": "decimal", "location": "external" },
+    { "name": "last_trade_size", "type": "decimal", "location": "external" },
+    { "name": "max_quote_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "quote_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "quote_time"
+}

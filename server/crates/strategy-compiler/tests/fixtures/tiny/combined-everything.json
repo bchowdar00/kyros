@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "name": "Combined Everything",
+    "description": "Verification fixture: every v0.3 feature in one document. A string param in a param leaf, a decimal param inside a cross-signal expr leaf, a window pushed from an event field, a guard reading a leg fill price and the platform average cost, an after timer, a GTD limit and a reduce-only target position.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+
+  "signals": {
+    "tape": "btc_usd.updown_1m.current.trades.v1",
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1"
+  },
+
+  "state": [
+    { "name": "sizes", "kind": "window", "value_type": "decimal", "capacity": 8 }
+  ],
+
+  "params": [
+    { "name": "target", "type": "string", "default": "0x0000000000000000000000000000000000000000" },
+    { "name": "edge", "type": "decimal", "default": "0.03" }
+  ],
+
+  "triggers": [
+    { "name": "whale",
+      "condition": { "signal": "tape", "field": "taker", "comparator": "==", "value": { "param": "target" } },
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "cheap",
+      "condition": { "expr": "signal.fair.up - signal.book.ask - param.edge", "comparator": ">=", "value": "0" },
+      "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+
+    { "name": "book_tick",
+      "condition": { "signal": "book" },
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "settle",
+      "timer": { "kind": "after", "elapsed": "5s" },
+      "fire": "on_crossing", "rearm": { "mode": "never" } }
+  ],
+
+  "legs": [
+    { "name": "watching",
+      "resident": true,
+      "arm": ["whale", "cheap"],
+      "body": [
+        { "name": "record",
+          "if": "triggered(whale)",
+          "do": ["push state.sizes = event.size"] },
+
+        { "name": "bid_up",
+          "if": "triggered(cheap) and count(state.sizes) >= 1",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "limit", "tif": "gtc",
+                "expire_after": "10s",
+                "price": "clamp(signal.fair.up - 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "bid",
+                "on": { "fill": "holding", "expiry": "watching", "reject": "watching" }
+            }}
+          ] }
+      ] },
+
+    { "name": "holding",
+      "resident": true,
+      "arm": ["book_tick", "settle"],
+      "body": [
+        { "name": "exit",
+          "if": "triggered(settle) or (triggered(book_tick) and signal.book.bid >= legs.watching.tag.bid.fill_price + 0.05 and signal.book.bid >= platform.position.avg_cost)",
+          "do": [
+            { "target_position": {
+                "instrument": "market", "outcome": "up",
+                "reduce_only": true,
+                "size": "clamp(0, 0, envelope.max_position_per_market)",
+                "max_size": "envelope.max_order_size",
+                "tag": "flat",
+                "on": { "fill": "done", "reject": "holding" }
+            }}
+          ] }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.cross.perp_spot_basis",
+  "version": "1.0.0",
+  "name": "Perpetual mark versus composite spot basis",
+  "description": "Signed basis of the Bybit perpetual mark price against the composite spot reference. This is a different measurement from btc.bybit.mark_index_basis_state@1.0.0, which compares Bybit's mark to Bybit's OWN index; that reading is carried here verbatim as bybit_mark_index_bps so the combination ships its factors (SIG-045). bybit_mark_price and bybit_index_price are the published fields of btc.bybit.mark_index_basis_state@1.0.0 and reference_price is the published reference_price of btc.external.spot_reference@1.0.0. bybit_mark_vs_spot_absolute is bybit_mark_price minus reference_price; bybit_mark_vs_spot_bps divides it by reference_price times ten thousand; bybit_index_gap_bps is (bybit_index_price minus reference_price) divided by reference_price times ten thousand and exposes disagreement between Bybit's own index and our composite rather than hiding it. basis_bps is the Bybit mark-vs-spot basis in basis points (equal to bybit_mark_vs_spot_bps). basis_change_bps_60s is basis_bps now minus the earliest basis_bps sample inside the causal receipt-time window (window_close minus 60 seconds, window_close], and requires 60 seconds of uninterrupted observation measured from the first ready reading after startup or recovery. state is contango when basis_bps exceeds flat_threshold_bps, backwardation when it is below the negation of flat_threshold_bps, and flat otherwise; flat_threshold_bps defaults to 2. The cross lane is Bybit-only (ruling E66 under E62): the {binance, bybit} venue set of the original spec §6.1 predates E62 and, from the Tokyo box, carries no Binance streams (rulings E30/E34), so a two-venue mean would make this identity structurally never ready, which is not a signal. Bybit is the sole configured derivatives venue and is fully observable; venue_count is 1. The Bybit leg plus the spot reference must be ready and no more than 10000 milliseconds old for a ready decision. Both sides are USD: the Bybit mark and index are converted to USD upstream through the Kraken USDT/USD reference (ruling E47) before btc.bybit.mark_index_basis_state@1.0.0 publishes them, so this basis is a like-for-like USD comparison against the USD spot blend and carries no currency conversion of its own; a stale USDT/USD reference reaches this identity as the upstream venue going non-ready, degrading the reading rather than being hidden. No binance_* field or reason can appear on this lane. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.external.spot_reference",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.bybit.mark_index_basis_state",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "reference_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "bybit_mark_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "bybit_index_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "bybit_mark_vs_spot_absolute",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "bybit_mark_vs_spot_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "bybit_index_gap_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "bybit_mark_index_bps",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "basis_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "basis_change_bps_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "contango",
+        "backwardation",
+        "flat"
+      ]
+    },
+    {
+      "name": "flat_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "venue_count",
+      "type": "u8",
+      "location": "internal"
+    },
+    {
+      "name": "max_input_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/activation.schema.json",
+  "title": "Activation",
+  "$comment": "Engine -> runner. Built per fired trigger, partitioned by destination addr. Ships the FULL recorded payload, not just the field that flipped. Source: both artifacts.",
+  "type": "object",
+  "required": ["schema_version", "partition_addr", "triggered", "fired_triggers", "payload", "ts"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "partition_addr": { "type": "string", "description": "Destination runner addr this activation is routed to." },
+    "triggered": {
+      "type": "array",
+      "description": "Strategy ids to invoke.",
+      "items": { "type": "string" }
+    },
+    "fired_triggers": {
+      "type": "array",
+      "description": "Trigger ids that evaluated truthy, for strategy context / debugging.",
+      "items": { "type": "string" }
+    },
+    "payload": {
+      "type": "object",
+      "description": "Signal values delivered at activation, assembled as-of the triggering event's sequence number. Keyed 'signal_id.field' -> value. The strategy runs against this subslice.",
+      "additionalProperties": { "$ref": "common.schema.json#/$defs/SignalValue" }
+    },
+    "layout_hash": {
+      "type": "string",
+      "description": "Must equal the resident strategy's manifest layout_hash; the harness refuses the activation otherwise. The per-message cost of one string buys the guarantee that layout drift is always a refusal, never a misread."
+    },
+    "ts": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  },
+  "additionalProperties": false
+}

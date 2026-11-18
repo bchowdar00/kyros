@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.absorption_state",
+  "version": "1.0.0",
+  "name": "BTC aggressive-flow absorption state",
+  "description": "Combines the ten-second signed aggressor flow, ten-second spot-reference return, and current combined five-basis-point depth. flow_to_depth_ratio divides absolute signed base flow by total near-touch base depth. response_bps_per_depth_turn divides absolute ten-second return by that ratio and is defined as zero when the ratio is exactly zero. State is insufficient_flow below a 0.25 depth turn; at or above 0.25 it is absorbing at no more than 1 response basis point per depth turn, price_responsive at or above 3, and mixed between those boundaries. The 0.25, 1, and 3 classification boundaries are initial research thresholds that require empirical calibration. These are measurement classifications, not trading instructions. Ready output requires all three exact upstream signals to be ready. absorption_state carries no move gate: it is ready whenever its three exact upstream signals are ready, independent of any qualifying-move threshold.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.external.micro_momentum", "version": "1.0.0" },
+    { "kind": "signal", "id": "btc.external.actionable_depth_imbalance", "version": "1.0.0" },
+    { "kind": "signal", "id": "btc.external.aggressor_flow", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "signed_flow_notional_usd_10s", "type": "decimal", "location": "internal" },
+    { "name": "price_response_bps_10s", "type": "decimal", "location": "internal" },
+    { "name": "flow_to_depth_ratio", "type": "decimal", "location": "internal" },
+    { "name": "response_bps_per_depth_turn", "type": "decimal", "location": "internal" },
+    {
+      "name": "flow_direction",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["sell", "flat", "buy"]
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["insufficient_flow", "absorbing", "mixed", "price_responsive"]
+    },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

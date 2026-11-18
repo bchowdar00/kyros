@@ -1,0 +1,15 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[reserved-name] at state[0].name: `entry` is a namespace head and cannot name a state slot
+  = help: rename it; reserved words are the grammar's keywords, namespace heads, builtin names, and 'stay'
+
+error[reserved-name] at params[0].name: `param` is a namespace head and cannot name a param
+  = help: rename it; reserved words are the grammar's keywords, namespace heads, builtin names, and 'stay'
+
+error[reserved-name] at params[1].name: `stay` is the reserved leg destination and cannot name a param
+  = help: rename it; reserved words are the grammar's keywords, namespace heads, builtin names, and 'stay'
+
+error[duplicate-name] at params[3].name: duplicate param name `edge` — first declared at params[2]
+  = help: every name in a section must be unique; rename one of them

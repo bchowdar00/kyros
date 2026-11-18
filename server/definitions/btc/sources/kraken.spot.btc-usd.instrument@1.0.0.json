@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "source_id": "kraken.spot.btc-usd.instrument",
+  "version": "1.0.0",
+  "name": "Kraken Spot BTC/USD instrument status",
+  "description": "Selected BTC/USD trading status, precision, and minimum-order constraints from Kraken Spot WebSocket v2. The provider supplies no event timestamp, so event_time is the local receipt time captured before parsing.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    { "name": "instrument", "type": "string", "location": "external" },
+    { "name": "base_asset", "type": "string", "location": "external" },
+    { "name": "quote_asset", "type": "string", "location": "external" },
+    { "name": "status", "type": "string", "location": "external" },
+    { "name": "quantity_increment", "type": "decimal", "location": "external" },
+    { "name": "price_increment", "type": "decimal", "location": "external" },
+    { "name": "minimum_quantity", "type": "decimal", "location": "external" },
+    { "name": "minimum_notional", "type": "decimal", "location": "external" },
+    {
+      "name": "update_kind",
+      "type": "enum",
+      "location": "external",
+      "variants": ["snapshot", "update"]
+    },
+    { "name": "event_time", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "event_time"
+}

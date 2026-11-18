@@ -1,0 +1,12 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[envelope-unreadable] at legs[0].body[0].if: `max_exposure_fraction` is a gate parameter — branching on your own circuit breaker is not allowed
+  envelope.max_exposure_fraction > 0.5
+           ^^^^^^^^^^^^^^^^^^^^^
+
+error[unknown-envelope-field] at legs[0].body[1].if: the envelope has no readable field `max_order`
+  envelope.max_order > 1
+           ^^^^^^^^^
+  = help: readable fields: allocation, loss_budget, round_budget, max_order_size, max_position_per_market, max_open_orders

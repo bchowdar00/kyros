@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_orders.rs
+expression: "common::render(&diagnostics)"
+---
+error[expr-cycle] at expressions.named.a: named expressions reference each other in a cycle: a -> b -> a
+  = help: named expressions are pure substitution; break the loop

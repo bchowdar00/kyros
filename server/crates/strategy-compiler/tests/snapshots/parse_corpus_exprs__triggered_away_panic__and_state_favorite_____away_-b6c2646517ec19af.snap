@@ -1,0 +1,161 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Logic {
+        op: And,
+        lhs: Spanned {
+            node: Logic {
+                op: And,
+                lhs: Spanned {
+                    node: Triggered {
+                        name: Spanned {
+                            node: "away_panic",
+                            span: Span {
+                                start: 10,
+                                end: 20,
+                            },
+                        },
+                    },
+                    span: Span {
+                        start: 0,
+                        end: 21,
+                    },
+                },
+                rhs: Spanned {
+                    node: Cmp {
+                        op: Eq,
+                        lhs: Spanned {
+                            node: Ref(
+                                Ref {
+                                    namespace: State,
+                                    path: [
+                                        Spanned {
+                                            node: "favorite",
+                                            span: Span {
+                                                start: 32,
+                                                end: 40,
+                                            },
+                                        },
+                                    ],
+                                    index: None,
+                                },
+                            ),
+                            span: Span {
+                                start: 26,
+                                end: 40,
+                            },
+                        },
+                        rhs: Spanned {
+                            node: Literal(
+                                Variant(
+                                    "away",
+                                ),
+                            ),
+                            span: Span {
+                                start: 44,
+                                end: 50,
+                            },
+                        },
+                    },
+                    span: Span {
+                        start: 26,
+                        end: 50,
+                    },
+                },
+            },
+            span: Span {
+                start: 0,
+                end: 50,
+            },
+        },
+        rhs: Spanned {
+            node: Cmp {
+                op: Ge,
+                lhs: Spanned {
+                    node: Ref(
+                        Ref {
+                            namespace: State,
+                            path: [
+                                Spanned {
+                                    node: "made_threes",
+                                    span: Span {
+                                        start: 61,
+                                        end: 72,
+                                    },
+                                },
+                            ],
+                            index: Some(
+                                [
+                                    Spanned {
+                                        node: Literal(
+                                            Variant(
+                                                "home",
+                                            ),
+                                        ),
+                                        span: Span {
+                                            start: 73,
+                                            end: 79,
+                                        },
+                                    },
+                                    Spanned {
+                                        node: Ref(
+                                            Ref {
+                                                namespace: Signal,
+                                                path: [
+                                                    Spanned {
+                                                        node: "pbp",
+                                                        span: Span {
+                                                            start: 88,
+                                                            end: 91,
+                                                        },
+                                                    },
+                                                    Spanned {
+                                                        node: "quarter",
+                                                        span: Span {
+                                                            start: 92,
+                                                            end: 99,
+                                                        },
+                                                    },
+                                                ],
+                                                index: None,
+                                            },
+                                        ),
+                                        span: Span {
+                                            start: 81,
+                                            end: 99,
+                                        },
+                                    },
+                                ],
+                            ),
+                        },
+                    ),
+                    span: Span {
+                        start: 55,
+                        end: 100,
+                    },
+                },
+                rhs: Spanned {
+                    node: Literal(
+                        Decimal(
+                            "5",
+                        ),
+                    ),
+                    span: Span {
+                        start: 104,
+                        end: 105,
+                    },
+                },
+            },
+            span: Span {
+                start: 55,
+                end: 105,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 105,
+    },
+}

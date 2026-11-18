@@ -1,0 +1,8 @@
+---
+source: crates/strategy-compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[unknown-namespace]: `foo` is not a namespace
+  foo.bar
+  ^^^
+  = help: references start with one of: event., signal., state., platform., legs., expr., table., entry., envelope., param.

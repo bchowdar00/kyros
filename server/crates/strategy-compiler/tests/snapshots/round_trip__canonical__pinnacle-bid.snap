@@ -1,0 +1,223 @@
+---
+source: crates/strategy-compiler/tests/round_trip.rs
+expression: first_emission
+---
+{
+  "meta": {
+    "name": "Pinnacle Bid",
+    "description": "On the NBA moneyline, Pinnacle's de-vigged line is treated as fair. Whenever the exchange pushes a side more than 2 cents below the Pinnacle number, rest a bid one cent under that number and pick up the cheap shares; on every line or book move while the side stays cheap, replace the bid so it tracks the line. When the discount closes back inside 2 cents, pull the bid and go back to watching.",
+    "dsl_version": "0.3"
+  },
+  "instruments": {
+    "game": "nba.sim.h2h.current"
+  },
+  "signals": {
+    "fair": "pinnacle.nba.sim.h2h.current.fair.v1",
+    "spread": "platform.nba.sim.h2h.current.sharp_spread.v1"
+  },
+  "state": [],
+  "triggers": [
+    {
+      "name": "home_cheap",
+      "condition": {
+        "signal": "spread",
+        "field": "home",
+        "comparator": ">",
+        "value": "0.02"
+      },
+      "fire": "if_true",
+      "rearm": {
+        "mode": "immediate"
+      }
+    },
+    {
+      "name": "home_fair",
+      "condition": {
+        "signal": "spread",
+        "field": "home",
+        "comparator": "<=",
+        "value": "0.02"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "name": "away_cheap",
+      "condition": {
+        "signal": "spread",
+        "field": "away",
+        "comparator": ">",
+        "value": "0.02"
+      },
+      "fire": "if_true",
+      "rearm": {
+        "mode": "immediate"
+      }
+    },
+    {
+      "name": "away_fair",
+      "condition": {
+        "signal": "spread",
+        "field": "away",
+        "comparator": "<=",
+        "value": "0.02"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "legs": [
+    {
+      "name": "watching",
+      "resident": true,
+      "arm": [
+        "home_cheap",
+        "away_cheap"
+      ],
+      "body": [
+        {
+          "name": "bid_home",
+          "if": "triggered(home_cheap)",
+          "do": [
+            {
+              "place": {
+                "instrument": "game",
+                "outcome": "home",
+                "side": "buy",
+                "order_type": "limit",
+                "tif": "gtc",
+                "price": "clamp(signal.fair.home - 0.01, 0.01, 0.99)",
+                "price_band": [
+                  "0.01",
+                  "0.99"
+                ],
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "bid"
+              }
+            }
+          ],
+          "then": "quoting_home"
+        },
+        {
+          "name": "bid_away",
+          "if": "triggered(away_cheap)",
+          "do": [
+            {
+              "place": {
+                "instrument": "game",
+                "outcome": "away",
+                "side": "buy",
+                "order_type": "limit",
+                "tif": "gtc",
+                "price": "clamp(signal.fair.away - 0.01, 0.01, 0.99)",
+                "price_band": [
+                  "0.01",
+                  "0.99"
+                ],
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "bid"
+              }
+            }
+          ],
+          "then": "quoting_away"
+        }
+      ]
+    },
+    {
+      "name": "quoting_home",
+      "resident": true,
+      "arm": [
+        "home_cheap",
+        "home_fair"
+      ],
+      "body": [
+        {
+          "name": "requote",
+          "if": "triggered(home_cheap)",
+          "do": [
+            {
+              "cancel_replace": {
+                "tag": "bid",
+                "instrument": "game",
+                "outcome": "home",
+                "side": "buy",
+                "order_type": "limit",
+                "tif": "gtc",
+                "price": "clamp(signal.fair.home - 0.01, 0.01, 0.99)",
+                "price_band": [
+                  "0.01",
+                  "0.99"
+                ],
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size"
+              }
+            }
+          ]
+        },
+        {
+          "name": "pull",
+          "if": "triggered(home_fair)",
+          "do": [
+            {
+              "cancel": {
+                "tag": "bid"
+              }
+            }
+          ],
+          "then": "watching"
+        }
+      ]
+    },
+    {
+      "name": "quoting_away",
+      "resident": true,
+      "arm": [
+        "away_cheap",
+        "away_fair"
+      ],
+      "body": [
+        {
+          "name": "requote",
+          "if": "triggered(away_cheap)",
+          "do": [
+            {
+              "cancel_replace": {
+                "tag": "bid",
+                "instrument": "game",
+                "outcome": "away",
+                "side": "buy",
+                "order_type": "limit",
+                "tif": "gtc",
+                "price": "clamp(signal.fair.away - 0.01, 0.01, 0.99)",
+                "price_band": [
+                  "0.01",
+                  "0.99"
+                ],
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size"
+              }
+            }
+          ]
+        },
+        {
+          "name": "pull",
+          "if": "triggered(away_fair)",
+          "do": [
+            {
+              "cancel": {
+                "tag": "bid"
+              }
+            }
+          ],
+          "then": "watching"
+        }
+      ]
+    }
+  ]
+}

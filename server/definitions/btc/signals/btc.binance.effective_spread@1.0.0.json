@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.effective_spread",
+  "version": "1.0.0",
+  "name": "Binance BTC/USDT effective and realized spread",
+  "description": "At each Binance BTC/USDT trade, effective_spread_bps = 2 * side_sign * (trade_price - midpoint) / midpoint expressed in basis points, where midpoint is the freshest Binance top-of-book midpoint at or before the trade's event time and side_sign is +1 for a buyer-aggressor and -1 for a seller-aggressor. The paired realized_spread_bps applies the same formula against the prevailing midpoint at trade_time plus realized_horizon_ms — the freshest Binance midpoint at or before that horizon (the midpoint is a step function, so this is the textbook TAQ mid at t plus horizon). Effective spread is not ready until a Binance midpoint has been observed, and a trade with no prevailing midpoint has no defined spread and enqueues no realized measurement. Realized spread stays awaiting_horizon until an event strictly past the horizon is observed; resolution then uses the prevailing at-or-before-horizon midpoint (the pre-trade midpoint when none arrived within the horizon), and a later midpoint never retroactively changes a resolved value. The published reading is the most recent resolved measurement when one exists, otherwise the most recent priced trade still awaiting its horizon. Every state-dependent field is always present: while a measurement is awaiting_horizon, realized_present is false and realized_spread_bps and midpoint_at_horizon carry the explicit 0 sentinel, so a ready update never omits a declared field. No value is ever fabricated. These are textbook TAQ execution-cost measures. realized_horizon_ms defaults to 5000. This identity is single-venue by construction: the measurement compares one venue's own trades and book against each other, so it reads only Binance inputs and is ready whenever the Binance book-and-trade join is fresh, independently of the other adopted spot venue. No blended `btc.external.*` variant of this measurement is published: a cross-venue form would have to rule which venue's book prices another venue's trade, and that ruling is deferred pending evidence (ADR 0023 amendment and ADR 0024, both 2026-09-02). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Binance sibling of `btc.coinbase.effective_spread@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Binance spot BTCUSDT; at decision time every price-level field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio fields (basis points, imbalances, ratios, counts) are quote-currency neutral. Binance inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `binance`, which the deployment sets only after that row clears. The Binance book input is the `btcusdt@depth20@100ms` partial-depth stream: every message is a complete top-20-per-side image at a 100 ms cadence, not a diff, and it carries no venue clock, so `event_time_basis` is `receipt` and `event_time` is the local receipt time. Ordering is the strictly increasing `last_update_id`; a duplicate or lower id is dropped and never applied. The Binance trade input is the `btcusdt@aggTrade` stream: one message is an aggregate of fills at one price on one side at one `trade_time`, with `aggressor_side` derived from `buyer_is_maker`. Aggregation preserves price, side and time, so every formula over signed price-times-size is unchanged; `trade_count` fields count aggregate trades, not individual fills, and the identity states that. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: every price-denominated field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio, basis-point, base-size and count fields are quote-currency neutral. E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (midpoint, midpoint_at_horizon, trade_price) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.spot.btcusdt.book-levels",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "binance.spot.btcusdt.agg-trades",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "effective_spread_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "realized_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "realized_spread_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "realized_state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "ready",
+        "awaiting_horizon"
+      ]
+    },
+    {
+      "name": "midpoint",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "midpoint_at_horizon",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "trade_price",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "aggressor_side",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "buy",
+        "sell"
+      ]
+    },
+    {
+      "name": "realized_horizon_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "trade_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "trade_time"
+}

@@ -1,0 +1,374 @@
+---
+source: crates/strategy-compiler/tests/emit_program.rs
+expression: program
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_a3e1cbbee7e3",
+  "source_hash": "a3e1cbbee7e3cbdce1035d0d53d5d4ace9820f8b50cb65fe267253bfef1c32ca",
+  "name": "Momentum Flip",
+  "description": "On the 2-minute BTC up/down market: when either side's price rises above 75 cents, buy that side at half max size. While holding, if the held side's price falls below 40 cents, flip the position by buying the opposite side at double size (one order flips sides on the unified book). If an entry or flip order is rejected, return to the prior mode.",
+  "dsl_version": "0.3",
+  "signals": {
+    "book": "btc_usd.updown_2m.current.price.v1"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_2m.current"
+  },
+  "subscriptions": [
+    "btc_usd.updown_2m.current.price.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [],
+  "params": [],
+  "triggers": [
+    {
+      "name": "up_rich",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_2m.current.price.v1",
+            "field": "up",
+            "comparator": ">",
+            "value": {
+              "kind": "literal",
+              "value": "0.75"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "down_rich",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_2m.current.price.v1",
+            "field": "down",
+            "comparator": ">",
+            "value": {
+              "kind": "literal",
+              "value": "0.75"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "up_cheap",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_2m.current.price.v1",
+            "field": "up",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.4"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    },
+    {
+      "name": "down_cheap",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_2m.current.price.v1",
+            "field": "down",
+            "comparator": "<",
+            "value": {
+              "kind": "literal",
+              "value": "0.4"
+            }
+          }
+        ]
+      },
+      "fire": "on_crossing",
+      "rearm": "fresh_crossing"
+    }
+  ],
+  "legs": [
+    {
+      "name": "hunting",
+      "resident": true,
+      "arm": [
+        "up_rich",
+        "down_rich"
+      ],
+      "blocks": [
+        {
+          "name": "buy_up",
+          "guard": {
+            "op": "triggered",
+            "name": "up_rich"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "hunting.buy_up.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "entry",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "/",
+                      "lhs": {
+                        "op": "envelope",
+                        "field": "max_order_size",
+                        "value": "100"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "2"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_up"
+        },
+        {
+          "name": "buy_down",
+          "guard": {
+            "op": "triggered",
+            "name": "down_rich"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "hunting.buy_down.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "entry",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "/",
+                      "lhs": {
+                        "op": "envelope",
+                        "field": "max_order_size",
+                        "value": "100"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "2"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_down"
+        }
+      ]
+    },
+    {
+      "name": "holding_up",
+      "resident": true,
+      "arm": [
+        "up_cheap"
+      ],
+      "blocks": [
+        {
+          "name": "flip_to_down",
+          "guard": {
+            "op": "triggered",
+            "name": "up_cheap"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_up.flip_to_down.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "down",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "flip",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_down"
+        }
+      ]
+    },
+    {
+      "name": "holding_down",
+      "resident": true,
+      "arm": [
+        "down_cheap"
+      ],
+      "blocks": [
+        {
+          "name": "flip_to_up",
+          "guard": {
+            "op": "triggered",
+            "name": "down_cheap"
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "holding_down.flip_to_up.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_2m.current",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "flip",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding_up"
+        }
+      ]
+    }
+  ],
+  "initial_leg": "hunting",
+  "intents": {
+    "holding_down.flip_to_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_down",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "holding_up.flip_to_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_up",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "hunting.buy_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "hunting.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

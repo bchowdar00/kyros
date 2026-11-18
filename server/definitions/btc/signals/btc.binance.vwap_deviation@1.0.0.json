@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.vwap_deviation",
+  "version": "1.0.0",
+  "name": "Binance BTC/USDT rolling VWAP deviation",
+  "description": "Binance BTC/USDT trade price times base-size divided by base volume over causal 10- and 60-second receipt-time windows of (window close minus duration, window close]. Each deviation_bps is (midpoint minus VWAP) divided by VWAP times 10000, where midpoint is the fresh Binance displayed best-quote midpoint, so a positive value means the Binance quote is above its own rolling VWAP. Ready output requires 60 seconds of uninterrupted Binance observation measured from the first observed Binance trade data after startup or recovery, positive volume in both windows, and a Binance trade and quote no more than 10 seconds old. This identity is single-venue: it reads only Binance inputs and is ready whenever Binance trades are warmed and fresh and its quote is fresh, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Binance sibling of `btc.coinbase.vwap_deviation@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Binance spot BTCUSDT; at decision time every price-level field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio fields (basis points, imbalances, ratios, counts) are quote-currency neutral. Binance inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `binance`, which the deployment sets only after that row clears. The Binance trade input is the `btcusdt@aggTrade` stream: one message is an aggregate of fills at one price on one side at one `trade_time`, with `aggressor_side` derived from `buyer_is_maker`. Aggregation preserves price, side and time, so every formula over signed price-times-size is unchanged; `trade_count` fields count aggregate trades, not individual fills, and the identity states that. The Binance quote input is the `btcusdt@bookTicker` stream, which publishes the best bid and ask price and quantity on every best-quote change. It is the Binance analogue of the Coinbase ticker's displayed best quote; the `depth20` top of book is explicitly NOT used as a second quote source. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: every price-denominated field is converted from the venue's USDT quote to USD via the Kraken USDT/USD mid, while ratio, basis-point, base-size and count fields are quote-currency neutral. E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (vwap_10s, vwap_60s, midpoint) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.spot.btcusdt.agg-trades",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "binance.spot.btcusdt.book-ticker",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "vwap_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "vwap_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "midpoint",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "deviation_bps_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "deviation_bps_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "base_volume_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "trade_count_60s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

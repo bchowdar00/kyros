@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[expr-ref-has-field] at legs[0].body[0].if: named expression `edge` has no fields — `expr.` references are the bare name
+  expr.edge.raw > 0
+            ^^^
+  = help: write `expr.edge`

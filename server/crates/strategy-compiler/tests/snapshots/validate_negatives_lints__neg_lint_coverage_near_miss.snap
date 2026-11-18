@@ -1,0 +1,5 @@
+---
+source: crates/compiler/tests/validate_negatives_lints.rs
+expression: rendered
+---
+(no diagnostics)

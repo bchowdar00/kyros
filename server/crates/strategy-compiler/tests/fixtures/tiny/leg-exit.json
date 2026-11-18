@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "name": "Leg Exit",
+    "description": "On the one-minute BTC up/down: with more than 15 seconds left and nothing resting, when the ask on up sits at least 4 cents under fair, rest a bid one cent under fair spending half the round budget. If it fills, hold until the bid on up is 5 cents above what the hunting leg paid, or cut the loss when the bid drops 10 cents under the average entry; either way sell the whole position at market. Pull an unfilled bid with 10 seconds left.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1"
+  },
+
+  "state": [],
+
+  "triggers": [
+    { "name": "cheap",
+      "condition": { "all": [
+        { "signal": "book", "field": "ask", "comparator": ">", "value": "0" },
+        { "signal": "fair", "field": "up", "comparator": ">", "value": "0" }
+      ]},
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "book_tick",
+      "condition": { "signal": "book" },
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "last_10s",
+      "timer": { "kind": "window_clock", "instrument": "market", "remaining": "10s" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "hunting",
+      "resident": true,
+      "arm": ["cheap", "last_10s"],
+      "body": [
+        { "name": "bid_up",
+          "if": "triggered(cheap) and signal.fair.up - signal.book.ask >= 0.04 and platform.open_orders == 0 and platform.window.remaining_ms > 15s",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "limit", "tif": "gtc",
+                "price": "clamp(signal.fair.up - 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(floor(envelope.round_budget * 0.5 / (signal.fair.up - 0.01)), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "bid",
+                "on": { "fill": "holding", "reject": "hunting" }
+            }}
+          ],
+          "then": "resting" },
+
+        { "name": "stop",
+          "if": "triggered(last_10s)",
+          "do": [],
+          "then": "done" }
+      ] },
+
+    { "name": "resting",
+      "resident": true,
+      "arm": ["last_10s"],
+      "body": [
+        { "name": "pull",
+          "if": "triggered(last_10s)",
+          "do": [ { "cancel": { "tag": "bid" } } ],
+          "then": "done" }
+      ] },
+
+    { "name": "holding",
+      "resident": true,
+      "arm": ["book_tick"],
+      "body": [
+        { "name": "take_profit",
+          "if": "triggered(book_tick) and legs.hunting.fills >= 1 and signal.book.bid >= legs.hunting.tag.bid.fill_price + 0.05",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "sell",
+                "order_type": "market", "tif": "ioc",
+                "reduce_only": true,
+                "size": "clamp(abs(platform.position.size), 0, envelope.max_position_per_market)",
+                "max_size": "envelope.max_position_per_market",
+                "tag": "exit",
+                "on": { "reject": "holding" }
+            }}
+          ],
+          "then": "done" },
+
+        { "name": "cut_loss",
+          "if": "triggered(book_tick) and signal.book.bid <= platform.position.avg_cost - 0.1",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "sell",
+                "order_type": "market", "tif": "ioc",
+                "reduce_only": true,
+                "size": "clamp(abs(platform.position.size), 0, envelope.max_position_per_market)",
+                "max_size": "envelope.max_position_per_market",
+                "tag": "stop",
+                "on": { "reject": "holding" }
+            }}
+          ],
+          "then": "done" }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

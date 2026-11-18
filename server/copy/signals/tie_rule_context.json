@@ -1,0 +1,14 @@
+{
+  "title": "Tie risk",
+  "description": "Whether this venue's market is close enough to its strike for the tie rule to matter. Each venue settles a tie differently, so near a tie one side gets a small edge.",
+  "fields": {
+    "near_tie": {
+      "label": "Near a tie",
+      "description": "Yes when the price is within the venue's tie threshold of the strike. Yes means the tie rule could decide the round."
+    },
+    "tie_advantage_side": {
+      "label": "Tie favours",
+      "description": "Which side wins if the price settles exactly on the strike under this venue's rule. Worth a cent or two when near a tie."
+    }
+  }
+}

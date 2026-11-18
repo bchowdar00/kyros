@@ -1,0 +1,114 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Call {
+        builtin: Clamp,
+        name_span: Span {
+            start: 0,
+            end: 5,
+        },
+        args: [
+            Spanned {
+                node: Arith {
+                    op: Mul,
+                    lhs: Spanned {
+                        node: Call {
+                            builtin: Abs,
+                            name_span: Span {
+                                start: 6,
+                                end: 9,
+                            },
+                            args: [
+                                Spanned {
+                                    node: Ref(
+                                        Ref {
+                                            namespace: Platform,
+                                            path: [
+                                                Spanned {
+                                                    node: "position",
+                                                    span: Span {
+                                                        start: 19,
+                                                        end: 27,
+                                                    },
+                                                },
+                                                Spanned {
+                                                    node: "size",
+                                                    span: Span {
+                                                        start: 28,
+                                                        end: 32,
+                                                    },
+                                                },
+                                            ],
+                                            index: None,
+                                        },
+                                    ),
+                                    span: Span {
+                                        start: 10,
+                                        end: 32,
+                                    },
+                                },
+                            ],
+                        },
+                        span: Span {
+                            start: 6,
+                            end: 33,
+                        },
+                    },
+                    rhs: Spanned {
+                        node: Literal(
+                            Decimal(
+                                "2",
+                            ),
+                        ),
+                        span: Span {
+                            start: 36,
+                            end: 37,
+                        },
+                    },
+                },
+                span: Span {
+                    start: 6,
+                    end: 37,
+                },
+            },
+            Spanned {
+                node: Literal(
+                    Decimal(
+                        "0",
+                    ),
+                ),
+                span: Span {
+                    start: 39,
+                    end: 40,
+                },
+            },
+            Spanned {
+                node: Ref(
+                    Ref {
+                        namespace: Envelope,
+                        path: [
+                            Spanned {
+                                node: "max_order_size",
+                                span: Span {
+                                    start: 51,
+                                    end: 65,
+                                },
+                            },
+                        ],
+                        index: None,
+                    },
+                ),
+                span: Span {
+                    start: 42,
+                    end: 65,
+                },
+            },
+        ],
+    },
+    span: Span {
+        start: 0,
+        end: 66,
+    },
+}

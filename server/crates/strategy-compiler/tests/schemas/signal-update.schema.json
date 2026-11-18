@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/signal-update.schema.json",
+  "title": "SignalUpdate",
+  "$comment": "HOT PATH. Source -> engine, on core-NATS subject `signal.<signal_id>`. The binary codec is substituted on the wire; this schema is the validation model, not the encoding.",
+  "type": "object",
+  "required": ["signal_id", "field", "value", "ts"],
+  "properties": {
+    "signal_id": { "type": "string" },
+    "field": { "type": "string" },
+    "value": { "$ref": "common.schema.json#/$defs/SignalValue" },
+    "ts": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  },
+  "additionalProperties": false
+}

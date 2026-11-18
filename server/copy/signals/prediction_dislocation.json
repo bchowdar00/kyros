@@ -1,0 +1,26 @@
+{
+  "title": "Venue dislocation",
+  "description": "How far Kalshi and Polymarket disagree on the odds of Up, after adjusting for their different strikes. A dislocation means one venue has moved and the other has not yet.",
+  "fields": {
+    "state": {
+      "label": "Dislocation state",
+      "description": "Aligned when the two venues agree within a threshold, dislocated when they do not. Dislocations tend to close from the lagging side."
+    },
+    "direction": {
+      "label": "Dislocation direction",
+      "description": "Which venue is pricing Up higher. That venue is either ahead of the move or overpaying."
+    },
+    "dislocation_bps": {
+      "label": "Venue gap",
+      "description": "The strike-adjusted gap between the two venues' odds of Up, in basis points. Bigger means a wider disagreement."
+    },
+    "implied_up_kalshi": {
+      "label": "Kalshi odds of Up",
+      "description": "The odds of Up implied by Kalshi's midpoint, as a percentage. Read against its own strike."
+    },
+    "implied_up_polymarket": {
+      "label": "Polymarket odds of Up",
+      "description": "The odds of Up implied by Polymarket's midpoint, as a percentage. Read against its own strike."
+    }
+  }
+}

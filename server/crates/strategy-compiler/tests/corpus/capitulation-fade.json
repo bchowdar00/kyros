@@ -1,0 +1,168 @@
+{
+  "meta": {
+    "name": "Capitulation Fade",
+    "description": "On the NBA moneyline: when a team has missed 6 or more threes in the current quarter, is down by 10 or more points, and its price is under 40 cents, buy the other team at half max size. While holding: if the held side rises above 80 cents, sell the position to lock in the profit and stop. If it falls below 30 cents instead, dump it and buy the original team in one order (the unified book flips the position). The exits apply to whichever side is currently held.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "game": "nba.sim.h2h.current"
+  },
+
+  "signals": {
+    "pbp":   "nba.sim.h2h.current.pbp.v1",
+    "price": "nba.sim.h2h.current.price.v1"
+  },
+
+  "state": [
+    { "name": "miss_count", "kind": "map",
+      "key_types": [{ "type": "enum", "variants": ["home", "away"] }, { "type": "u8" }],
+      "value_type": "u8", "max_keys": 16, "overflow": "refuse_update" }
+  ],
+
+  "triggers": [
+    { "name": "missed_three",
+      "condition": { "all": [
+        { "signal": "pbp", "field": "action", "comparator": "==", "value": "three_pointer" },
+        { "signal": "pbp", "field": "result", "comparator": "==", "value": "missed" }
+      ]},
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "home_capitulation",
+      "condition": { "all": [
+        { "signal": "price", "field": "home", "comparator": "<", "value": "0.4" },
+        { "expr": "signal.pbp.away_score - signal.pbp.home_score", "comparator": ">=", "value": "10" }
+      ]},
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "away_capitulation",
+      "condition": { "all": [
+        { "signal": "price", "field": "away", "comparator": "<", "value": "0.4" },
+        { "expr": "signal.pbp.home_score - signal.pbp.away_score", "comparator": ">=", "value": "10" }
+      ]},
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "home_rich",
+      "condition": { "signal": "price", "field": "home", "comparator": ">", "value": "0.8" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "away_rich",
+      "condition": { "signal": "price", "field": "away", "comparator": ">", "value": "0.8" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "home_cheap",
+      "condition": { "signal": "price", "field": "home", "comparator": "<", "value": "0.3" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "away_cheap",
+      "condition": { "signal": "price", "field": "away", "comparator": "<", "value": "0.3" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "hunting",
+      "resident": true,
+      "arm": ["missed_three", "home_capitulation", "away_capitulation"],
+      "body": [
+        { "name": "count_miss",
+          "if": "triggered(missed_three)",
+          "do": ["set state.miss_count[event.team, event.quarter] = state.miss_count[event.team, event.quarter] + 1"] },
+
+        { "name": "fade_home",
+          "if": "triggered(home_capitulation) and state.miss_count['home', signal.pbp.quarter] >= 6",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "away", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(envelope.max_order_size / 2, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry",
+                "on": { "reject": "hunting" }
+            }}
+          ],
+          "then": "holding_away" },
+
+        { "name": "fade_away",
+          "if": "triggered(away_capitulation) and state.miss_count['away', signal.pbp.quarter] >= 6",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "home", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(envelope.max_order_size / 2, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry",
+                "on": { "reject": "hunting" }
+            }}
+          ],
+          "then": "holding_home" }
+      ] },
+
+    { "name": "holding_away",
+      "resident": true,
+      "arm": ["away_rich", "away_cheap"],
+      "body": [
+        { "name": "take_profit",
+          "if": "triggered(away_rich)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "away", "side": "sell",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "exit",
+                "on": { "reject": "holding_away" }
+            }}
+          ],
+          "then": "done" },
+
+        { "name": "stop_flip",
+          "if": "triggered(away_cheap)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "home", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(abs(platform.position.size) * 2, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "flip",
+                "on": { "reject": "holding_away" }
+            }}
+          ],
+          "then": "holding_home" }
+      ] },
+
+    { "name": "holding_home",
+      "resident": true,
+      "arm": ["home_rich", "home_cheap"],
+      "body": [
+        { "name": "take_profit",
+          "if": "triggered(home_rich)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "home", "side": "sell",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "exit",
+                "on": { "reject": "holding_home" }
+            }}
+          ],
+          "then": "done" },
+
+        { "name": "stop_flip",
+          "if": "triggered(home_cheap)",
+          "do": [
+            { "place": {
+                "instrument": "game", "outcome": "away", "side": "buy",
+                "order_type": "market", "tif": "ioc",
+                "size": "clamp(abs(platform.position.size) * 2, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "flip",
+                "on": { "reject": "holding_home" }
+            }}
+          ],
+          "then": "holding_away" }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

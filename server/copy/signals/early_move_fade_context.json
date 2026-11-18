@@ -1,0 +1,18 @@
+{
+  "title": "Early move",
+  "description": "Whether a sharp move is likely to fade. A big move into absorbing liquidity tends to come back; one into thin liquidity tends to run.",
+  "fields": {
+    "state": {
+      "label": "Move state",
+      "description": "Fade when a big move met absorption, run when it met thin liquidity, and none when nothing sharp has happened. Fade is the contrarian read."
+    },
+    "big_move_bps": {
+      "label": "Move size",
+      "description": "The size of the latest one-second move that tripped the signal, in basis points. Zero when nothing has tripped."
+    },
+    "direction_10s": {
+      "label": "Move direction 10s",
+      "description": "Which way the price has gone over the last ten seconds. Read it with the state to know which way a fade would go."
+    }
+  }
+}

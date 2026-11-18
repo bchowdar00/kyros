@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.multi.pair_cost_spread",
+  "version": "1.0.0",
+  "name": "Polymarket versus Kalshi BTC pair-cost spread",
+  "scope_kind": "multi_market",
+  "description": "Cost of locking a one-dollar payout on each venue alone and across the two venues, for the aligned market pair. It is multi-market scoped on the same two legs and the same exact_close alignment rule as btc.multi.prediction_dislocation@1.0.0. The single-venue legs are consumed verbatim: kalshi_pair_cost and kalshi_fee_adjusted_pair_cost are the published pair_cost and fee_adjusted_pair_cost of btc.kalshi.pair_cost_state@1.0.0, and the polymarket pair likewise from btc.polymarket.pair_cost_state@1.0.0; this identity never re-derives a fee formula. pair_cost_spread is polymarket_fee_adjusted_pair_cost minus kalshi_fee_adjusted_pair_cost and cheaper_venue names the smaller of the two. The two cross legs buy the affirmative outcome on one venue and the negative outcome on the other: cross_pair_cost_up_kalshi is (kalshi affirmative_ask plus the published kalshi yes_leg_fee) plus (polymarket negative_ask plus the published polymarket down_leg_fee) minus one, and cross_pair_cost_up_polymarket is the mirror using polymarket affirmative_ask with its up_leg_fee and kalshi negative_ask with its no_leg_fee. best_cross_pair_cost is the smaller of the two cross legs and best_cross_direction names it, or none when neither leg is computable. state applies the same vocabulary and thresholds as the single-venue identity to best_cross_pair_cost: locked_profit when it is negative, premium when it exceeds premium_threshold, fair otherwise; premium_threshold defaults to 0.01 and is read from the venue identities rather than redeclared. lock_is_conditional is true whenever the two rules cards differ in settlement_benchmark, comparator, tie_outcome or strike, which is the standing case today: a negative cross pair cost is NOT a risk-free lock, because the two contracts can settle inconsistently, and the field says so on every update. Ready output requires both venue pair_cost_state inputs ready, both quotes no more than 10000 milliseconds old, and the leg alignment satisfied. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.prediction_quote",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.prediction_quote",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.pair_cost_state",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.pair_cost_state",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "kalshi_market_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_market_generation",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_market_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_market_generation",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_pair_cost",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_fee_adjusted_pair_cost",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_pair_cost",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_fee_adjusted_pair_cost",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "pair_cost_spread",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "cheaper_venue",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "polymarket",
+        "kalshi",
+        "tied"
+      ]
+    },
+    {
+      "name": "cross_pair_cost_up_kalshi",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "cross_pair_cost_up_polymarket",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "best_cross_pair_cost",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "best_cross_direction",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "up_kalshi_down_polymarket",
+        "up_polymarket_down_kalshi",
+        "none"
+      ]
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "locked_profit",
+        "fair",
+        "premium"
+      ]
+    },
+    {
+      "name": "premium_threshold",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "lock_is_conditional",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "time_to_close_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "max_input_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

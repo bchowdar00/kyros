@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.window_streak",
+  "version": "1.0.0",
+  "name": "Kalshi BTC settled-window outcome streak",
+  "description": "The run of settled outcomes across the bound market family's prior quarter-hour windows. Its only input is the settlement history this lane itself published: each time btc.kalshi.settlement_anchor_state publishes its one final ready decision for a completing window (ruling E37b, including the departed-quarter decision released under ruling E37c), that decision's settled side is appended to the history, keyed by the window's derived quarter close so the same window is never counted twice on a replay or a restart. streak_direction is the side of the most recent settled window (up when it settled affirmative, down otherwise) and streak_length is how many consecutive settled windows ended on that side. last_n_outcomes is the last eight settled outcomes as a string of u and d characters, oldest first, and up_share_8 is the fraction of those that settled up, over however many of the eight exist. settled_window_count is the total number of settled windows observed since this processor started, and last_settled_close is the derived quarter close of the newest one. Ready after two settled windows have been observed, which is the smallest history in which a streak is distinguishable from a single outcome; while warming the instance-status reason is market_contract_warming_up. The history is per market family - the quarter-hour KXBTC series the lane is bound to - and windows of another family are never mixed in. Restart-safe: the outcome history and the last counted quarter close are carried in the prediction checkpoint as an additive optional field, so a restart resumes the streak instead of re-warming, and a checkpoint written before this identity existed restores as an empty history. This identity is the only one in the pack that reads across windows. It is published on the Kalshi lane only and only while that lane's CF Benchmarks index socket is armed (ruling E43), because the settled decisions it folds exist only there: Polymarket resolves on the RTDS sixty-second TWAP and has no settlement-window completion (ruling E37b), so this lane holds no settled outcome for that venue and no Polymarket sibling is published. This identity states a historical frequency; it is not a prediction, and consecutive settled windows are not evidence of dependence. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.settlement_anchor_state",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "streak_direction",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "up",
+        "down"
+      ]
+    },
+    {
+      "name": "streak_length",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "last_n_outcomes",
+      "type": "string",
+      "location": "internal"
+    },
+    {
+      "name": "up_share_8",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "settled_window_count",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "last_settled_close",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

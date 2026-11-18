@@ -1,0 +1,8 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[legs-unknown-tag] at legs[1].body[0].if: leg `main` places no order tagged `nope`
+  legs.main.tag.nope.fill_price > legs.main.tag.open.fill_price
+                ^^^^
+  = help: tags placed from `main`: open

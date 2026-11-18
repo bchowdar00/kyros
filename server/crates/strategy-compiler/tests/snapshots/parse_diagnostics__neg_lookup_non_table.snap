@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[table-ref-outside-lookup]: the first argument of `lookup` must be a table reference
+  lookup(state.x, 1)
+         ^^^^^^^
+  = help: write `lookup(table.<name>, key)`

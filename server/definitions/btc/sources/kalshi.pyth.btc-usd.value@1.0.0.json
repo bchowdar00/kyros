@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.pyth.btc-usd.value",
+  "version": "1.0.0",
+  "name": "Kalshi Pyth BTC/USD value relay",
+  "description": "Authenticated Kalshi WebSocket channel pyth_value, restricted to the single configured BTC underlying ticker. Kalshi relays deduplicated Pyth prices keyed by underlying ticker, ignoring duplicate and out-of-order source timestamps independently per ticker; the adapter enforces the same rule against its own (underlying_ticker, event_time) frontier. This is a relay, not the Pyth Hermes feed: there is no confidence interval, no exponent, no EMA price and no raw upstream frame on this channel, so it cannot substitute for pyth.hermes.btc-usd.price and any oracle identity must declare which of the two it read. The exact BTC underlying ticker spelling is a configured string; the 2026-09-03 Tokyo probe confirms that Crypto.BTC/USD is ACCEPTED as a subscription (acknowledged on sid 2), and any other underlying_ticker on the wire is refused rather than accepted under a different name. Channel cadence is not stated in Kalshi's documentation AND no frame has ever been delivered: the channel was acknowledged on every connection of four separate Tokyo captures on 2026-09-03 — a 2-minute probe, a 65-minute probe hour across four connections, and two 65-minute in-tree hours — for a little over three hours of acknowledged silence, and produced zero frames. Neither the cadence nor the body shape below has ever been observed; the feed-health board keeps its conservative default liveness bound. price is preserved as provider decimal text at eight fractional digits. event_time is the Pyth source timestamp; kalshi_received_at is Kalshi's receipt; the envelope received_at is our local receipt. Two rights questions gate this source: Kalshi's own data terms and whether Pyth's prohibition on extracting or copying feed data binds data received through a licensed Kalshi relay. Refusal-gated at runtime until both clear. The channel is subscribed on Kalshi's market socket wss://external-api-ws.kalshi.com/trade-api/ws/v2 under the market command envelope {\"cmd\":\"subscribe\",\"id\":102,\"params\":{\"channels\":[\"pyth_value\"],\"underlying_tickers\":[\"Crypto.BTC/USD\"]}}. Runtime refusal gate: the channel is subscribed only when the environment allow-list SIGNALS_ENABLED_VENUES lists pyth; absent, it is not subscribed and the dependent instances publish unavailable. Wire contract is documented-NOT-observed and the surface is refuse-closed: the adapter parses, sequences and orders a pyth_value message strictly to the model below, but publishes NOTHING under this identity until a real frame is captured (ruling E23). The 65-minute Tokyo capture settles it.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    {
+      "name": "underlying_ticker",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_received_at",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "upstream_sequence",
+      "type": "u64",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time",
+  "sequence_field": "upstream_sequence"
+}

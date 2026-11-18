@@ -1,0 +1,232 @@
+{
+  "id": "polymarket-discount",
+  "title": "Polymarket Gap",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": null },
+  "series": ["btc-15m"],
+  "logic": "Polymarket runs its own fifteen-minute BTC up or down market on nearly the same strike. When Polymarket prices a side at least three cents above what it costs here, it bids for that side a cent under Polymarket's price and follows it. Pulls the bid if the strikes drift apart or the close is near. Holds any fill to the end.",
+  "inverse_logic": "Polymarket runs its own fifteen-minute BTC up or down market on nearly the same strike. When our price for a side is at least three cents above Polymarket's, it buys the other side here. Sells out once the two markets are back within a cent of each other, otherwise holds to the close.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "2", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-15m": { "requote": "2s", "pull": "45s", "cutoff": "90s", "edge": "0.03", "converged": "0.01", "strike_band": "0.0003" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Follow Polymarket",
+      "description": "While Polymarket's fifteen-minute strike is within the strike band of ours: when its affirmative midpoint is at least the edge above our ask on Up, rest a bid on Up one cent under that midpoint; when its negative midpoint is at least the edge above our ask on Down, rest a bid on Down the same way. Re-quote on every Polymarket tick, cancel if the strikes drift apart, and pull on the window clock before the close. A fill is held to settlement.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "strike": "{{series}}.current.strike.v1",
+      "poly": "btc.polymarket.prediction_quote.v1",
+      "contract": "btc.polymarket.market_contract.v1"
+    },
+    "state": [],
+    "expressions": {
+      "named": {
+        "aligned": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price <= {{strike_band}}"
+      }
+    },
+    "triggers": [
+      { "name": "up_cheap",
+        "condition": { "all": [
+          { "expr": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price", "comparator": "<=", "value": "{{strike_band}}" },
+          { "expr": "signal.poly.affirmative_midpoint - signal.book.ask", "comparator": ">=", "value": "{{edge}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "down_cheap",
+        "condition": { "all": [
+          { "expr": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price", "comparator": "<=", "value": "{{strike_band}}" },
+          { "expr": "signal.poly.negative_midpoint - (1 - signal.book.bid)", "comparator": ">=", "value": "{{edge}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "poly_tick",
+        "condition": { "signal": "poly" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "{{requote}}" } },
+      { "name": "closing",
+        "timer": { "kind": "window_clock", "instrument": "market", "remaining": "{{pull}}" },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["up_cheap", "down_cheap", "closing"],
+        "body": [
+          { "name": "bid_up",
+            "if": "triggered(up_cheap) and platform.window.remaining_ms > {{pull}}",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "gtc",
+                  "price": "clamp(signal.poly.affirmative_midpoint - 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.poly.affirmative_midpoint, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "bid",
+                  "on": { "fill": "done", "partial": "quoting_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "quoting_up" },
+          { "name": "bid_down",
+            "if": "triggered(down_cheap) and platform.window.remaining_ms > {{pull}}",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "gtc",
+                  "price": "clamp(signal.poly.negative_midpoint - 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.poly.negative_midpoint, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "bid",
+                  "on": { "fill": "done", "partial": "quoting_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "quoting_down" },
+          { "name": "stop", "if": "triggered(closing)", "do": [], "then": "done" }
+        ] },
+      { "name": "quoting_up", "resident": true, "arm": ["poly_tick", "closing"],
+        "body": [
+          { "name": "unaligned", "if": "triggered(poly_tick) and not expr.aligned", "do": [ { "cancel": { "tag": "bid" } } ], "then": "hunting" },
+          { "name": "requote",
+            "if": "triggered(poly_tick)",
+            "do": [
+              { "cancel_replace": {
+                  "tag": "bid",
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "gtc",
+                  "price": "clamp(signal.poly.affirmative_midpoint - 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.poly.affirmative_midpoint, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size"
+              } }
+            ] },
+          { "name": "pull", "if": "triggered(closing)", "do": [ { "cancel": { "tag": "bid" } } ], "then": "done" }
+        ] },
+      { "name": "quoting_down", "resident": true, "arm": ["poly_tick", "closing"],
+        "body": [
+          { "name": "unaligned", "if": "triggered(poly_tick) and not expr.aligned", "do": [ { "cancel": { "tag": "bid" } } ], "then": "hunting" },
+          { "name": "requote",
+            "if": "triggered(poly_tick)",
+            "do": [
+              { "cancel_replace": {
+                  "tag": "bid",
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "gtc",
+                  "price": "clamp(signal.poly.negative_midpoint - 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.poly.negative_midpoint, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size"
+              } }
+            ] },
+          { "name": "pull", "if": "triggered(closing)", "do": [ { "cancel": { "tag": "bid" } } ], "then": "done" }
+        ] },
+      { "name": "done", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Fade Polymarket",
+      "description": "While Polymarket's fifteen-minute strike is within the strike band of ours: when our bid on Up is at least the edge above Polymarket's affirmative midpoint, take Down with an immediate-or-cancel limit two cents over the ask; when our bid on Down is at least the edge above its negative midpoint, take Up. Sell out with an immediate-or-cancel once the side held is priced within the converged band of Polymarket's midpoint for it, else hold to settlement. No entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "strike": "{{series}}.current.strike.v1",
+      "poly": "btc.polymarket.prediction_quote.v1",
+      "contract": "btc.polymarket.market_contract.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "up_rich",
+        "condition": { "all": [
+          { "expr": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price", "comparator": "<=", "value": "{{strike_band}}" },
+          { "expr": "signal.book.bid - signal.poly.affirmative_midpoint", "comparator": ">=", "value": "{{edge}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "down_rich",
+        "condition": { "all": [
+          { "expr": "abs(signal.contract.strike - signal.strike.price) / signal.strike.price", "comparator": "<=", "value": "{{strike_band}}" },
+          { "expr": "(1 - signal.book.ask) - signal.poly.negative_midpoint", "comparator": ">=", "value": "{{edge}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "down_converged",
+        "condition": { "expr": "abs((1 - signal.book.ask) - signal.poly.negative_midpoint)", "comparator": "<=", "value": "{{converged}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "up_converged",
+        "condition": { "expr": "abs(signal.book.bid - signal.poly.affirmative_midpoint)", "comparator": "<=", "value": "{{converged}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["up_rich", "down_rich"],
+        "body": [
+          { "name": "take_down",
+            "if": "triggered(up_rich) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_down",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_down" },
+          { "name": "take_up",
+            "if": "triggered(down_rich) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_up",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_up" }
+        ] },
+      { "name": "holding_down", "resident": true, "arm": ["down_converged"],
+        "body": [
+          { "name": "take_profit",
+            "if": "triggered(down_converged) and platform.position.size <= -1",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "done", "partial": "holding_down", "reject": "holding_down", "cancel_ack": "holding_down", "expiry": "holding_down" }
+              } }
+            ],
+            "then": "done" }
+        ] },
+      { "name": "holding_up", "resident": true, "arm": ["up_converged"],
+        "body": [
+          { "name": "take_profit",
+            "if": "triggered(up_converged) and platform.position.size >= 1",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(platform.position.size, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "done", "partial": "holding_up", "reject": "holding_up", "cancel_ack": "holding_up", "expiry": "holding_up" }
+              } }
+            ],
+            "then": "done" }
+        ] },
+      { "name": "done", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

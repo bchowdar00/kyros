@@ -1,0 +1,18 @@
+{
+  "title": "Perp basis",
+  "description": "How far the perpetual trades from its spot index. A widening basis means leverage is pushing one way faster than spot can follow.",
+  "fields": {
+    "regime": {
+      "label": "Basis regime",
+      "description": "Rich when the perp is above its index, cheap when below, neutral inside a small band. Rich means leveraged buyers are ahead of spot."
+    },
+    "basis_bps": {
+      "label": "Basis",
+      "description": "Perp mark price minus the spot index as a share of price, in basis points. Positive means the perp is rich to spot."
+    },
+    "basis_bps_change_60s": {
+      "label": "Basis change 60s",
+      "description": "How much the basis moved over the last minute, in basis points. A fast change means leverage is repricing."
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.cfbenchmarks.brti.value-5hz",
+  "version": "1.0.0",
+  "name": "Kalshi CF Benchmarks BRTI 5 Hz index value",
+  "description": "Authenticated Kalshi WebSocket channel cfbenchmarks_value_5hz for index id BRTI, subscribed on the market socket wss://external-api-ws.kalshi.com/trade-api/ws/v2 under the market command envelope with command id 103 (only BRTI is configured; the index set is BRTI only by ruling R2). OBSERVED (ruling E25), with the evidence of record an in-tree capture: the 65-minute kalshi-index hour of 2026-09-03 10:01-11:06Z replays through btc-feeds replay unmodified and yields 19,497 events on this identity, 5 per second unbroken for the hour with upstream_sequence contiguous from 1 to 19497 and zero adapter errors. Every frame's msg key set is exactly {index_id, value_usd, source_ts_ms, received_at, data} — no trailing sixty-second average and no quarter-hour average, both of which stay on the per-second channel, so this identity is the low-latency index reading and never the settlement quantity. source_ts_ms sits on an exact 200 ms grid across all 2,202 frames (5.00 frames per second over 440 seconds) and received_at trails it by 21 to 137 ms. index_value is msg.value_usd, preserved verbatim as provider decimal text at exactly eight fractional digits; the embedded raw CF Benchmarks frame in msg.data is a JSON string {type,time,id,value} parsed for cross-check only, and its id, time and value must equal index_id, event_time and index_value, a disagreement being a state inconsistency that drops the message rather than choosing a side. The embedded value is free-scale within eight digits while value_usd is fixed at eight, so the two are compared by decimal value and never as text. upstream_sequence is the per-subscription seq counter, observed contiguous from 1 within one sid and reset by every reconnect. Kalshi ignores duplicate and out-of-order upstream source timestamps and the adapter enforces the same rule against its own (index_id, event_time) frontier, which survives reconnects while the per-subscription seq state does not. Full-state value stream: a sequence gap is reported and publication continues from the newest valid image. AVAILABILITY VARIES PER CONNECTION AND IS NOT AN ERROR: with the same credentials throughout, the channel was answered error code 8, \"Unknown channel name\", on three of the four connections of the 06:37-07:42Z hour and accepted on the fourth, then accepted on the very first subscribe of the 10:01-11:06Z hour and held for its full 65 minutes. Refused 3 of 4 on one hour, accepted 1 of 1 on the next: a refusal is a property of the connection, not of the account or the entitlement. A refusal is a SubscriptionRejected notice naming the channel, marks this identity unavailable for that connection, leaves the market channels and kalshi.cfbenchmarks.brti.value untouched, never refuses the lane (ruling E2), and is re-attempted on the next reconnect. Status stays draft until acceptance is the observed norm over more connections than the five recorded so far; the 10:01Z hour supplies the first acceptance from a first subscribe. Rights-gated exactly as kalshi.cfbenchmarks.brti.value: the channel is subscribed only when the environment allow-list SIGNALS_ENABLED_VENUES lists cfbrti; absent, it is not subscribed and the dependent instances publish unavailable.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    {
+      "name": "index_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "index_value",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_received_at",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "upstream_sequence",
+      "type": "u64",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time",
+  "sequence_field": "upstream_sequence"
+}

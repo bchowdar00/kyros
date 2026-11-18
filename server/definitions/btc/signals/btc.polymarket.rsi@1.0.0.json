@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.rsi",
+  "version": "1.0.0",
+  "name": "Polymarket BTC affirmative-probability RSI(14)",
+  "description": "Wilder's Relative Strength Index over the last fourteen ten-second closes of the affirmative midpoint of the affirmative (up) outcome token of the bound market, expressed in probability points (a midpoint of 0.55 is 55 points). Ten-second bars are folded from the one-second midpoint ring on the lane clock at ten-second boundaries (ruling E58): open is the first second's close, high and low are the extrema, close is the last second's close. A bar missing any of its ten one-second samples is invalid and clears the closed-bar history, so a warm-up restarts from the next complete bar rather than bridging a gap. rsi_14 is Wilder's form: the average gain and average loss are seeded as simple means over the first fourteen deltas and then smoothed as (average * 13 + delta) / 14, and rsi_14 = 100 - 100 / (1 + average_gain / average_loss). A window with no loss is 100, one with no gain is 0, and a perfectly flat window is the midpoint 50. regime is a research-default classification of that reading: oversold at or below oversold_threshold (default 30), overbought at or above overbought_threshold (default 70), neutral between; both thresholds are published so a consumer reads the bands the classification actually used. bars_observed is the count of complete closed bars behind the reading. Not ready until fifteen complete ten-second bars have closed within the current market generation (fourteen deltas take fifteen closes), about 150 seconds of contiguous one-second samples; while warming the instance-status reason is market_contract_warming_up. At ten-second bars (ruling E58) the warm-up completes about 150 seconds into a generation, so this identity is ready for the second half of the five-minute Polymarket window rather than never. The identity is market-scoped: it fails closed while the venue is unbound, the market contract is still warming, or the affirmative quote is missing, stale or crossed, and it publishes no value rather than a stale one. Its rolling history is per generation and is cleared at the market roll, so a reading never mixes two contracts (ruling E51, spec C3 \u00a72). The history is rolling market-relative state and is deliberately not checkpointed: it re-warms after a restart. All arithmetic is exact decimal and causal - every published number is a fold over admitted events at or before the decision instant. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.prediction_quote",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "rsi_14",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "oversold",
+        "neutral",
+        "overbought"
+      ]
+    },
+    {
+      "name": "bars_observed",
+      "type": "u16",
+      "location": "internal"
+    },
+    {
+      "name": "oversold_threshold",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "overbought_threshold",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

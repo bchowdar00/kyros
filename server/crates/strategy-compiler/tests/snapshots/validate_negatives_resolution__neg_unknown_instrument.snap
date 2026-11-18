@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-instrument] at legs[0].body[0].do[0].place.instrument: intent names undeclared instrument `gme`
+  = help: declared instruments: game

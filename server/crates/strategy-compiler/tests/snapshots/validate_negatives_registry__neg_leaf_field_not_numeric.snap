@@ -1,0 +1,8 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_registry.rs
+expression: rendered
+---
+error[leaf-field-not-numeric] at triggers[0].condition.expr: a trigger expression is arithmetic — this expression is not numeric
+  signal.pbp.action
+  ^^^^^^^^^^^^^^^^^
+  = help: compare enum, string and boolean fields with a field leaf

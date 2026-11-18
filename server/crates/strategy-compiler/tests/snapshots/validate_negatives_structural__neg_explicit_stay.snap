@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+warning[explicit-stay] at legs[0].body[0].do[0].place.on.reject: `reject: stay` is the default — omit it (sparse-in)
+  = help: write only the keys that transition

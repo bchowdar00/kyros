@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.cross_venue_dispersion",
+  "version": "1.0.0",
+  "name": "Coinbase and Kraken BTC/USD dispersion",
+  "description": "One-second comparison of the two fresh exact-decimal constituent midpoints carried by the spot-reference processor. absolute_difference is the unsigned midpoint difference and dispersion_bps divides that difference by their equal-weight mean. leading_venue identifies the higher midpoint. reference_guard_state reports whether full-precision dispersion is within the spot-reference 10-basis-point guard. Divergence is a valid measurement for this signal; missing, stale, crossed, or otherwise invalid constituents degrade it. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.external.spot_reference", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "coinbase_mid", "type": "decimal", "location": "internal" },
+    { "name": "kraken_mid", "type": "decimal", "location": "internal" },
+    { "name": "absolute_difference", "type": "decimal", "location": "internal" },
+    { "name": "dispersion_bps", "type": "decimal", "location": "internal" },
+    {
+      "name": "leading_venue",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["coinbase", "kraken", "tied"]
+    },
+    {
+      "name": "reference_guard_state",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["within_guard", "outside_guard"]
+    },
+    { "name": "max_input_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

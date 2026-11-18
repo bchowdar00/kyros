@@ -1,0 +1,18 @@
+{
+  "title": "Momentum",
+  "description": "How the price has moved over the last ten and thirty seconds. Short bursts of momentum are what a two-minute round trades on.",
+  "fields": {
+    "return_bps_10s": {
+      "label": "Return 10s",
+      "description": "The change in midpoint over the last ten seconds, in basis points. Positive means the price has been rising."
+    },
+    "return_bps_30s": {
+      "label": "Return 30s",
+      "description": "The change in midpoint over the last thirty seconds, in basis points. Compare it with the ten-second read to see if a move is accelerating."
+    },
+    "direction_10s": {
+      "label": "Move direction 10s",
+      "description": "Up or down once the ten-second return clears a small threshold, otherwise flat. The one-word version of the return."
+    }
+  }
+}

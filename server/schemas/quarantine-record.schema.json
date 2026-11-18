@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTC Signals Spool Quarantine Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "package_id", "destination", "quarantined_at", "reason",
+    "existing_sha256", "incoming_sha256"
+  ],
+  "properties": {
+    "schema_version": { "const": "btc.signals.quarantine-record/v1" },
+    "package_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "destination": {
+      "type": "string", "minLength": 1, "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "quarantined_at": { "type": "string", "format": "date-time" },
+    "reason": { "const": "conflicting_acknowledgement" },
+    "existing_sha256": {
+      "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"
+    },
+    "incoming_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

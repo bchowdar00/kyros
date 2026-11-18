@@ -1,0 +1,5 @@
+{
+  "title": "Trade tape",
+  "description": "Every fill in the current round as it happens, with who took it, the side, the price and the size. A stream for strategies rather than a reading to watch.",
+  "fields": {}
+}

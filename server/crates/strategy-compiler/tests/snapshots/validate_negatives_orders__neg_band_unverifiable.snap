@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_orders.rs
+expression: rendered
+---
+error[band-unverifiable] at legs[0].body[0].do[0].place.price: the price band cannot be verified: clamp bounds must be literal decimals
+  clamp(signal.price.home, envelope.allocation, 0.9)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = help: write the clamp's lo and hi as canonical decimals inside the band

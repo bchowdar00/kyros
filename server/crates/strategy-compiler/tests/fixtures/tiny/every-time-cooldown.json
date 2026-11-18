@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "name": "Every Time Cooldown",
+    "description": "On the one-minute BTC up/down: whenever the ask on up sits at least 4 cents under the platform's fair probability, buy up at once with a tenth of the round budget, at most once every 5 seconds. Hold everything to settlement. Ten seconds before the close, stop buying.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1"
+  },
+
+  "state": [],
+
+  "triggers": [
+    { "name": "cheap",
+      "condition": { "expr": "signal.fair.up - signal.book.ask", "comparator": ">=", "value": "0.04" },
+      "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "5s" } },
+
+    { "name": "last_10s",
+      "timer": { "kind": "window_clock", "instrument": "market", "remaining": "10s" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "trading",
+      "resident": true,
+      "arm": ["cheap", "last_10s"],
+      "body": [
+        { "name": "buy_up",
+          "if": "triggered(cheap)",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "limit", "tif": "ioc",
+                "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(floor(envelope.round_budget * 0.1 / (signal.book.ask + 0.01)), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry"
+            }}
+          ] },
+
+        { "name": "stop",
+          "if": "triggered(last_10s)",
+          "do": [],
+          "then": "done" }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

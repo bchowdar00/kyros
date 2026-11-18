@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.expected_value",
+  "version": "1.0.0",
+  "name": "Kalshi BTC expected value at the ask",
+  "description": "The per-contract expected value of crossing the spread on either side of the bound Kalshi market, net of the venue's taker fee. fair_probability is the model probability published by btc.kalshi.fair_up_probability - the same standardized-moneyness path, read on this decision rather than recomputed - and payout is the contract's settlement payout per unit, one. yes_ask and no_ask are the executable asks of the YES and NO sides from btc.kalshi.prediction_quote. yes_fee and no_fee are the per-contract taker fees charged at those asks. The fee model is the one btc.kalshi.pair_cost_state charges: the official Kalshi schedule's round_up(0.07 * P * (1 - P)) per contract, aligned up to the retail 0.01 increment. Both the fee rate and the alignment are read back from that same computation rather than restated here, so the published expected value and the published pair cost cannot charge different fees. ev_buy_yes_at_ask = fair_probability * payout - yes_ask - yes_fee and ev_buy_no_at_ask = (1 - fair_probability) * payout - no_ask - no_fee, both per contract in dollars. best_side is the side with the higher expected value, resolving an exact tie to yes so the choice is total, and ev_bps_of_stake expresses that side's expected value in basis points of the capital it puts at risk (its ask plus its fee); a zero stake has no return on stake and reports zero. Ready only when both inputs are ready: the fair probability (which needs a bound market, a ready spot reference, warmed volatility and an in-domain model) and both outcome quotes (fresh, two-sided and uncrossed). Any missing input fails the identity closed with that input's own reason - never a substituted or stale value. The expected value is a model quantity, not a forecast of realised profit: it inherits every assumption of the fair-probability model and charges the taker fee only, no maker rebate, slippage or settlement cost. The identity is market-scoped: it fails closed while the venue is unbound, the market contract is still warming, or the affirmative quote is missing, stale or crossed, and it publishes no value rather than a stale one. Its rolling history is per generation and is cleared at the market roll, so a reading never mixes two contracts (ruling E51, spec C3 \u00a72). The history is rolling market-relative state and is deliberately not checkpointed: it re-warms after a restart. All arithmetic is exact decimal and causal - every published number is a fold over admitted events at or before the decision instant. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.fair_up_probability",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.prediction_quote",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.pair_cost_state",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "fair_probability",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "payout",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "yes_ask",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "no_ask",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "yes_fee",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "no_fee",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "ev_buy_yes_at_ask",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "ev_buy_no_at_ask",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "best_side",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "yes",
+        "no"
+      ]
+    },
+    {
+      "name": "ev_bps_of_stake",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

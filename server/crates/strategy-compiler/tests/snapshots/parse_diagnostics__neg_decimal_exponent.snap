@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[non-canonical-decimal]: numbers must be canonical decimals
+  1e5
+  ^^^
+  = help: no exponents (write 100000, not 1e5), no digit separators (write 500000, not 500_000); the only letters allowed after a number are the duration units ms, s, m, h

@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.early_move_fade_context",
+  "version": "1.0.0",
+  "name": "BTC early-move fade context",
+  "description": "Pairs the latest momentum from micro_momentum with the latest absorption_state. state is quiet when the absolute thirty-second return is below big_move_bps; the outsized classification uses the thirty-second return (a 30-second lookback and a 20 bps big_move_bps, both research defaults) rather than the one-second return, so outsized states are reachable on real data. On an outsized move, state is outsized_absorbing when absorption is absorbing (the fade-candidate context), outsized_responsive when price_responsive, and outsized_unclear for the remaining absorption states (insufficient_flow, mixed). The reading also carries return_bps_1s as one-second context, direction_10s, and absorption_state. Not ready until both inputs have emitted; readiness does not depend on a move occurring. big_move_bps defaults to 20. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.external.micro_momentum",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.external.absorption_state",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "quiet",
+        "outsized_absorbing",
+        "outsized_responsive",
+        "outsized_unclear"
+      ]
+    },
+    {
+      "name": "return_bps_1s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "direction_10s",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "up",
+        "down",
+        "flat"
+      ]
+    },
+    {
+      "name": "absorption_state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "insufficient_flow",
+        "absorbing",
+        "price_responsive",
+        "mixed"
+      ]
+    },
+    {
+      "name": "big_move_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

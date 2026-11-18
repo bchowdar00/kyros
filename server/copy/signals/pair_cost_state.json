@@ -1,0 +1,18 @@
+{
+  "title": "Pair cost",
+  "description": "What buying both Up and Down together costs on this venue. The pair always pays out one dollar, so above a dollar after fees the venue is charging a premium.",
+  "fields": {
+    "state": {
+      "label": "Pair cost state",
+      "description": "Premium when the pair costs more than it pays, discount when less, fair in between. A discount is free money until it closes."
+    },
+    "pair_cost": {
+      "label": "Pair cost",
+      "description": "The Up ask plus the Down ask, in dollars per pair, before fees. One dollar is fair."
+    },
+    "fee_adjusted_pair_cost": {
+      "label": "Pair cost after fees",
+      "description": "The same pair cost with this venue's fees on both legs, in dollars. This is what you would actually pay."
+    }
+  }
+}

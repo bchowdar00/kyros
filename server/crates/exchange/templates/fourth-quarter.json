@@ -1,0 +1,198 @@
+{
+  "id": "fourth-quarter",
+  "title": "Crunch Time",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-03.jpg" },
+  "series": ["nba-h2h"],
+  "logic": "Waits for the fourth quarter. When a team leads by ten or more with under six minutes left and its side costs 92 cents or less, it buys that side and holds to the final. The bet is that the last few cents are free once the game is nearly decided.",
+  "inverse_logic": "Waits for the last four minutes. When a team trails by six or less and its side costs under twenty cents, it buys a lottery ticket on the comeback and holds it. Close games get closer late, so the tickets hit more often than the price says.",
+  "envelope": {
+    "loss_budget_fraction": "1",
+    "order_fraction": "0.1",
+    "max_order_size": "200",
+    "max_open_orders": "1",
+    "max_position_per_market": "200"
+  },
+  "substitutions": {
+    "nba-h2h": { "closing_clock": "360", "closing_lead": "10", "late_clock": "240", "max_deficit": "6" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Close It Out",
+      "description": "In play, from the fourth quarter with at most the closing clock left, when the margin is at least the closing lead take Home, and when it is at most minus the closing lead take Away, each with an immediate-or-cancel limit two cents over its ask capped at the maximum price, once per round, and hold to the final.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "margin": "nba.sim.margin.v1",
+      "pbp": "nba.sim.pbp.v1"
+    },
+    "state": [],
+    "params": [ { "name": "max_price", "type": "decimal", "default": "0.92" } ],
+    "triggers": [
+      {
+        "name": "home_closing",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "pbp", "field": "quarter", "comparator": ">=", "value": "4" },
+            { "signal": "pbp", "field": "clock_remaining", "comparator": "<=", "value": "{{closing_clock}}" },
+            { "signal": "margin", "field": "value", "comparator": ">=", "value": "{{closing_lead}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      },
+      {
+        "name": "away_closing",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "pbp", "field": "quarter", "comparator": ">=", "value": "4" },
+            { "signal": "pbp", "field": "clock_remaining", "comparator": "<=", "value": "{{closing_clock}}" },
+            { "signal": "margin", "field": "value", "comparator": "<=", "value": "-{{closing_lead}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "waiting",
+        "resident": true,
+        "arm": ["home_closing", "away_closing"],
+        "body": [
+          {
+            "name": "take_home",
+            "if": "triggered(home_closing) and signal.book.ask <= param.max_price",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(min(signal.book.ask + 0.02, param.max_price), 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_home",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "waiting", "cancel_ack": "waiting", "expiry": "waiting" }
+                }
+              }
+            ],
+            "then": "holding"
+          },
+          {
+            "name": "take_away",
+            "if": "triggered(away_closing) and 1 - signal.book.bid <= param.max_price",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(min((1 - signal.book.bid) + 0.02, param.max_price), 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_away",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "waiting", "cancel_ack": "waiting", "expiry": "waiting" }
+                }
+              }
+            ],
+            "then": "holding"
+          }
+        ]
+      },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Late Comeback",
+      "description": "In play, from the fourth quarter with at most the late clock left, when Home trails by between one and the maximum deficit take Home, and when Away does take Away, each with an immediate-or-cancel limit two cents over its ask while that ask is under the ticket price, once per round, and hold to the final.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "margin": "nba.sim.margin.v1",
+      "pbp": "nba.sim.pbp.v1"
+    },
+    "state": [],
+    "params": [ { "name": "ticket", "type": "decimal", "default": "0.2" } ],
+    "triggers": [
+      {
+        "name": "home_trailing",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "pbp", "field": "quarter", "comparator": ">=", "value": "4" },
+            { "signal": "pbp", "field": "clock_remaining", "comparator": "<=", "value": "{{late_clock}}" },
+            { "signal": "margin", "field": "value", "comparator": "<=", "value": "-1" },
+            { "signal": "margin", "field": "value", "comparator": ">=", "value": "-{{max_deficit}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      },
+      {
+        "name": "away_trailing",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "pbp", "field": "quarter", "comparator": ">=", "value": "4" },
+            { "signal": "pbp", "field": "clock_remaining", "comparator": "<=", "value": "{{late_clock}}" },
+            { "signal": "margin", "field": "value", "comparator": ">=", "value": "1" },
+            { "signal": "margin", "field": "value", "comparator": "<=", "value": "{{max_deficit}}" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "1s" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "waiting",
+        "resident": true,
+        "arm": ["home_trailing", "away_trailing"],
+        "body": [
+          {
+            "name": "ticket_home",
+            "if": "triggered(home_trailing) and signal.book.ask < param.ticket",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(min(signal.book.ask + 0.02, param.ticket), 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "ticket_home",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "waiting", "cancel_ack": "waiting", "expiry": "waiting" }
+                }
+              }
+            ],
+            "then": "holding"
+          },
+          {
+            "name": "ticket_away",
+            "if": "triggered(away_trailing) and 1 - signal.book.bid < param.ticket",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(min((1 - signal.book.bid) + 0.02, param.ticket), 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "ticket_away",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "waiting", "cancel_ack": "waiting", "expiry": "waiting" }
+                }
+              }
+            ],
+            "then": "holding"
+          }
+        ]
+      },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

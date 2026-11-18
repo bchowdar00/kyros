@@ -1,0 +1,14 @@
+{
+  "title": "Order flow",
+  "description": "Net size added to bids versus asks as the book updates. It shows which side is building before anyone trades.",
+  "fields": {
+    "ofi_base_10s": {
+      "label": "Flow in 10s",
+      "description": "Size added to bids minus size added to asks over the last ten seconds, in BTC. Positive means buyers are building faster."
+    },
+    "ofi_base_60s": {
+      "label": "Flow in 60s",
+      "description": "The same net size over the last minute, in BTC. Slower to move but harder to fake."
+    }
+  }
+}

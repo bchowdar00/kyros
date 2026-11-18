@@ -1,0 +1,76 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Logic {
+        op: And,
+        lhs: Spanned {
+            node: Triggered {
+                name: Spanned {
+                    node: "last_20s",
+                    span: Span {
+                        start: 10,
+                        end: 18,
+                    },
+                },
+            },
+            span: Span {
+                start: 0,
+                end: 19,
+            },
+        },
+        rhs: Spanned {
+            node: Cmp {
+                op: Ge,
+                lhs: Spanned {
+                    node: Ref(
+                        Ref {
+                            namespace: Signal,
+                            path: [
+                                Spanned {
+                                    node: "book",
+                                    span: Span {
+                                        start: 31,
+                                        end: 35,
+                                    },
+                                },
+                                Spanned {
+                                    node: "up",
+                                    span: Span {
+                                        start: 36,
+                                        end: 38,
+                                    },
+                                },
+                            ],
+                            index: None,
+                        },
+                    ),
+                    span: Span {
+                        start: 24,
+                        end: 38,
+                    },
+                },
+                rhs: Spanned {
+                    node: Literal(
+                        Decimal(
+                            "0.95",
+                        ),
+                    ),
+                    span: Span {
+                        start: 42,
+                        end: 46,
+                    },
+                },
+            },
+            span: Span {
+                start: 24,
+                end: 46,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 46,
+    },
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/signal-artifact.schema.json",
+  "title": "SignalArtifact",
+  "$comment": "Compiler -> SME. The definition of a filtered (dynamic) signal: 'evaluate this predicate against events from this feed; publish matches under signal_id'. Upserted at strategy deploy; idempotent by signal_id (no-op if the hash already exists; refcount bumped). signal_id MUST equal the content hash of (feed, feed_version, filter, normalization_version) -- see signal-id.md for the exact procedure. Raw-feed recording is never gated by this artifact's existence or refcount.",
+  "type": "object",
+  "required": ["schema_version", "signal_id", "feed", "feed_version",
+               "filter", "normalization_version"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+
+    "signal_id": {
+      "type": "string",
+      "description": "UUID v7"
+    },
+
+    "feed": {
+      "type": "string",
+      "description": "The raw feed this filter evaluates against, e.g. 'sportradar.nba.pbp'."
+    },
+
+    "feed_version": {
+      "type": "string",
+      "description": "Schema version of the feed. A feed schema change produces a different hash, hence a different signal."
+    },
+
+    "filter": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "common.schema.json#/$defs/TriggerCondition" },
+      "$comment": "A filter is a single AND-group -- the stateless leaf/AND subset of the trigger grammar (ConditionTree), never a tree. An OR at the filter layer is represented as two filters (two signals, two hashes), split by the compiler's normalization pass; see trigger-normalization.md. Same grammar, one implementation -- never a second dialect.",
+      "description": "AND of stateless, per-event conditions over the feed's fields. Same grammar as trigger conditions -- the stateless subset."
+    },
+
+    "normalization_version": {
+      "type": "string",
+      "description": "Version of the feed-parsing/normalization logic. A parser change produces a different hash, hence a different signal."
+    }
+  },
+  "additionalProperties": false
+}

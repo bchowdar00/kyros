@@ -1,0 +1,156 @@
+---
+source: crates/strategy-compiler/tests/emit_manifest.rs
+expression: manifest
+---
+{
+  "schema_version": 2,
+  "strategy_id": "Strategy_a3e1cbbee7e3",
+  "name": "Momentum Flip",
+  "description": "On the 2-minute BTC up/down market: when either side's price rises above 75 cents, buy that side at half max size. While holding, if the held side's price falls below 40 cents, flip the position by buying the opposite side at double size (one order flips sides on the unified book). If an entry or flip order is rejected, return to the prior mode.",
+  "dsl_version": "0.3",
+  "source_hash": "a3e1cbbee7e3cbdce1035d0d53d5d4ace9820f8b50cb65fe267253bfef1c32ca",
+  "signals": [
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "staleness_policy": "proceed"
+    }
+  ],
+  "watch_fields": [
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "field": "down"
+    },
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "field": "up"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "up_rich",
+      "condition": {
+        "signal_id": "btc_usd.updown_2m.current.price.v1",
+        "field": "up",
+        "comparator": ">",
+        "value": "0.75"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "id": "down_rich",
+      "condition": {
+        "signal_id": "btc_usd.updown_2m.current.price.v1",
+        "field": "down",
+        "comparator": ">",
+        "value": "0.75"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "id": "up_cheap",
+      "condition": {
+        "signal_id": "btc_usd.updown_2m.current.price.v1",
+        "field": "up",
+        "comparator": "<",
+        "value": "0.4"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "id": "down_cheap",
+      "condition": {
+        "signal_id": "btc_usd.updown_2m.current.price.v1",
+        "field": "down",
+        "comparator": "<",
+        "value": "0.4"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "lifecycle_stages": [
+    {
+      "name": "hunting",
+      "resident": true,
+      "arm": [
+        "up_rich",
+        "down_rich"
+      ]
+    },
+    {
+      "name": "holding_up",
+      "resident": true,
+      "arm": [
+        "up_cheap"
+      ]
+    },
+    {
+      "name": "holding_down",
+      "resident": true,
+      "arm": [
+        "down_cheap"
+      ]
+    }
+  ],
+  "intent_index": {
+    "holding_down.flip_to_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_down",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "holding_up.flip_to_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding_up",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "hunting.buy_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "hunting.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  }
+}

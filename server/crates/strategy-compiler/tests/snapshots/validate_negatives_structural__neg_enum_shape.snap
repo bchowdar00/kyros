@@ -1,0 +1,12 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[duplicate-variant] at state[0].key_types[0]: variant `home` is declared twice
+  = help: variants are a set; remove the repeat
+
+error[max-keys-zero] at state[0].max_keys: a map with `max_keys` 0 can never hold an entry
+  = help: declare the map's real capacity bound
+
+error[enum-too-small] at state[0].value_type: an enum needs at least 2 variants
+  = help: a one-variant enum is a constant; drop the slot or add variants

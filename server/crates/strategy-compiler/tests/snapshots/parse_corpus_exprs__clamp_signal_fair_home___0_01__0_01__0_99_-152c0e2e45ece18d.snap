@@ -1,0 +1,89 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Call {
+        builtin: Clamp,
+        name_span: Span {
+            start: 0,
+            end: 5,
+        },
+        args: [
+            Spanned {
+                node: Arith {
+                    op: Sub,
+                    lhs: Spanned {
+                        node: Ref(
+                            Ref {
+                                namespace: Signal,
+                                path: [
+                                    Spanned {
+                                        node: "fair",
+                                        span: Span {
+                                            start: 13,
+                                            end: 17,
+                                        },
+                                    },
+                                    Spanned {
+                                        node: "home",
+                                        span: Span {
+                                            start: 18,
+                                            end: 22,
+                                        },
+                                    },
+                                ],
+                                index: None,
+                            },
+                        ),
+                        span: Span {
+                            start: 6,
+                            end: 22,
+                        },
+                    },
+                    rhs: Spanned {
+                        node: Literal(
+                            Decimal(
+                                "0.01",
+                            ),
+                        ),
+                        span: Span {
+                            start: 25,
+                            end: 29,
+                        },
+                    },
+                },
+                span: Span {
+                    start: 6,
+                    end: 29,
+                },
+            },
+            Spanned {
+                node: Literal(
+                    Decimal(
+                        "0.01",
+                    ),
+                ),
+                span: Span {
+                    start: 31,
+                    end: 35,
+                },
+            },
+            Spanned {
+                node: Literal(
+                    Decimal(
+                        "0.99",
+                    ),
+                ),
+                span: Span {
+                    start: 37,
+                    end: 41,
+                },
+            },
+        ],
+    },
+    span: Span {
+        start: 0,
+        end: 42,
+    },
+}

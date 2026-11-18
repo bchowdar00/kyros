@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.spot_quote",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD displayed best quote",
+  "description": "The displayed best bid and ask from the Kraken BTC/USD ticker input, with the exact-decimal midpoint (bid plus ask divided by two) and spread_bps as (ask minus bid) divided by midpoint times 10000. input_age_ms is the admission time minus the quote's logical receipt time. Ready output requires a positive uncrossed quote received no more than 10000 milliseconds before production. Readiness guards evaluate full internal decimal precision before rounding. This identity is single-venue: it reads only Kraken inputs and is ready whenever the Kraken quote is positive, uncrossed, and inside the staleness bound, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "kraken.spot.btc-usd.ticker", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "bid", "type": "decimal", "location": "internal" },
+    { "name": "ask", "type": "decimal", "location": "internal" },
+    { "name": "midpoint", "type": "decimal", "location": "internal" },
+    { "name": "spread_bps", "type": "decimal", "location": "internal" },
+    { "name": "input_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

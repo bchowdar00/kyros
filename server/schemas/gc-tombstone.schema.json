@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTC Signals Spool Garbage-Collection Tombstone",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "package_id", "manifest_sha256", "policy_sha256",
+    "deletion_committed_at", "acknowledgement_sha256"
+  ],
+  "properties": {
+    "schema_version": { "const": "btc.signals.gc-tombstone/v1" },
+    "package_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "policy_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "deletion_committed_at": { "type": "string", "format": "date-time" },
+    "acknowledgement_sha256": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "minLength": 1, "maxLength": 64,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+      },
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+    }
+  }
+}

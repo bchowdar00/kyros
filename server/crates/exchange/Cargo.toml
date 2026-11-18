@@ -1,0 +1,52 @@
+[package]
+name = "exchange"
+description = "The Tiny exchange server: engine, order book, bots, price feed, HTTP + WebSocket API."
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "exchange"
+path = "src/main.rs"
+
+[dependencies]
+strategy-compiler = { path = "../strategy-compiler" }
+
+# The signal producers, copied from the signals prototype and run in-process
+# alongside the exchange. `btc-feeds` with default features off drops its
+# CLI (clap) and keeps only the adapters and live runner.
+signals-core = { path = "../signals-core" }
+btc-feeds = { path = "../btc-feeds", default-features = false }
+btc-signals = { path = "../btc-signals" }
+
+# Exact arithmetic for the automation runtime (signal snapshots, trigger
+# comparison, interpreter). `maths` adds exp/ln/sqrt/powd for the analytic
+# builtins.
+rust_decimal = { workspace = true, features = ["maths"] }
+
+axum = { version = "0.8", features = ["ws"] }
+tokio = { version = "1", features = ["full"] }
+serde.workspace = true
+serde_json.workspace = true
+# JSON Schema of the IR document, served at /api/strategy/schema.
+schemars.workspace = true
+tower-http = { version = "0.6", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+futures = "0.3"
+slab = "0.4"
+rand = "0.9"
+tokio-tungstenite = { version = "0.29", features = ["rustls-tls-webpki-roots"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+dotenvy = "0.15"
+pyth-lazer-client = "26"
+pyth-lazer-protocol = "0.46"
+anyhow = "1"
+chrono = { workspace = true }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+
+[dev-dependencies]
+# Paused-clock tests for the automation runtime's timers.
+tokio = { version = "1", features = ["full", "test-util"] }
+# Temp lane roots for the retention sweep tests.
+tempfile = "3"

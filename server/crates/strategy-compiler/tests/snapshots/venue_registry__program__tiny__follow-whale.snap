@@ -1,0 +1,283 @@
+---
+source: crates/strategy-compiler/tests/venue_registry.rs
+expression: artifacts.program_json
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_afb4e747ec7c",
+  "source_hash": "afb4e747ec7c5f93055318566d08d800abdb7a1efd7b25726abe97cbcd69e704",
+  "name": "Follow Whale",
+  "description": "On the one-minute BTC up/down: watch the trade tape for a chosen account (the target param). When that account buys up in size at least min_size, and the ask on up still sits at least edge under fair, buy up at market once and remember who we followed. The target, the minimum size and the edge are deploy-time params the user can change on a running strategy.",
+  "dsl_version": "0.3",
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1",
+    "tape": "btc_usd.updown_1m.current.trades.v1"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+  "subscriptions": [
+    "btc_usd.updown_1m.current.price.v1",
+    "platform.btc_usd.updown_1m.current.fair.v1",
+    "btc_usd.updown_1m.current.trades.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [
+    {
+      "kind": "scalar",
+      "name": "followed",
+      "default": {
+        "op": "str",
+        "value": ""
+      }
+    },
+    {
+      "kind": "scalar",
+      "name": "follows",
+      "default": {
+        "op": "decimal",
+        "value": "0"
+      }
+    }
+  ],
+  "params": [
+    {
+      "name": "target",
+      "type": {
+        "kind": "string"
+      },
+      "default": {
+        "op": "str",
+        "value": "0x0000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "name": "min_size",
+      "type": {
+        "kind": "decimal"
+      },
+      "default": {
+        "op": "decimal",
+        "value": "25"
+      }
+    },
+    {
+      "name": "edge",
+      "type": {
+        "kind": "decimal"
+      },
+      "default": {
+        "op": "decimal",
+        "value": "0.04"
+      }
+    },
+    {
+      "name": "side",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          "buy",
+          "sell"
+        ]
+      },
+      "default": {
+        "op": "variant",
+        "value": "buy"
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "name": "whale",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_1m.current.trades.v1",
+            "field": "taker",
+            "comparator": "==",
+            "value": {
+              "kind": "param",
+              "name": "target"
+            }
+          },
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_1m.current.trades.v1",
+            "field": "side",
+            "comparator": "==",
+            "value": {
+              "kind": "param",
+              "name": "side"
+            }
+          },
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_1m.current.trades.v1",
+            "field": "size",
+            "comparator": ">=",
+            "value": {
+              "kind": "param",
+              "name": "min_size"
+            }
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    }
+  ],
+  "legs": [
+    {
+      "name": "watching",
+      "resident": true,
+      "arm": [
+        "whale"
+      ],
+      "blocks": [
+        {
+          "name": "follow",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "and",
+              "lhs": {
+                "op": "triggered",
+                "name": "whale"
+              },
+              "rhs": {
+                "op": "==",
+                "lhs": {
+                  "op": "event",
+                  "field": "taker"
+                },
+                "rhs": {
+                  "op": "param",
+                  "name": "target"
+                }
+              }
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "-",
+                "lhs": {
+                  "op": "signal",
+                  "signal_id": "platform.btc_usd.updown_1m.current.fair.v1",
+                  "field": "up"
+                },
+                "rhs": {
+                  "op": "signal",
+                  "signal_id": "btc_usd.updown_1m.current.price.v1",
+                  "field": "ask"
+                }
+              },
+              "rhs": {
+                "op": "param",
+                "name": "edge"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "btc_usd.updown_1m.current.price.v1",
+              "field": "ask"
+            },
+            {
+              "signal_id": "platform.btc_usd.updown_1m.current.fair.v1",
+              "field": "up"
+            }
+          ],
+          "items": [
+            {
+              "kind": "set",
+              "slot": "followed",
+              "value": {
+                "op": "event",
+                "field": "taker"
+              }
+            },
+            {
+              "kind": "set",
+              "slot": "follows",
+              "value": {
+                "op": "+",
+                "lhs": {
+                  "op": "state",
+                  "slot": "follows"
+                },
+                "rhs": {
+                  "op": "decimal",
+                  "value": "1"
+                }
+              }
+            },
+            {
+              "kind": "place",
+              "intent_id": "watching.follow.2",
+              "order": {
+                "instrument_id": "btc_usd.updown_1m.current",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "follow",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "done"
+        }
+      ]
+    },
+    {
+      "name": "done",
+      "resident": true,
+      "arm": [],
+      "blocks": []
+    }
+  ],
+  "initial_leg": "watching",
+  "intents": {
+    "watching.follow.2": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "watching",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.roc",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD rate of change over ten seconds, one minute and five minutes",
+  "description": "A causal reading over the fresh Kraken displayed best-quote midpoint, sampled once per second on the lane decision clock. Each field is the rate of change of the one-second sample series in basis points: the current sample minus the sample ten seconds, sixty seconds and three hundred seconds earlier, divided by that earlier sample, times ten thousand. This is the ROC convention \u2014 a percentage of the prior level \u2014 expressed in basis points, and the one-minute and five-minute fields therefore carry the same horizons as `horizon_momentum` under that convention while roc_bps_10s adds the fast horizon. sample_count is the number of contiguous one-second samples behind the reading. The three horizons are initial research defaults that require empirical calibration; the rate-of-change formula is not a heuristic threshold. A missing or non-ready one-second sample breaks continuity: the sample ring is discarded and the warm-up restarts. Nothing is bridged across a gap. Ready once three hundred and one contiguous one-second samples have been observed. Decimal outputs are rounded to eight places using round-half-to-even. Every reading is causal: it reads only samples at or before the decision it is published on. Adopted in the C3a TA pack (ruling E51, 2026-09-04): the seven technical-analysis identities are published on every price venue we carry, computed from the venue's own one-second sample ring by the shared `crates/btc-signals/src/ta.rs` helper, so every scope runs byte-identical arithmetic and only the sample series differs.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "kraken.spot.btc-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "roc_bps_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_bps_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_bps_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "sample_count",
+      "type": "u16",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

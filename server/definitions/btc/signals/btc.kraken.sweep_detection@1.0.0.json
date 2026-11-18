@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.sweep_detection",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD multi-level taker sweep",
+  "description": "Within one ingested Kraken BTC/USD trade batch sharing one event timestamp, aggressive flow on one side that consumes at or above min_levels (K) distinct prices is a sweep. detection_state is sweep when a side qualifies and quiet otherwise; a batch spanning exactly K-1 distinct prices does not fire. On detection the signal emits swept_levels (distinct prices consumed), swept_size (total consumed base size on that side), and direction (buy or sell). This is a state-shaped signal with a latest-sweep payload and a quiet default: the adopted spot set has no emit-only-on-detection signal to mirror, so a non-sweeping batch publishes detection_state = quiet and leaves the retained latest sweep unchanged. Every state-dependent field is always present: before any sweep has fired there is nothing retained, so the payload is the explicit sentinel direction = none with swept_levels 0 and swept_size 0 rather than a missing field. When both sides qualify in one batch the deeper level count wins, then the larger swept size, then buy, so the choice is deterministic. min_levels defaults to 3. This identity is single-venue by construction: the measurement compares one venue's own trades and book against each other, so it reads only Kraken inputs and is ready whenever the Kraken book-and-trade join is fresh, independently of the other adopted spot venue. No blended `btc.external.*` variant of this measurement is published: a cross-venue form would have to rule which venue's book prices another venue's trade, and that ruling is deferred pending evidence (ADR 0023 amendment and ADR 0024, both 2026-09-02). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "kraken.spot.btc-usd.book-levels", "version": "1.0.0" },
+    { "kind": "source", "id": "kraken.spot.btc-usd.trades", "version": "1.0.0" }
+  ],
+  "fields": [
+    {
+      "name": "detection_state",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["sweep", "quiet"]
+    },
+    {
+      "name": "direction",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["buy", "sell", "none"]
+    },
+    { "name": "swept_levels", "type": "u32", "location": "internal" },
+    { "name": "swept_size", "type": "decimal", "location": "internal" },
+    { "name": "min_levels", "type": "u32", "location": "internal" },
+    { "name": "observation_time", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "observation_time"
+}

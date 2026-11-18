@@ -1,0 +1,140 @@
+{
+  "id": "sweep-follower",
+  "title": "Whale Watch",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-07.jpg" },
+  "series": ["btc-2m"],
+  "logic": "Watches the Coinbase and Kraken books for a sweep: one order clearing several price levels at once. Someone wanted size right now and paid up for it, so it goes with them: Up after a buy sweep, Down after a sell sweep. One trade per round, held to the close.",
+  "inverse_logic": "Watches the Coinbase and Kraken books for a sweep: one order clearing several price levels at once. The big order has already moved the price, so it bets on the bounce: Down after a buy sweep, Up after a sell sweep. One trade per round, held to the close.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-2m": { "cutoff": "20s" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Follow the Whale",
+      "description": "When Coinbase or Kraken reports a buy sweep, take Up with an immediate-or-cancel limit two cents over the ask, once per round, and hold to settlement. On a sell sweep, take Down the same way. No entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "cb": "btc.coinbase.sweep_detection.v1",
+      "kr": "btc.kraken.sweep_detection.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "buy_sweep",
+        "condition": { "any": [
+          { "signal": "cb", "field": "direction", "comparator": "==", "value": "buy" },
+          { "signal": "kr", "field": "direction", "comparator": "==", "value": "buy" }
+        ] },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+      { "name": "sell_sweep",
+        "condition": { "any": [
+          { "signal": "cb", "field": "direction", "comparator": "==", "value": "sell" },
+          { "signal": "kr", "field": "direction", "comparator": "==", "value": "sell" }
+        ] },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["buy_sweep", "sell_sweep"],
+        "body": [
+          { "name": "take_up",
+            "if": "triggered(buy_sweep) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_up",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" },
+          { "name": "take_down",
+            "if": "triggered(sell_sweep) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_down",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" }
+        ] },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Fade the Whale",
+      "description": "When Coinbase or Kraken reports a buy sweep, fade it: take Down with an immediate-or-cancel limit two cents over the ask, once per round, and hold to settlement. On a sell sweep, take Up the same way. No entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "cb": "btc.coinbase.sweep_detection.v1",
+      "kr": "btc.kraken.sweep_detection.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "buy_sweep",
+        "condition": { "any": [
+          { "signal": "cb", "field": "direction", "comparator": "==", "value": "buy" },
+          { "signal": "kr", "field": "direction", "comparator": "==", "value": "buy" }
+        ] },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+      { "name": "sell_sweep",
+        "condition": { "any": [
+          { "signal": "cb", "field": "direction", "comparator": "==", "value": "sell" },
+          { "signal": "kr", "field": "direction", "comparator": "==", "value": "sell" }
+        ] },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["buy_sweep", "sell_sweep"],
+        "body": [
+          { "name": "fade_down",
+            "if": "triggered(buy_sweep) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "fade_down",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" },
+          { "name": "fade_up",
+            "if": "triggered(sell_sweep) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "fade_up",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" }
+        ] },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

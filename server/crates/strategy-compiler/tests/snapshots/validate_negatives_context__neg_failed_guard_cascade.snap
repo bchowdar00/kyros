@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: "common::render(&diagnostics)"
+---
+error[superseded-crossed] at legs[0].body[0].if: `crossed()` was removed in v0.2 — edge detection lives in trigger fire/rearm modes
+  crossed(signal.pbp.quarter > 2)
+  ^^^^^^^
+  = help: declare a trigger with fire: on_crossing, rearm: fresh_crossing and gate the block with triggered(<trigger name>)

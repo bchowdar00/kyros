@@ -1,0 +1,30 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_registry.rs
+expression: rendered
+---
+error[value-type-mismatch] at triggers[0].condition.all[0].value: "0.4" is text — field `home` is numeric
+  = help: compare a numeric field against a canonical decimal
+
+error[value-type-mismatch] at triggers[0].condition.all[1].value: param `who` is not the type of field `home` (a param compared against a field must be declared in the field's type; enum params must use only the field's variants)
+  = help: declare the param in the field's type, or compare a literal
+
+error[value-type-mismatch] at triggers[0].condition.all[2].value: `whale` is a bare word — field `bettor` is a string
+  = help: write string values as {"str": "..."}
+
+error[value-type-mismatch] at triggers[0].condition.all[3].value: `0` is a number — field `bettor` is a string
+  = help: write string values as {"str": "..."}
+
+error[comparator-type-mismatch] at triggers[0].condition.all[4].comparator: field `bettor` is a string; ordering comparators require a numeric field
+  = help: use == or != against a {"str": ...} value
+
+error[value-type-mismatch] at triggers[0].condition.all[5].value: "home" is text — field `team` is an enum (variants: home, away)
+  = help: compare an enum field against one of its variants, written plain
+
+error[value-type-mismatch] at triggers[0].condition.all[6].value: param `team` is not the type of field `team` (a param compared against a field must be declared in the field's type; enum params must use only the field's variants)
+  = help: declare the param in the field's type, or compare a literal
+
+error[value-type-mismatch] at triggers[0].condition.all[7].value: param `flag` is not numeric — an expr leaf compares arithmetic against a decimal
+  = help: compare the expression against a canonical decimal or a decimal param
+
+error[value-type-mismatch] at triggers[0].condition.all[8].value: "10" is text, not a number — an expr leaf compares arithmetic against a decimal
+  = help: compare the expression against a canonical decimal or a decimal param

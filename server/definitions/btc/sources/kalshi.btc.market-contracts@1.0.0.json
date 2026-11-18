@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.btc.market-contracts",
+  "version": "1.0.0",
+  "name": "Kalshi BTC 15-minute market contracts",
+  "description": "Normalized keyless REST discovery for one exact KXBTC15M market. A ready event requires a 15-minute open-to-close window, CF Benchmarks BRTI sixty-print average rules, an at-least comparator, and an explicit distinction between expected expiration and the later legal expiration_time; event_time is updated_time.",
+  "status": "approved",
+  "transport": "http_poll",
+  "fields": [
+    { "name": "market_ticker", "type": "string", "location": "external" },
+    { "name": "event_ticker", "type": "string", "location": "external" },
+    { "name": "title", "type": "string", "location": "external" },
+    { "name": "status", "type": "string", "location": "external" },
+    { "name": "open_time", "type": "timestamp", "location": "external" },
+    { "name": "close_time", "type": "timestamp", "location": "external" },
+    { "name": "expected_expiration_time", "type": "timestamp", "location": "external" },
+    { "name": "legal_expiration_time", "type": "timestamp", "location": "external" },
+    {
+      "name": "benchmark",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["cf_benchmarks_brti"]
+    },
+    { "name": "averaging_window_seconds", "type": "u32", "location": "internal" },
+    {
+      "name": "comparator",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["greater_than_or_equal"]
+    },
+    {
+      "name": "tie_outcome",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["yes"]
+    },
+    { "name": "reference_value", "type": "decimal", "location": "external" },
+    { "name": "rules_sha256", "type": "string", "location": "internal" },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

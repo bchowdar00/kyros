@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.venue_repricing_lag",
+  "version": "1.0.0",
+  "name": "Kalshi BTC venue repricing lag",
+  "description": "A qualifying spot move is a spot-reference midpoint simple return of at least move_threshold_bps measured over a rolling 5-second lookback on the spot-reference series \u2014 the return between the current price and the oldest sample still within the window (both the 5-second lookback and the 10 bps threshold are research defaults). repricing_lag_ms is the time from that move to the first Kalshi quote change \u2014 a nonzero change in either outcome midpoint (affirmative or negative) \u2014 answering it; staleness_ms is the time the currently unanswered move has waited, measured from the move itself. state is lagging while a qualifying move is unanswered and current otherwise. A qualifying move is armed on entry into the qualifying state; while a move is unanswered a further qualifying return does not re-arm, so the lag measures the venue response to the first unanswered move. Until the first move has been answered the instance is not ready and publishes no_qualifying_move (upstream_measurement_unavailable is published only before the spot reference and a venue quote have both been observed). This deliberately does not model the implied magnitude of the venue response; that is the fair_up_probability lane. move_threshold_bps defaults to 10. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.external.spot_reference",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.prediction_quote",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "current",
+        "lagging"
+      ]
+    },
+    {
+      "name": "repricing_lag_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "staleness_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "move_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

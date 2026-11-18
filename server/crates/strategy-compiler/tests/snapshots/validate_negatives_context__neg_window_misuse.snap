@@ -1,0 +1,56 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[window-misuse] at legs[0].body[0].do[0]: `push` appends to a window — state slot `n` is not one
+  push state.n = signal.price.home
+             ^
+  = help: declare the slot with kind: window, or use `set`
+
+error[window-misuse] at legs[0].body[1].do[0]: state slot `w` is a window — it is appended with `push`, never set
+  set state.w = 1
+            ^
+  = help: write `push state.<window> = <value>`
+
+error[window-misuse] at legs[0].body[2].if: a reducer's first argument is a window slot
+  count(state.n) > 3
+        ^^^^^^^
+  = help: write count(state.<window>), sum(state.<window>), ...
+
+error[window-misuse] at legs[0].body[3].if: state slot `w` is a window, not a value
+  state.w > 3
+  ^^^^^^^
+  = help: reduce it: count(state.w), sum(state.w), max_of, min_of, oldest, newest, count_where(state.w, entry.value ...)
+
+error[window-misuse] at legs[0].body[4].if: signal is not allowed inside a count_where predicate
+  count_where(state.w, entry.value > signal.price.home) > 1
+                                     ^^^^^^^^^^^^^^^^^
+  = help: the predicate is a pure function of entry.value (plus params, envelope constants and literals); compute anything else outside the reducer
+
+error[entry-outside-reducer] at legs[0].body[5].if: the element under a reducer has one field: entry.value
+  count_where(state.w, entry.price > state.n) > 1
+                       ^^^^^^^^^^^
+
+error[window-misuse] at legs[0].body[5].if: state is not allowed inside a count_where predicate
+  count_where(state.w, entry.price > state.n) > 1
+                                     ^^^^^^^
+  = help: the predicate is a pure function of entry.value (plus params, envelope constants and literals); compute anything else outside the reducer
+
+error[window-misuse] at legs[0].body[6].if: a reducer is not allowed inside a count_where predicate
+  count_where(state.w, count(state.w) > 1) > 1
+                       ^^^^^
+  = help: the predicate is a pure function of entry.value (plus params, envelope constants and literals); compute anything else outside the reducer
+
+error[window-misuse] at legs[0].body[6].if: state is not allowed inside a count_where predicate
+  count_where(state.w, count(state.w) > 1) > 1
+                             ^^^^^^^
+  = help: the predicate is a pure function of entry.value (plus params, envelope constants and literals); compute anything else outside the reducer
+
+error[set-rhs-type-mismatch] at legs[0].body[7].do[0]: 'home' is a variant — the declared value type is not an enum
+  push state.w = 'home'
+                 ^^^^^^
+
+error[window-misuse] at legs[0].body[8].if: a reducer's first argument is a window slot
+  sum(signal.price.home) > 0
+      ^^^^^^^^^^^^^^^^^
+  = help: write count(state.<window>), sum(state.<window>), ...

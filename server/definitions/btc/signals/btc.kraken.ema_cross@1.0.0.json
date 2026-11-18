@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kraken.ema_cross",
+  "version": "1.0.0",
+  "name": "Kraken BTC/USD one-minute EMA(9)/EMA(21) cross state",
+  "description": "A causal reading over the fresh Kraken displayed best-quote midpoint, sampled once per second on the lane decision clock. Ema_9 and ema_21 are exponential moving averages of the one-minute bar closes with smoothing factor alpha equal to two divided by (period plus one) \u2014 0.2 and approximately 0.09090909 respectively. Each is seeded with the arithmetic mean of its first `period` closes and advanced as previous value plus alpha times (current close minus previous value). spread_bps is (ema_9 minus ema_21) divided by ema_21, times ten thousand. state is bullish when spread_bps is positive, bearish when it is negative, and flat when it is exactly zero. crossed_present is true once a sign change of spread_bps has been observed since continuity started, and crossed_at is the bar close at which that change was observed; while crossed_present is false, crossed_at repeats window_close and carries no cross information. The nine- and twenty-one-bar lengths are initial research defaults that require empirical calibration; the exponential-moving-average recursion is not a heuristic threshold. One-minute bars are closed on the lane decision clock at minute boundaries from the one-second sample series: open is the first sample of the minute, high and low its extrema, close its last sample. A bar that is missing any one-second sample is invalid; the missing sample breaks continuity, every retained bar and every smoothed state derived from them is discarded, and the bar warm-up restarts from the next whole bar. Nothing is bridged across a gap. Ready once twenty-one contiguous one-minute bars have closed (the longer average's seed). Decimal outputs are rounded to eight places using round-half-to-even. Every reading is causal: it reads only samples at or before the decision it is published on. Adopted in the C3a TA pack (ruling E51, 2026-09-04): the seven technical-analysis identities are published on every price venue we carry, computed from the venue's own one-second sample ring by the shared `crates/btc-signals/src/ta.rs` helper, so every scope runs byte-identical arithmetic and only the sample series differs.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "kraken.spot.btc-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "ema_9",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "ema_21",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "spread_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "bearish",
+        "flat",
+        "bullish"
+      ]
+    },
+    {
+      "name": "crossed_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "crossed_at",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "bar_count",
+      "type": "u16",
+      "location": "internal"
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[wrong-arity]: `min` expects 2 arguments, found 3
+  min(1, 2, 3)
+  ^^^^^^^^^^^^
+  = help: min and max are strictly binary; nest for more: min(a, min(b, c))

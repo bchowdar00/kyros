@@ -1,0 +1,14 @@
+{
+  "title": "Oracle price",
+  "description": "The BTC price this oracle is reporting, on its own schedule. Freshness says whether the latest value is recent enough to trust.",
+  "fields": {
+    "value": {
+      "label": "Oracle price",
+      "description": "The oracle's latest published BTC price, in dollars. Oracles update less often than exchanges, so it can lag spot by seconds."
+    },
+    "freshness": {
+      "label": "Oracle freshness",
+      "description": "Fresh when the latest value is inside the oracle's normal update interval, stale when it has gone quiet. Stale oracles should not be traded on."
+    }
+  }
+}

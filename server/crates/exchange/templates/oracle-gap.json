@@ -1,0 +1,190 @@
+{
+  "id": "oracle-gap",
+  "title": "Oracle's Edge",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-04.jpg" },
+  "series": ["btc-2m", "btc-15m"],
+  "logic": "Rounds settle on Pyth's price, but the book trades off Coinbase and Kraken. When Pyth pulls ahead of them while BTC is still near the strike, it bets the book will catch up: Up when Pyth is higher, Down when it is lower. One trade per round, held to the close.",
+  "inverse_logic": "Rounds settle on Pyth's price, but the book trades off Coinbase and Kraken. When Pyth has been leading and then snaps back in line, the book was leaning the wrong way, so it buys the side the exchanges were pointing at. Sells out after a four-cent gain, otherwise holds to the close.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-2m": { "cutoff": "20s", "gap": "0.0002", "closed": "0.00005", "near_band": "0.0005", "gain": "0.04", "check": "1s", "patience": "30s" },
+    "btc-15m": { "cutoff": "90s", "gap": "0.0002", "closed": "0.00005", "near_band": "0.0005", "gain": "0.04", "check": "2s", "patience": "60s" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Follow the Oracle",
+      "description": "When the Pyth spot price differs from the blended Coinbase and Kraken reference by at least the gap while spot is within the near band of the strike, take the side Pyth leads toward with an immediate-or-cancel limit two cents over the ask, once per round, and hold to settlement. No entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "delta": "{{series}}.current.delta.v1",
+      "venues": "btc.external.spot_reference.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "leads_up",
+        "condition": { "all": [
+          { "expr": "(signal.delta.spot - signal.venues.reference_price) / signal.venues.reference_price", "comparator": ">=", "value": "{{gap}}" },
+          { "expr": "abs(signal.delta.delta_bps)", "comparator": "<=", "value": "5" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "leads_down",
+        "condition": { "all": [
+          { "expr": "(signal.venues.reference_price - signal.delta.spot) / signal.venues.reference_price", "comparator": ">=", "value": "{{gap}}" },
+          { "expr": "abs(signal.delta.delta_bps)", "comparator": "<=", "value": "5" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["leads_up", "leads_down"],
+        "body": [
+          { "name": "take_up",
+            "if": "triggered(leads_up) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_up",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" },
+          { "name": "take_down",
+            "if": "triggered(leads_down) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "take_down",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding" }
+        ] },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Oracle Snapback",
+      "description": "When the Pyth spot price has led the blended Coinbase and Kraken reference by at least the gap and then the gap closes to within the closed band, take the side the venues had been on: Down after Pyth led upward, Up after it led downward, with an immediate-or-cancel limit two cents over the ask. Sell out with an immediate-or-cancel once that side's bid is the gain above the entry, else hold to settlement. A gap that does not close within the patience window is abandoned.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "delta": "{{series}}.current.delta.v1",
+      "venues": "btc.external.spot_reference.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "leads_up",
+        "condition": { "expr": "(signal.delta.spot - signal.venues.reference_price) / signal.venues.reference_price", "comparator": ">=", "value": "{{gap}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "leads_down",
+        "condition": { "expr": "(signal.venues.reference_price - signal.delta.spot) / signal.venues.reference_price", "comparator": ">=", "value": "{{gap}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "closed",
+        "condition": { "expr": "abs(signal.delta.spot - signal.venues.reference_price) / signal.venues.reference_price", "comparator": "<=", "value": "{{closed}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "gave_up",
+        "timer": { "kind": "after", "elapsed": "{{patience}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "tick",
+        "condition": { "signal": "book" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "{{check}}" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["leads_up", "leads_down"],
+        "body": [
+          { "name": "saw_up", "if": "triggered(leads_up) and platform.window.remaining_ms > {{cutoff}}", "do": [], "then": "led_up" },
+          { "name": "saw_down", "if": "triggered(leads_down) and platform.window.remaining_ms > {{cutoff}}", "do": [], "then": "led_down" }
+        ] },
+      { "name": "led_up", "resident": true, "arm": ["closed", "gave_up"],
+        "body": [
+          { "name": "snap_down",
+            "if": "triggered(closed) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "snap_down",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_down" },
+          { "name": "abandon", "if": "triggered(gave_up)", "do": [], "then": "hunting" }
+        ] },
+      { "name": "led_down", "resident": true, "arm": ["closed", "gave_up"],
+        "body": [
+          { "name": "snap_up",
+            "if": "triggered(closed) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "snap_up",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_up" },
+          { "name": "abandon", "if": "triggered(gave_up)", "do": [], "then": "hunting" }
+        ] },
+      { "name": "holding_down", "resident": true, "arm": ["tick"],
+        "body": [
+          { "name": "take_profit",
+            "if": "triggered(tick) and platform.position.size <= -1 and 1 - signal.book.ask >= legs.led_up.tag.snap_down.fill_price + {{gain}}",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "done", "partial": "holding_down", "reject": "holding_down", "cancel_ack": "holding_down", "expiry": "holding_down" }
+              } }
+            ],
+            "then": "done" }
+        ] },
+      { "name": "holding_up", "resident": true, "arm": ["tick"],
+        "body": [
+          { "name": "take_profit",
+            "if": "triggered(tick) and platform.position.size >= 1 and signal.book.bid >= legs.led_down.tag.snap_up.fill_price + {{gain}}",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(platform.position.size, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "done", "partial": "holding_up", "reject": "holding_up", "cancel_ack": "holding_up", "expiry": "holding_up" }
+              } }
+            ],
+            "then": "done" }
+        ] },
+      { "name": "done", "resident": true, "arm": [], "body": [] }
+    ]
+  }
+}

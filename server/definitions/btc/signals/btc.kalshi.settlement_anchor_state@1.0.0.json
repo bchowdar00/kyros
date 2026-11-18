@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.settlement_anchor_state",
+  "version": "1.0.0",
+  "name": "Kalshi BTC settlement-anchor state",
+  "description": "The Kalshi twin of btc.polymarket.settlement_anchor_state, on the same formulas and the same field set, with the Kalshi settlement basis substituted for the Chainlink one. Consumes the CF Benchmarks BRTI trailing sixty-second average relayed by Kalshi's cfbenchmarks_value channel (source kalshi.cfbenchmarks.brti.value, field avg_60s_value — the exact quantity a KXBTC15M market settles on when sampled at window close) and the bound market's rules card. anchor_price is the latest avg_60s_value; threshold is the rules-card strike verbatim. distance_bps = (anchor - threshold) / threshold in signed basis points. time_to_close_ms is the time remaining to the rules-card window_close (the contract close, never the later legal expiration); the update is not ready once the window is closed or an input is missing. side_if_settled_now applies the contract comparator greater_than_or_equal to anchor versus threshold, and an exact tie resolves to the contract's tie outcome, which on Kalshi is yes and normalizes to up. state is pinned when the absolute distance is at or within pin_threshold_bps AND time_to_close_ms is at or within pin_window_ms, and tracking otherwise. A settlement-adjacent reading fails closed on a thin anchor window: avg_60s_window_size below the declared full window degrades with cfbrti_anchor_window_thin rather than publishing an average of one tick as if it were sixty. Not ready until both inputs are seen. Published under the bound market scope, so an unbound, still-warming or closed market fails it closed. observation_time is the decision instant the reading was evaluated at, which is also the instant time_to_close_ms is measured from. Three settlement-window fields carry the completeness KXBTC15M locks on, read from the source kalshi.cfbenchmarks.brti.settlement-window (E28/E37): quarter_close_time is the derived close on the fifteen-minute grid, window_as_of is how far the final-minute average has actually reached, and settlement_window_complete is true exactly when window_as_of equals quarter_close_time with the full sixty-print window, four times an hour. They inform completeness but do not gate readiness (E37a); the readiness anchor is the trailing sixty-second average. At the grid close the anchor publishes exactly one final ready decision carrying the settled anchor with settlement_window_complete true, window_as_of equal to quarter_close_time and a zero time_to_close_ms, and only the next decision goes market_closed (E37b). If a scheduled rollover beats the completing frame, that one final ready decision is instead retained and published up to five seconds later, scoped to the departed market, when the completing settlement-window frame for its quarter arrives, or the pending slot expires unpublished and is counted in feed health (ruling E37c). This contextualizes the anchor path; it does no probability or volatility modeling, predicts nothing, and is not the final-minute settlement-path arithmetic (that is the separate later btc.kalshi.settlement_path_state slice, whose input is kalshi.cfbenchmarks.brti.settlement-window). Instance-status reasons: oracle_rights_gated, cfbrti_warming_up, cfbrti_stale, cfbrti_anchor_window_thin, cfbrti_disconnected, cfbrti_subscription_rejected, cfbrti_entitlement_denied, cfbrti_value_invalid, cfbrti_anchor_missing, market_contract_warming_up, market_rollover, market_closed. pin_threshold_bps defaults to 10 and pin_window_ms defaults to 60000. Decimal outputs are rounded to eight places using round-half-to-even. side_if_settled_now's down and void variants: down is reachable, void is reachable only through a rules card declaring a void tie outcome, which the current Kalshi vocabulary does not declare, and is retained for contract variants that do.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "kalshi.cfbenchmarks.brti.value",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kalshi.cfbenchmarks.brti.settlement-window",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.market_contract",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "anchor_price",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "threshold",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "distance_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "time_to_close_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "comparator",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "greater_than_or_equal"
+      ]
+    },
+    {
+      "name": "side_if_settled_now",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "up",
+        "down",
+        "void"
+      ]
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "pinned",
+        "tracking"
+      ]
+    },
+    {
+      "name": "pin_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "pin_window_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "quarter_close_time",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "window_as_of",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "settlement_window_complete",
+      "type": "bool",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

@@ -1,0 +1,10 @@
+{
+  "title": "Round clock",
+  "description": "Where this round is in its life. When the clock reaches zero the round settles on the game's final score and the next one opens on the next matchup.",
+  "fields": {
+    "remaining": {
+      "label": "Time left",
+      "description": "Time until this round settles. The game is paced to finish shortly before it does."
+    }
+  }
+}

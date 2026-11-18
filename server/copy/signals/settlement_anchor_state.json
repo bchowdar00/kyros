@@ -1,0 +1,18 @@
+{
+  "title": "Settlement read",
+  "description": "Which way this venue's market would settle if it closed right now. The live price is compared with the settlement anchor.",
+  "fields": {
+    "state": {
+      "label": "Settlement state",
+      "description": "Tracking while the price sits clear of the anchor, pinned when it is within a hair of it. Pinned rounds can flip on the last tick."
+    },
+    "side_if_settled_now": {
+      "label": "Winning now",
+      "description": "Up or Down, whichever would win if the round closed this second. It changes every time the price crosses the anchor."
+    },
+    "distance_bps": {
+      "label": "Distance to strike",
+      "description": "How far the price is from the anchor, in basis points. Positive means above it and Up is winning."
+    }
+  }
+}

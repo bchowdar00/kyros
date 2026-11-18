@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[non-canonical-decimal]: decimals cannot have leading zeros on the integer part
+  05
+  ^^
+  = help: write `5`, not `05`

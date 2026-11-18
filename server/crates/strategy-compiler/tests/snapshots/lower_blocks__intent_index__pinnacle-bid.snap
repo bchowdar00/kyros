@@ -1,0 +1,46 @@
+---
+source: crates/compiler/tests/lower_blocks.rs
+expression: lowered.intent_index
+---
+{
+    "quoting_away.requote.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "stay",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "quoting_home.requote.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "stay",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "watching.bid_away.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "stay",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "watching.bid_home.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "stay",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+}

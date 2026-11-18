@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.chainlink.oracle_reference",
+  "version": "1.0.0",
+  "name": "Chainlink on-chain BTC/USD oracle reference",
+  "description": "Tier-1 single-venue oracle reading for the Chainlink BTC/USD EACAggregatorProxy on Ethereum mainnet, read from source chainlink.ethereum.btc-usd.rounds on the oracle lane. value is the latest accepted round's answer at the feed's eight decimals. round_id is the proxy round identity as decimal text (u80 on chain, so string on the wire); phase_id is the locally derived round_id >> 64 decomposition, carried at the source's declared u64 width, and it increments when the underlying aggregator implementation is swapped. publish_time is the round's updated_at; observation_time is the decision instant; staleness_ms = observation_time - publish_time, floored at zero; update_interval_ms is the elapsed time between this round's publish time and the previous accepted one. This feed publishes on a 0.5 percent deviation threshold OR a one-hour heartbeat, so age is expected and freshness compares against a heartbeat-derived bound rather than a market-data bound: fresh when staleness_ms is at or within staleness_threshold_ms, stale otherwise. heartbeat_seconds and deviation_threshold_bps are the declared feed parameters, published so a consumer reads freshness against the feed's own contract instead of guessing it. A round_id regression is a chain reorganisation: publication is withheld with chainlink_reorg_detected until a round above the last published one is observed, never republished in place. Reads only Chainlink and predicts nothing. Not ready until the first round is accepted. Instance-status reasons: oracle_rights_gated, chainlink_warming_up, chainlink_rpc_unavailable, chainlink_round_invalid, chainlink_reorg_detected. staleness_threshold_ms defaults to 3900000 (the one-hour heartbeat plus five minutes of publication slack), heartbeat_seconds to 3600 and deviation_threshold_bps to 50. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 60000,
+  "staleness_bound_ms": 300000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "chainlink.ethereum.btc-usd.rounds",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "value",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "round_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "phase_id",
+      "type": "u64",
+      "location": "internal"
+    },
+    {
+      "name": "publish_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "staleness_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "update_interval_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "freshness",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "fresh",
+        "stale"
+      ]
+    },
+    {
+      "name": "staleness_threshold_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "heartbeat_seconds",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "deviation_threshold_bps",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

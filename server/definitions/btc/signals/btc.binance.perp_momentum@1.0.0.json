@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.perp_momentum",
+  "version": "1.0.0",
+  "name": "Binance USD-M BTCUSDT perpetual mark momentum",
+  "description": "Causal simple basis-point returns of the Binance USD-M BTCUSDT perpetual mark price (socket mark-price stream or the REST premium-index poll), sampled once per second off the decision clock, over 10-second, 1-minute, 5-minute and 15-minute horizons. return_bps_10s, return_bps_1m, return_bps_5m and return_bps_15m are 10000 times the mark change over the horizon divided by the mark 10, 60, 300 and 900 seconds earlier on the one-second ring. direction_5m is down, flat or up from the full-precision five-minute return, with flat exactly zero and no dead band. Ready output requires 901 contiguous one-second samples (the longest horizon, 15 minutes) of the mark; each one-second sample holds the venue's latest mark row for up to a 3-second bound (a research default that admits the sub-1 Hz mark cadence, the premium-index poll landing about every 1.3 seconds and Bybit mark prices carrying multi-second gaps), and a mark row 3 seconds or more old — a stalled poll or an absent mark — is a missing observation that breaks continuity and restarts the warm-up (no gap bridging). Warm-up degrades as binance_warming_up, a stale merged mark as binance_stale and a mark-missing feed state as binance_recovery_required. The Binance USD-M lane refuses to start (exit 78) unless SIGNALS_ENABLED_VENUES lists binance; the rights gate is a startup refusal, never an instance status. This identity is reference-free and scale-free: it publishes no price-denominated field, only basis-point returns and their root mean square, so nothing is converted from USDT to USD. There is no usdt_usd_rate, no usdt_usd_rate_age_ms and no usdt_reference_stale gating; returns are quote-neutral by construction. quote_currency is the constant \"usd\". Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.usdm.btcusdt.premium-index",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "return_bps_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "return_bps_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "return_bps_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "return_bps_15m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "direction_5m",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "down",
+        "flat",
+        "up"
+      ]
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

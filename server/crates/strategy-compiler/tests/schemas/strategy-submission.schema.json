@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/strategy-submission.schema.json",
+  "title": "StrategySubmission",
+  "$comment": "Editor -> cloud pipeline. The raw thing a logged-in user submits.",
+  "type": "object",
+  "required": ["schema_version", "submission_id", "user_id", "name", "source", "dsl_version", "created_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "submission_id": { "type": "string", "description": "Idempotency key for this submit." },
+    "user_id": { "type": "string" },
+    "name": { "type": "string" },
+    "source": { "type": "string", "description": "The serialized IR document (JSON) emitted by the authoring layer. Must parse as a valid IR doc at dsl_version." },
+    "dsl_version": { "type": "string", "description": "Version of the IR schema that .source conforms to. Matches meta.dsl_version inside the document." },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  },
+  "additionalProperties": false
+}

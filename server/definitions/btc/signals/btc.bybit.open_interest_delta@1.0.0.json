@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.open_interest_delta",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT perpetual open interest delta",
+  "description": "Open-interest change and its price quadrant for the Bybit linear BTCUSDT perpetual contract. open_interest_notional_usd is open_interest_base times mark_price, computed the same way on every venue; a venue-published notional field is deliberately unused so the formula is identical. delta_base_1m, delta_base_5m and delta_base_15m subtract the open_interest_base of the latest admitted reading with event time at or before observation_time minus 60, 300 and 900 seconds. delta_pct_1m, delta_pct_5m and delta_pct_15m divide each delta by the level at that window start and multiply by 100, and are exactly 0 when the level at the window start is 0. price_return_bps_5m is mark_price divided by the mark_price of the reading at or before observation_time minus 300 seconds, minus 1, times 10000. quadrant is flat when the absolute value of delta_pct_5m is below oi_band_pct or the absolute value of price_return_bps_5m is below price_band_bps, otherwise the sign pair oi_up_price_up, oi_up_price_down, oi_down_price_up or oi_down_price_down; oi_band_pct is 0.1 and price_band_bps is 5, both published. divergence is true when quadrant is oi_up_price_down or oi_down_price_up. Open interest rides the 100-millisecond tickers push; the difference in resolution is declared by approximate_interval_ms and by this description, not hidden. Ready output requires 900 seconds of uninterrupted observation of the open-interest input with every declared field present, and degrades as open_interest_history_warming_up until delta_base_15m has a window start. The reading history is bounded at 900 seconds and 90000 entries per venue; exceeding it refuses as a resource limit. Notional is converted from USDT to USD via the Kraken USDT/USD mid; base sizes, counts, ratios and durations are quote-currency neutral; quote_currency is \"usd\" for this instrument. Ready output requires 900 seconds of uninterrupted Bybit linear observation and an admitted input no older than staleness_bound_ms; warm-up degrades as bybit_warming_up, a lapsed bound as bybit_stale, a closed socket as bybit_disconnected, a recovery-required feed state as bybit_recovery_required, a refused subscription as bybit_subscription_rejected and a venue outage as bybit_venue_unavailable. Decimal outputs are rounded to eight places using round-half-to-even. The Bybit linear lane refuses to start (exit 78) unless SIGNALS_ENABLED_VENUES lists bybit; the rights gate is a startup refusal, never an instance status. E47 (USD quoting): this identity quotes in USD. The venue trades BTC against USDT, so at decision time every price, notional and quote-denominated cost field (open_interest_notional_usd, mark_price) is converted USDT to USD with the latest USDT/USD reference rate; base-denominated fields (base sizes, counts, basis-point ratios, durations) are unchanged. The reference is kraken.spot.usdt-usd.ticker, delivered on the dedicated Kraken reference socket (a second reference, coinbase.exchange.usdt-usd.ticker, joins when it lands). quote_currency is the constant \"usd\". usdt_usd_rate (decimal, eight places, round-half-to-even) and usdt_usd_rate_age_ms are published on every ready decision, and the identity is non-ready with reason usdt_reference_stale when the rate is absent or older than 60000 milliseconds.",
+  "status": "approved",
+  "approximate_interval_ms": 5000,
+  "staleness_bound_ms": 30000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.linear.btcusdt.tickers",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "kraken.spot.usdt-usd.ticker",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "open_interest_base",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "open_interest_notional_usd",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "mark_price",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "delta_base_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "delta_base_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "delta_base_15m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "delta_pct_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "delta_pct_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "delta_pct_15m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "price_return_bps_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "quadrant",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "flat",
+        "oi_up_price_up",
+        "oi_up_price_down",
+        "oi_down_price_up",
+        "oi_down_price_down"
+      ]
+    },
+    {
+      "name": "divergence",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "oi_band_pct",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "price_band_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "usdt_usd_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "usdt_usd_rate_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

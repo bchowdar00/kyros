@@ -1,0 +1,22 @@
+{
+  "title": "Venue depth",
+  "description": "How much can be traded on this venue without moving it. Spread is what a fill costs; depth is how big a fill it can take.",
+  "fields": {
+    "affirmative_spread": {
+      "label": "Up spread",
+      "description": "The gap between the Up bid and ask on this venue, in dollars per contract. Wide means expensive fills."
+    },
+    "negative_spread": {
+      "label": "Down spread",
+      "description": "The gap between the Down bid and ask on this venue, in dollars per contract. Usually mirrors the Up spread."
+    },
+    "affirmative_total_bid_depth": {
+      "label": "Up bid depth",
+      "description": "Total contracts waiting to buy Up on this venue. How much you could sell before running out of buyers."
+    },
+    "affirmative_total_ask_depth": {
+      "label": "Up ask depth",
+      "description": "Total contracts waiting to sell Up on this venue. How much you could buy before running out of sellers."
+    }
+  }
+}

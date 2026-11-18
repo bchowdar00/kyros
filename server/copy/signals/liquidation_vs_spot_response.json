@@ -1,0 +1,22 @@
+{
+  "title": "Liquidation follow-through",
+  "description": "Whether the spot price followed the last burst of liquidations. Follow-through means the flush moved the market; none means it was absorbed.",
+  "fields": {
+    "horizon_state": {
+      "label": "Response state",
+      "description": "Watching while the thirty-second window after a burst is open, followed or absorbed once it closes, idle when there has been no burst. Absorbed bursts often reverse."
+    },
+    "burst_side": {
+      "label": "Burst side",
+      "description": "Whether the last burst liquidated longs or shorts. Longs being flushed pushes the price down, shorts up."
+    },
+    "response_bps_30s": {
+      "label": "Spot response 30s",
+      "description": "How far spot moved in the thirty seconds after the burst, in basis points. Small against a big burst means absorption."
+    },
+    "follow_through": {
+      "label": "Followed through",
+      "description": "Yes when spot moved the same way as the burst by more than the threshold. No means the market took the flush in its stride."
+    }
+  }
+}

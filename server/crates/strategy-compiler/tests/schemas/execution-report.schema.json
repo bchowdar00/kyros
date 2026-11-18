@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/execution-report.schema.json",
+  "title": "ExecutionReport",
+  "$comment": "Execution plane -> runner (and settler). Carries risk decision + fill state. This return path is wired in the MVP even though a static strategy ignores it — it is the input a lifecycle-aware strategy (Q1) consumes.",
+  "type": "object",
+  "required": ["schema_version", "client_order_id", "status", "ts"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "client_order_id": { "type": "string" },
+    "order_id": { "type": "string", "description": "Venue order id once accepted." },
+    "status": {
+      "type": "string",
+      "enum": ["accepted", "rejected", "partially_filled", "filled", "canceled"]
+    },
+    "filled_quantity": { "type": "string", "description": "Decimal as string." },
+    "avg_price": { "type": "string", "description": "Decimal as string." },
+    "reason": { "type": "string", "description": "Populated on rejected/canceled (e.g. risk breach)." },
+    "ts": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  },
+  "additionalProperties": false
+}

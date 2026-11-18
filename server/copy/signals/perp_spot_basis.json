@@ -1,0 +1,18 @@
+{
+  "title": "Perp vs spot",
+  "description": "The Bybit perpetual's mark price against the blended spot reference. It says whether leverage is leading or lagging the spot market.",
+  "fields": {
+    "state": {
+      "label": "Basis state",
+      "description": "Rich when the perp is above spot, cheap when below, flat inside a small band. Rich means leveraged buyers are ahead of spot."
+    },
+    "basis_bps": {
+      "label": "Basis",
+      "description": "Perp mark minus blended spot as a share of price, in basis points. Positive means the perp is rich to spot."
+    },
+    "basis_change_bps_60s": {
+      "label": "Basis change 60s",
+      "description": "How much the basis moved over the last minute, in basis points. A fast change means leverage is repricing."
+    }
+  }
+}

@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_lints.rs
+expression: rendered
+---
+warning[trigger-unarmed] at triggers[1]: trigger `orphan` is armed by no leg and can never fire
+  = help: arm it in some leg, or delete it

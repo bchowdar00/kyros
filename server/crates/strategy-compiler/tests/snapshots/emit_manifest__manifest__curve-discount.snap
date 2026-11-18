@@ -1,0 +1,138 @@
+---
+source: crates/strategy-compiler/tests/emit_manifest.rs
+expression: manifest
+---
+{
+  "schema_version": 2,
+  "strategy_id": "Strategy_f93286bd377f",
+  "name": "Curve Discount",
+  "description": "On the 2-minute BTC up/down market, trade only the last 30 seconds. A hand-fitted fair-value curve maps the absolute move from window open to the leading side's worth: 0.02% moved is about 55 cents, 0.05% about 65, 0.10% about 80, 0.15% or more about 92. During the last 30 seconds, whenever the leading side trades at least 5 cents below the curve, buy it — once per window. At window rollover, reset and wait for the next window's endgame.",
+  "dsl_version": "0.3",
+  "source_hash": "f93286bd377f9ed6e52319f6c90dcf64d6a34841443285bf199c5814d0f13410",
+  "signals": [
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "staleness_policy": "proceed"
+    },
+    {
+      "signal_id": "platform.btc_usd.window_delta.v1",
+      "staleness_policy": "proceed"
+    },
+    {
+      "signal_id": "btc_usd.updown_2m.current.window.v1",
+      "staleness_policy": "proceed"
+    }
+  ],
+  "watch_fields": [
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "field": "down"
+    },
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "field": "up"
+    },
+    {
+      "signal_id": "btc_usd.updown_2m.current.window.v1",
+      "field": "phase"
+    },
+    {
+      "signal_id": "platform.btc_usd.window_delta.v1",
+      "field": "pct"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "last_30s",
+      "timer": {
+        "kind": "window_clock",
+        "window_clock": {
+          "instrument_id": "btc_usd.updown_2m.current",
+          "remaining_ms": 30000
+        }
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "id": "book_tick",
+      "condition": {
+        "signal_id": "btc_usd.updown_2m.current.price.v1",
+        "comparator": "always"
+      },
+      "fire": "if_true",
+      "rearm": {
+        "mode": "immediate"
+      }
+    },
+    {
+      "id": "window_open",
+      "condition": {
+        "signal_id": "btc_usd.updown_2m.current.window.v1",
+        "field": "phase",
+        "comparator": "==",
+        "value": "open"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "lifecycle_stages": [
+    {
+      "name": "waiting",
+      "resident": true,
+      "arm": [
+        "last_30s"
+      ]
+    },
+    {
+      "name": "endgame",
+      "resident": true,
+      "arm": [
+        "book_tick",
+        "window_open"
+      ]
+    },
+    {
+      "name": "filled",
+      "resident": true,
+      "arm": [
+        "window_open"
+      ]
+    }
+  ],
+  "intent_index": {
+    "endgame.buy_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "endgame.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  }
+}

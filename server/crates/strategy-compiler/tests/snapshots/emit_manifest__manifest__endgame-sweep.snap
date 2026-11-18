@@ -1,0 +1,83 @@
+---
+source: crates/strategy-compiler/tests/emit_manifest.rs
+expression: manifest
+---
+{
+  "schema_version": 2,
+  "strategy_id": "Strategy_ba5f4e2b7ffe",
+  "name": "Endgame Sweep",
+  "description": "On the 2-minute BTC up/down market: at 20 seconds before window close, if either side is trading at 95 cents or more, buy that side at the market and let it resolve. Runs every window; positions settle at expiry and the next window's check is the next wake.",
+  "dsl_version": "0.3",
+  "source_hash": "ba5f4e2b7ffe6379c6d1e9d1fc562aaa7bf557c22665cc253cb27e5d2e987587",
+  "signals": [
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "staleness_policy": "proceed"
+    }
+  ],
+  "watch_fields": [
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "field": "down"
+    },
+    {
+      "signal_id": "btc_usd.updown_2m.current.price.v1",
+      "field": "up"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "last_20s",
+      "timer": {
+        "kind": "window_clock",
+        "window_clock": {
+          "instrument_id": "btc_usd.updown_2m.current",
+          "remaining_ms": 20000
+        }
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "lifecycle_stages": [
+    {
+      "name": "sweeping",
+      "resident": true,
+      "arm": [
+        "last_20s"
+      ]
+    }
+  ],
+  "intent_index": {
+    "sweeping.buy_down.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "sweeping.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  }
+}

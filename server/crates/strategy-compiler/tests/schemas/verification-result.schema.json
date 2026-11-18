@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/verification-result.schema.json",
+  "title": "VerificationResult",
+  "$comment": "Verify stage -> editor. Surfaced back in the UI before compile.",
+  "type": "object",
+  "required": ["schema_version", "submission_id", "ok", "diagnostics", "verified_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "submission_id": { "type": "string" },
+    "ok": { "type": "boolean" },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "message"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["error", "warning", "info"] },
+          "message": { "type": "string" },
+          "line": { "type": "integer", "minimum": 1 },
+          "column": { "type": "integer", "minimum": 1 },
+          "path": { "type": "string", "description": "JSON path into the IR document, e.g. 'legs[0].rules[2].do[1].size'." },
+          "code": { "type": "string", "description": "Stable machine-readable error code, e.g. 'E_MISSING_REARM'." },
+          "params": { "type": "object", "description": "Structured details keyed by code." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "verified_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  },
+  "additionalProperties": false
+}

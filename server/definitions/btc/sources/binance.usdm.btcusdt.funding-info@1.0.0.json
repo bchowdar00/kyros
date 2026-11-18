@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "source_id": "binance.usdm.btcusdt.funding-info",
+  "version": "1.0.0",
+  "name": "Binance USD-M BTCUSDT funding interval, cap and floor",
+  "description": "Normalized BTCUSDT element of `GET https://fapi.binance.com/fapi/v1/fundingInfo`, polled every 3600000 milliseconds and sharing a 500-request per five-minute pool with the funding-rate history endpoint. `funding_interval_hours` must be between one and twenty-four; `adjusted_funding_rate_cap` and `adjusted_funding_rate_floor` are signed fractions per funding interval. The endpoint documents only symbols with non-default settings, so BTCUSDT may be absent: in that case NO event is emitted and an informational state-inconsistency is raised, and the dependent funding identity stays non-ready. No default interval, cap or floor is ever substituted; unknown stays unknown. The body carries no venue timestamp, so `event_time` is the local receipt time of the polled response. The request and the response are both written to the capture, so replay needs no network. Refusal-gated: Binance redistribution requires written consent (see RIGHTS-LEDGER.md). OBSERVED against the same 65-minute Tokyo capture, which answers probe P5: BTCUSDT IS present. Each of the two hourly responses listed 777 symbols with exactly one BTCUSDT row, carrying `fundingIntervalHours` 8 and a cap and floor of +/-0.00300 at five fractional digits - so neither the interval nor the scale can be assumed from another symbol, and the venue-declared interval is what the funding identity must read. A field the drafted table did not name is present on every row and accepted without being published: `updateTime`, the venue's own last-change time for that symbol's settings, which is NULLABLE and was null for BTCUSDT on both polls (null on exactly the 114 of 1,554 rows whose `disclaimer` is true). A declared field that is always null on our instrument would promise nothing, so it is carried only if a later capture shows it populated.",
+  "status": "approved",
+  "transport": "http_poll",
+  "expected_heartbeat_ms": 3600000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "funding_interval_hours",
+      "type": "u32",
+      "location": "external"
+    },
+    {
+      "name": "adjusted_funding_rate_cap",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "adjusted_funding_rate_floor",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "event_time"
+}

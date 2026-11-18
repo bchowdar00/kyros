@@ -1,0 +1,16 @@
+# Gitignored files that new worktrees need copied in.
+
+# Server: loaded by dotenvy in server/crates/exchange/src/main.rs (OPENAI_API_KEY, PORT, TRADER_BOT_COUNT)
+server/.env
+
+# Repo-root .env: crates/exchange/src/api/strategy/parse.rs tests fall back to ../../../.env
+.env
+
+# Frontend: Next.js env (EXCHANGE_API_URL, NEXT_PUBLIC_API_URL, OPENAI_API_KEY)
+frontend/.env.local
+frontend/.env
+frontend/.env.*.local
+
+# Machine-local Claude Code settings / agent memory
+.claude/settings.local.json
+frontend/.claude/

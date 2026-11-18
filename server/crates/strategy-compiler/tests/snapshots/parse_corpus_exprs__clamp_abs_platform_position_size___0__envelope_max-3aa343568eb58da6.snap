@@ -1,0 +1,94 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Call {
+        builtin: Clamp,
+        name_span: Span {
+            start: 0,
+            end: 5,
+        },
+        args: [
+            Spanned {
+                node: Call {
+                    builtin: Abs,
+                    name_span: Span {
+                        start: 6,
+                        end: 9,
+                    },
+                    args: [
+                        Spanned {
+                            node: Ref(
+                                Ref {
+                                    namespace: Platform,
+                                    path: [
+                                        Spanned {
+                                            node: "position",
+                                            span: Span {
+                                                start: 19,
+                                                end: 27,
+                                            },
+                                        },
+                                        Spanned {
+                                            node: "size",
+                                            span: Span {
+                                                start: 28,
+                                                end: 32,
+                                            },
+                                        },
+                                    ],
+                                    index: None,
+                                },
+                            ),
+                            span: Span {
+                                start: 10,
+                                end: 32,
+                            },
+                        },
+                    ],
+                },
+                span: Span {
+                    start: 6,
+                    end: 33,
+                },
+            },
+            Spanned {
+                node: Literal(
+                    Decimal(
+                        "0",
+                    ),
+                ),
+                span: Span {
+                    start: 35,
+                    end: 36,
+                },
+            },
+            Spanned {
+                node: Ref(
+                    Ref {
+                        namespace: Envelope,
+                        path: [
+                            Spanned {
+                                node: "max_order_size",
+                                span: Span {
+                                    start: 47,
+                                    end: 61,
+                                },
+                            },
+                        ],
+                        index: None,
+                    },
+                ),
+                span: Span {
+                    start: 38,
+                    end: 61,
+                },
+            },
+        ],
+    },
+    span: Span {
+        start: 0,
+        end: 62,
+    },
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.order_flow_imbalance",
+  "version": "1.0.0",
+  "name": "Binance BTC/USDT level-two order-flow imbalance",
+  "description": "Standard best-quote event order-flow imbalance over completed atomic Binance level-two delta groups. Bid contribution adds current size when bid price is unchanged or improves and subtracts prior size when unchanged or worsens; ask contribution subtracts current size when ask price is unchanged or improves and adds prior size when unchanged or worsens. Positive output represents net bid-side pressure and negative output net ask-side pressure, in BTC base units, over causal 1-, 10-, and 60-second receipt-time windows of (window close minus duration, window close]. Because the Binance partial-depth stream is a continuous sequence of full images rather than a seed-plus-diff stream, two consecutive images with contiguous strictly increasing `last_update_id` and `image_kind` = `full_replace` are continuous and DO contribute flow between their best quotes; an `image_kind` = `reseed` image (the first image after connect, reconnect or an ordering reset) establishes a baseline and contributes no flow. The arithmetic is unchanged: only the continuity predicate binds to this venue's own reset semantics, exactly as the Coinbase snapshot rule binds to Coinbase's. Ready output requires 60 seconds of uninterrupted Binance observation measured from a complete snapshot after startup or recovery, and Binance demonstrably alive. An eventless book window on a live Binance connection — any admitted Binance input event within staleness_bound_ms — publishes truthful zero imbalance; no admitted Binance input within that bound keeps degrading as book_snapshot_stale_or_missing, and a crossed, invalid, or unsnapshotted Binance book still degrades. This identity is single-venue: it reads only Binance inputs and is ready whenever Binance is warmed and alive and its book is valid, independently of the other adopted spot venue. The blended `btc.external.*` reading of the same measurement stays the reference layer and continues to require every adopted venue (ADR 0024). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Binance sibling of `btc.coinbase.order_flow_imbalance@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Binance spot BTCUSDT; this identity publishes no price-level field, so its outputs (base sizes, basis points, imbalances, ratios, counts) are quote-currency neutral and nothing is converted. Binance inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `binance`, which the deployment sets only after that row clears. The Binance book input is the `btcusdt@depth20@100ms` partial-depth stream: every message is a complete top-20-per-side image at a 100 ms cadence, not a diff, and it carries no venue clock, so `event_time_basis` is `receipt` and `event_time` is the local receipt time. Ordering is the strictly increasing `last_update_id`; a duplicate or lower id is dropped and never applied. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: this identity publishes no price-denominated field — its outputs are base sizes, ratios, basis-point and count fields, all quote-currency neutral — so nothing is converted. E47 (USD quoting): this identity quotes in USD and publishes no price, notional or quote-denominated cost field — its outputs are base sizes, counts, basis-point ratios and durations, which are quote-currency neutral — so nothing is converted and no usdt_usd_rate is published. quote_currency is the constant \"usd\".",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.spot.btcusdt.book-levels",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "ofi_base_1s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "ofi_base_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "ofi_base_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "event_count_60s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

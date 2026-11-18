@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "source_id": "kraken.spot.btc-usd.book-orders",
+  "version": "1.0.0",
+  "name": "Kraken Spot BTC/USD level-three book orders",
+  "description": "Checksum-gated Kraken Spot WebSocket v2 BTC/USD per-order book changes. Rows sharing update_group are one atomic provider message and are released only after applying all changes, truncating to the subscribed price-level depth, and validating order queue priority through Kraken's top-ten CRC32 checksum.",
+  "status": "approved",
+  "transport": "websocket",
+  "expected_heartbeat_ms": 1000,
+  "fields": [
+    { "name": "instrument", "type": "string", "location": "external" },
+    { "name": "configured_depth", "type": "u16", "location": "internal" },
+    { "name": "update_group", "type": "string", "location": "internal" },
+    { "name": "update_index", "type": "u32", "location": "internal" },
+    { "name": "update_count", "type": "u32", "location": "internal" },
+    {
+      "name": "update_kind",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["snapshot", "delta"]
+    },
+    {
+      "name": "event_kind",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["snapshot", "add", "modify", "delete", "depth_eviction"]
+    },
+    {
+      "name": "side",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["bid", "ask"]
+    },
+    { "name": "order_id", "type": "string", "location": "external" },
+    { "name": "price", "type": "decimal", "location": "external" },
+    { "name": "size", "type": "decimal", "location": "internal" },
+    { "name": "order_time", "type": "timestamp", "location": "external" },
+    { "name": "book_checksum", "type": "u32", "location": "external" },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

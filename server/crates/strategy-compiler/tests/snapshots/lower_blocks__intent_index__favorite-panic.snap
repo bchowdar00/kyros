@@ -1,0 +1,66 @@
+---
+source: crates/compiler/tests/lower_blocks.rs
+expression: lowered.intent_index
+---
+{
+    "holding_away.cut_loss.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "holding_away",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "holding_away.take_profit.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "holding_away",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "holding_home.cut_loss.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "holding_home",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "holding_home.take_profit.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "holding_home",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "hunting.buy_away_favorite.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "hunting",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+    "hunting.buy_home_favorite.0": IntentEntry {
+        on: OnTotal {
+            fill: "stay",
+            partial: "stay",
+            reject: "hunting",
+            cancel_ack: "stay",
+            expiry: "stay",
+        },
+        max_size: "100",
+    },
+}

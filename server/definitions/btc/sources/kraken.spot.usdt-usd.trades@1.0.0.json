@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "source_id": "kraken.spot.usdt-usd.trades",
+  "version": "1.0.0",
+  "name": "Kraken Spot USDT/USD trades",
+  "description": "Normalized Kraken Spot WebSocket v2 USDT/USD trade events for auxiliary conversion and basis analysis. aggressor_side preserves Kraken's documented taker side. trade_id supports ordering and deduplication without assuming numeric adjacency. update_kind distinguishes subscription history from live updates so causal rolling calculations do not misclassify snapshot rows as newly occurring flow.",
+  "status": "approved",
+  "transport": "websocket",
+  "expected_heartbeat_ms": 1000,
+  "fields": [
+    { "name": "instrument", "type": "string", "location": "external" },
+    { "name": "trade_id", "type": "u64", "location": "external" },
+    { "name": "price", "type": "decimal", "location": "external" },
+    { "name": "size", "type": "decimal", "location": "external" },
+    {
+      "name": "aggressor_side",
+      "type": "enum",
+      "location": "external",
+      "variants": ["buy", "sell"]
+    },
+    {
+      "name": "order_type",
+      "type": "enum",
+      "location": "external",
+      "variants": ["limit", "market"]
+    },
+    {
+      "name": "update_kind",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["snapshot", "update"]
+    },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time",
+  "sequence_field": "trade_id"
+}

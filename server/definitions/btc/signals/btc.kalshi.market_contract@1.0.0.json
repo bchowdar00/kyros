@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.market_contract",
+  "version": "1.0.0",
+  "name": "Kalshi BTC market rules card",
+  "description": "Full-replacement rules card for one automatically bound Kalshi KXBTC15M market generation. The exact ticker, fifteen-minute window, strike, and archived rules come from validated keyless REST discovery. settlement_benchmark identifies the CF Benchmarks BRTI sixty-print simple average, comparator is greater-than-or-equal, and an exact tie pays YES. These values are first-class and must not be treated as equivalent to Polymarket's Chainlink TWAP. A market_transition bound frame precedes the first update for a generation, and an unavailable frame plus degraded batch ends it. Decimal values are rounded to at most eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "kalshi.btc.market-contracts", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "market_id", "type": "string", "location": "external" },
+    { "name": "market_generation", "type": "u64", "location": "internal" },
+    { "name": "window_open", "type": "timestamp", "location": "external" },
+    { "name": "window_close", "type": "timestamp", "location": "external" },
+    { "name": "strike", "type": "decimal", "location": "external" },
+    { "name": "settlement_benchmark", "type": "enum", "location": "internal", "variants": ["cf_benchmarks_brti_sixty_print"] },
+    { "name": "averaging_window_seconds", "type": "u32", "location": "internal" },
+    { "name": "comparator", "type": "enum", "location": "internal", "variants": ["greater_than_or_equal"] },
+    { "name": "tie_outcome", "type": "enum", "location": "internal", "variants": ["yes"] },
+    { "name": "affirmative_outcome", "type": "enum", "location": "internal", "variants": ["yes"] },
+    { "name": "negative_outcome", "type": "enum", "location": "internal", "variants": ["no"] },
+    { "name": "rules_sha256", "type": "string", "location": "internal" },
+    { "name": "contract_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "contract_time"
+}

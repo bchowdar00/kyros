@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.pair_cost_state",
+  "version": "1.0.0",
+  "name": "Kalshi BTC pair-cost state",
+  "description": "Kalshi quotes a single binary YES book. Locking a one-dollar payout means buying YES at yes_ask and buying NO at no_ask, where no_ask equals one minus yes_bid (the NO purchase crosses the other side of the same book), so pair_cost = yes_ask + no_ask - 1 = yes_ask - yes_bid, the YES spread (pair-locking on one binary book is spread capture). fee_adjusted_pair_cost adds the taker fee on both legs. The fee model is Kalshi's official fee schedule effective 2026-07-07: taker fee per contract = fee_rate * P * (1 - P) rounded up to the fee_alignment increment. The BTC series take the general schedule. This is the conservative taker-taker case (both legs crossing); resting one side pays the maker rate, which defaults to zero for the BTC series under the current schedule, so taker-taker is the worst case. There is no settlement fee, so holding both sides to expiry costs exactly the two entry fees. state is locked_profit when fee_adjusted_pair_cost is negative, premium when it exceeds premium_threshold, and fair otherwise. A missing outcome ask is a defined not-ready state. fee_rate defaults to 0.07, fee_alignment defaults to 0.01 (the non-direct member increment; the direct-member tier is 0.0001), and premium_threshold defaults to 0.01. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.prediction_quote",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "pair_cost",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "fee_adjusted_pair_cost",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "yes_leg_fee",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "no_leg_fee",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "fee_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "fee_alignment",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "premium_threshold",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "locked_profit",
+        "fair",
+        "premium"
+      ]
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

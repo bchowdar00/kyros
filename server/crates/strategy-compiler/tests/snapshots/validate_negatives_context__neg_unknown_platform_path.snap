@@ -1,0 +1,8 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[unknown-platform-path] at legs[0].body[0].if: `platform.position` is not a platform read
+  platform.position > 0
+  ^^^^^^^^^^^^^^^^^
+  = help: supported reads: platform.position.size, platform.position.avg_cost, platform.realized_pnl, platform.unrealized_pnl, platform.cash, platform.open_orders, platform.window.remaining_ms, platform.last_fill.price

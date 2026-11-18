@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_orders.rs
+expression: rendered
+---
+error[band-violation] at legs[0].body[0].do[0].place.price: clamp bounds [0.05, 0.95] exceed price_band [0.1, 0.9]
+  clamp(signal.price.home, 0.05, 0.95)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = help: tighten the clamp bounds to fall inside the declared band

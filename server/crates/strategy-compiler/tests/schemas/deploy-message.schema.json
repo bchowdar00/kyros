@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/deploy-message.schema.json",
+  "title": "DeployMessage",
+  "$comment": "CLOUD -> DATACENTER seam. Published to JetStream stream DEPLOY, subject `deploy.strategy`. Runners subscribe as a queue group (load balancing); a runner acks after successful registration (at-least-once).",
+  "type": "object",
+  "required": ["schema_version", "strategy_id", "deploy_epoch", "artifact_ref", "schema", "issued_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "strategy_id": { "type": "string" },
+    "deploy_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "$comment": "RESERVED mechanism for Q1. Monotonic per strategy_id. MVP: always the latest wins, deploy once. Later: a higher epoch replaces the strategy's registered interest without any contract change."
+    },
+    "artifact_ref": { "type": "string" },
+    "schema": { "$ref": "strategy-schema.schema.json" },
+    "target_pool": { "type": "string", "description": "Optional runner pool / datacenter selector. Absent = default pool." },
+    "issued_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  },
+  "additionalProperties": false
+}

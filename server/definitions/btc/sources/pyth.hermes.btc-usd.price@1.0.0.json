@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "source_id": "pyth.hermes.btc-usd.price",
+  "version": "1.0.0",
+  "name": "Pyth Hermes Crypto.BTC/USD aggregate price",
+  "description": "Pyth Network Hermes aggregate price for feed id e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43 (Crypto.BTC/USD, min_channel real_time), verified against the keyless GET /v2/price_feeds catalogue on 2026-09-03. This is the second, independent source for btc.pyth.oracle_reference; the Kalshi pyth_value relay (kalshi.pyth.btc-usd.value) is the first and feeds that identity at 1.0.0. This source is keyed and adopted, verified against an authenticated hour captured on the Tokyo box on 2026-09-04, and the Pyth-specific fields it adds (confidence, exponent, EMA) are what raise the identity to 1.1.0. The adapter streams GET /v2/updates/price/stream with parsed=true and encoding=hex and uses GET /v2/updates/price/latest only as a start-up and post-reconnect anchor probe, at most once per ten seconds; update_kind distinguishes the two so rolling windows can exclude REST rows. Both update endpoints require Authorization: Bearer $PYTH_API_KEY and return 401 without it (verified 2026-09-03); the key is injected from the environment and never appears in argv, logs, notices or captures. price, conf, ema_price and ema_conf are the provider integers rescaled by 10^expo with exact decimal arithmetic, never floats, following the polymarket.rtds.btc-usd.twap-60s precedent that a rescaled provider value stays external; the raw integers and the exponent ride alongside so nothing upstream is lost. Pyth publishes one exponent and one publish time per aggregate: the parsed ema_price sub-object's own expo and publish_time, if present, are read and asserted equal to the aggregate's, and a mismatch refuses the update rather than being carried as a second exponent or timestamp, which is why there is no ema_expo or ema_publish_time field here. The signed on-chain proof blob is carried in the capture and is not decoded or normalized here. publish_time, prev_publish_time and proof_available_time are unix seconds converted to milliseconds and validated through the shared event window, so a value already in milliseconds or microseconds fails closed. There is no per-message sequence: ordering is slot then publish_time, an equal slot with identical values is a duplicate and a lower slot or publish time is out of order. There is no backfill on this endpoint, so a detected gap is answered by re-warming, never by fetching. Gap detection relies on prev_publish_time chaining to the previously admitted publish_time, now observed: an authenticated hour captured on the Tokyo box on 2026-09-04 (pyth-hermes-stream-r1-20260904T012850Z.jsonl, 3660 stream frames; pyth-hermes-rest-r1-20260904T012850Z.jsonl, 390 REST anchors) replayed cleanly through the adapter with no unknown fields and no shape or value rejection, every frame carried metadata.prev_publish_time chaining to the prior aggregate, so gap detection is confirmed on this feed (239 real chain-break gaps over the hour) and the staleness-only fallback is not needed; the parsed field set matches the capture exactly (see build/A2-pyth-hermes-feed.md sections 3.2 and 3.4). transport sse is the additive source-transport value introduced by the wave-A additive-contract ADR. Runtime is gated by the SIGNALS_ENABLED_VENUES allow-list until the Pyth rights row clears.",
+  "status": "approved",
+  "transport": "sse",
+  "expected_heartbeat_ms": 30000,
+  "fields": [
+    { "name": "instrument", "type": "string", "location": "internal" },
+    { "name": "feed_id", "type": "string", "location": "external" },
+    { "name": "symbol", "type": "string", "location": "internal" },
+    {
+      "name": "update_kind",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["stream", "latest"]
+    },
+    { "name": "price", "type": "decimal", "location": "external" },
+    { "name": "conf", "type": "decimal", "location": "external" },
+    { "name": "price_raw", "type": "i64", "location": "external" },
+    { "name": "conf_raw", "type": "u64", "location": "external" },
+    { "name": "expo", "type": "i64", "location": "external" },
+    { "name": "ema_price", "type": "decimal", "location": "external" },
+    { "name": "ema_conf", "type": "decimal", "location": "external" },
+    { "name": "ema_price_raw", "type": "i64", "location": "external" },
+    { "name": "ema_conf_raw", "type": "u64", "location": "external" },
+    { "name": "slot", "type": "u64", "location": "external" },
+    { "name": "prev_publish_time", "type": "timestamp", "location": "external" },
+    { "name": "proof_available_time", "type": "timestamp", "location": "external" },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

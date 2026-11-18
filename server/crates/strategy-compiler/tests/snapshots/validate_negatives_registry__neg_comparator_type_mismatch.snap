@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_registry.rs
+expression: rendered
+---
+error[comparator-type-mismatch] at triggers[0].condition.comparator: field `action` is an enum; ordering comparators require a numeric field
+  = help: use == or != against a variant

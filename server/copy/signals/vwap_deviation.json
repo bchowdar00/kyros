@@ -1,0 +1,18 @@
+{
+  "title": "Price vs VWAP",
+  "description": "Where the price sits against the volume-weighted average of recent trades. Trading far from where the volume happened tends to pull back toward it.",
+  "fields": {
+    "vwap_60s": {
+      "label": "VWAP 60s",
+      "description": "The average trade price over the last minute, weighted by size, in dollars. It is where the money actually changed hands."
+    },
+    "deviation_bps_10s": {
+      "label": "Deviation 10s",
+      "description": "How far the midpoint is above or below the ten-second VWAP, in basis points. Positive means trading above where the volume happened."
+    },
+    "deviation_bps_60s": {
+      "label": "Deviation 60s",
+      "description": "The same distance against the one-minute VWAP, in basis points. A larger, slower read of the same stretch."
+    }
+  }
+}

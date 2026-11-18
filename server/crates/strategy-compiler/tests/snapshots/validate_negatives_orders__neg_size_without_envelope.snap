@@ -1,0 +1,13 @@
+---
+source: crates/compiler/tests/validate_negatives_orders.rs
+expression: rendered
+---
+error[size-without-envelope] at legs[0].body[0].do[0].place.max_size: a max_size must be sourced from envelope.* — a literal magnitude is not allowed
+  100
+  ^^^
+  = help: scale from an envelope field (e.g. envelope.max_order_size); only dimensionless shape constants may be literals
+
+error[size-without-envelope] at legs[0].body[0].do[0].place.size: a size must be sourced from envelope.* — a literal magnitude is not allowed
+  clamp(50, 0, 100)
+  ^^^^^^^^^^^^^^^^^
+  = help: scale from an envelope field (e.g. envelope.max_order_size); only dimensionless shape constants may be literals

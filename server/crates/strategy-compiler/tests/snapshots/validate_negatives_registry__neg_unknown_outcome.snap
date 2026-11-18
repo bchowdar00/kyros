@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_registry.rs
+expression: rendered
+---
+error[unknown-outcome] at legs[0].body[0].do[0].place.outcome: `hom` is not an outcome of `game` (outcomes: home, away)
+  = help: outcome labels are registry venue data, matched verbatim

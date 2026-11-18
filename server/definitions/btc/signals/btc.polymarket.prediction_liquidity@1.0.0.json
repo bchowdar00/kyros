@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.polymarket.prediction_liquidity",
+  "version": "1.0.0",
+  "name": "Polymarket BTC displayed prediction liquidity",
+  "description": "Displayed native-token book liquidity for one bound Polymarket market generation. It publishes both outcome spreads and top sizes, total displayed bid/ask depth, and the exact book-only cost/proceeds for a research-initial ten-outcome-unit probe. The probe excludes fees and is a measurement normalization, not an order recommendation; output fails closed if either native book cannot fill it. No cross-market book state survives a market_transition boundary. While the venue is alive — any book, quote, trade, or contract input admitted within staleness_bound_ms (10000 ms) — an unchanged resting book republishes its band-depth values and stays ready, while a genuinely silent venue and every integrity fault (snapshot missing, one-sided, crossed or invalid, insufficient probe depth) still degrade unchanged. Book age uses monotonic receipt time. Decimal values are rounded to at most eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.polymarket.market_contract", "version": "1.0.0" },
+    { "kind": "source", "id": "polymarket.btc.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "market_id", "type": "string", "location": "external" },
+    { "name": "market_generation", "type": "u64", "location": "internal" },
+    { "name": "probe_units", "type": "decimal", "location": "internal" },
+    { "name": "affirmative_spread", "type": "decimal", "location": "internal" },
+    { "name": "negative_spread", "type": "decimal", "location": "internal" },
+    { "name": "affirmative_bid_size", "type": "decimal", "location": "external" },
+    { "name": "affirmative_ask_size", "type": "decimal", "location": "external" },
+    { "name": "negative_bid_size", "type": "decimal", "location": "external" },
+    { "name": "negative_ask_size", "type": "decimal", "location": "external" },
+    { "name": "affirmative_total_bid_depth", "type": "decimal", "location": "internal" },
+    { "name": "affirmative_total_ask_depth", "type": "decimal", "location": "internal" },
+    { "name": "negative_total_bid_depth", "type": "decimal", "location": "internal" },
+    { "name": "negative_total_ask_depth", "type": "decimal", "location": "internal" },
+    { "name": "affirmative_buy_cost", "type": "decimal", "location": "internal" },
+    { "name": "affirmative_sell_proceeds", "type": "decimal", "location": "internal" },
+    { "name": "negative_buy_cost", "type": "decimal", "location": "internal" },
+    { "name": "negative_sell_proceeds", "type": "decimal", "location": "internal" },
+    { "name": "max_book_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "book_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "book_time"
+}

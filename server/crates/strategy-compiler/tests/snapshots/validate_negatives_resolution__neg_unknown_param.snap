@@ -1,0 +1,16 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[unknown-param] at triggers[0].condition.value: trigger leaf value names undeclared param `gone`
+  = help: declared params: edge
+
+error[unknown-param] at legs[0].body[0].if: reference to undeclared param `nope`
+  signal.price.home < param.nope
+                            ^^^^
+  = help: declared params: edge
+
+error[unknown-param] at legs[0].body[1].if: param `edge` has no fields — `param.` references are the bare name
+  signal.price.home < param.edge.raw
+                                 ^^^
+  = help: write `param.edge`

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.tick_velocity",
+  "version": "1.0.0",
+  "name": "Bybit BTC update velocity",
+  "description": "How fast Bybit spot BTCUSDT is updating. quote_updates_1s and quote_updates_10s count admitted best-quote updates (the one-level bbo book's best bid and ask) over the trailing one and ten seconds; trades_1s and trades_10s count admitted trades over the same windows; midpoint_changes_10s counts the admitted quote updates in the last ten seconds whose midpoint differed from the previously admitted one, so requoting without price movement is visible as motion without price discovery. velocity_ratio compares the ten-second quote rate with the trailing baseline rate over baseline_window_ms of observed lane time, capped at five minutes (a research default): it is (quote_updates_10s / 10 s) divided by (baseline_quote_updates / baseline window), formed as a single exact ratio so nothing rounds before the comparison. One means the venue is updating at its own recent average. Before any baseline exists the ratio has no denominator, so velocity_ratio_present is false and velocity_ratio is left at zero rather than fabricated - the same presence idiom book_resilience uses for recovery_ms. Every count is a fold over admitted event times, never a wall clock, so a replay of the same admissions reproduces every number. This identity is single-venue by construction: it counts only Bybit's own admitted events and is independent of the other spot venues, so one venue's fault degrades this reading alone. Not ready until ten seconds of lane time have been observed since the venue's first admitted event, so the ten-second counts are complete rather than partial; while warming the instance-status reason is bybit_warming_up, and while the venue is marked unavailable it is bybit_venue_unavailable and the counters are cleared so they re-warm on reconnection. The counters are rolling market-relative state and are deliberately not checkpointed: they re-warm after a restart. No blended btc.external.* variant of this measurement is published - a cross-venue update rate would have to rule how two venues' independent update streams combine, and that ruling is deferred pending evidence. Decimal outputs are rounded to eight places using round-half-to-even. quote_currency is emitted on every decision and is the constant \"usd\" for this venue. E47 (USD quoting): this identity publishes no price, notional or quote-denominated cost field - its outputs are counts, a dimensionless ratio and a duration - so nothing is converted and no usdt_usd_rate is published. Bybit inputs are rights-gated (signals/knowledge/RIGHTS-LEDGER.md): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list SIGNALS_ENABLED_VENUES names bybit.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.bbo-levels",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.trades",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "quote_updates_1s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "quote_updates_10s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "trades_1s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "trades_10s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "midpoint_changes_10s",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "velocity_ratio_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "velocity_ratio",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "baseline_quote_updates",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "baseline_window_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

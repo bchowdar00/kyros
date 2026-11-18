@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.perp_roc",
+  "version": "1.0.0",
+  "name": "Binance USD-M BTCUSDT perpetual mark rate of change over ten seconds, one minute and five minutes",
+  "description": "A causal reading over the fresh Binance USD-M BTCUSDT perpetual mark price, taken from either the socket `markPrice` stream or the REST `premiumIndex` poll that carries the same mark state (F2/E50), sampled once per second on the lane decision clock. Each one-second sample holds the venue's latest mark row for up to a 3-second bound (a research default; the premium-index poll lands about every 1.3 seconds and Bybit mark prices carry multi-second gaps), and a mark row 3 seconds or more old is a missing sample, so a stalled poll or an absent mark invalidates the bar spanning it and re-warms the identity. Each field is the rate of change of the one-second sample series in basis points: the current sample minus the sample ten seconds, sixty seconds and three hundred seconds earlier, divided by that earlier sample, times ten thousand. This is the ROC convention — a percentage of the prior level — expressed in basis points, and the one-minute and five-minute fields therefore carry the same horizons as `horizon_momentum` under that convention while roc_bps_10s adds the fast horizon. sample_count is the number of contiguous one-second samples behind the reading. The three horizons are initial research defaults that require empirical calibration; the rate-of-change formula is not a heuristic threshold. A missing or non-ready one-second sample breaks continuity: the sample ring is discarded and the warm-up restarts. Nothing is bridged across a gap. Ready once three hundred and one contiguous one-second samples have been observed. Decimal outputs are rounded to eight places using round-half-to-even. Every reading is causal: it reads only samples at or before the decision it is published on. E47 (USD quoting): this identity quotes in USD and publishes no price, notional or quote-denominated cost field — its outputs are basis-point ratios, indices, counts and timestamps, which are quote-currency neutral — so nothing is converted and no usdt_usd_rate is published. quote_currency is the constant \"usd\". Binance inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `binance`. The Binance USD-M socket `markPrice` stream is unreachable from the Tokyo box (E30), so the mark state is fed by the REST `premiumIndex` poll (F2/E50); before the first mark row of a generation this identity publishes the honest unavailable reason `binance_recovery_required` rather than a warm-up that could never resolve. Adopted in the C3a TA pack (ruling E51, 2026-09-04): the seven technical-analysis identities are published on every price venue we carry, computed from the venue's own one-second sample ring by the shared `crates/btc-signals/src/ta.rs` helper, so every scope runs byte-identical arithmetic and only the sample series differs.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.usdm.btcusdt.premium-index",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "roc_bps_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_bps_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "roc_bps_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "sample_count",
+      "type": "u16",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

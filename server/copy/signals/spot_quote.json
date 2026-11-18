@@ -1,0 +1,22 @@
+{
+  "title": "Best quote",
+  "description": "The tightest bid and ask on this venue's BTC book. The gap between them is what it costs to trade immediately.",
+  "fields": {
+    "bid": {
+      "label": "Bid",
+      "description": "The highest price a buyer is waiting at on this venue. Selling into the venue fills here."
+    },
+    "ask": {
+      "label": "Ask",
+      "description": "The lowest price a seller is waiting at on this venue. Buying from the venue fills here."
+    },
+    "midpoint": {
+      "label": "Midpoint",
+      "description": "Halfway between the bid and the ask, the venue's fair price for BTC right now. Most other signals on this venue are built from it."
+    },
+    "spread_bps": {
+      "label": "Spread",
+      "description": "The gap between bid and ask as a share of the midpoint, in basis points. Wide means thin liquidity and expensive fills."
+    }
+  }
+}

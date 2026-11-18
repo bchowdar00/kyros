@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_registry.rs
+expression: rendered
+---
+error[outcome-forbidden] at legs[0].body[0].do[0].place.outcome: instrument `perp` is linear — `up` names an outcome it does not have
+  = help: omit `outcome` on linear markets

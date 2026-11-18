@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/strategy-schema.schema.json",
+  "title": "StrategySchema",
+  "$comment": "Compiler output. THE CONTRACT: the engine runs from this and never needs the strategy code. Source: strategy-platform.html + mmarkets.excalidraw.",
+  "type": "object",
+  "required": ["schema_version", "strategy_id", "signals", "watch_fields", "triggers", "envelope"],
+  "allOf": [
+    {
+      "$comment": "AMENDED (compiler pin): the former triggers-XOR-lifecycle_stages oneOf is gone -- 'triggers' is the always-present document-level trigger table, and 'lifecycle_stages' layers per-leg delivery masks on top; the per-intent index travels with the leg machine (iff both ways: intent ids only exist in the leg-machine vocabulary).",
+      "if": { "required": ["lifecycle_stages"] },
+      "then": { "required": ["intent_index"] },
+      "else": { "not": { "required": ["intent_index"] } }
+    }
+  ],
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/SchemaVersion",
+      "minimum": 2,
+      "$comment": "2 = the compiler-pin shape: document-level triggers, arm-list lifecycle_stages, intent_index, v0.2 envelope."
+    },
+    "strategy_id": { "type": "string" },
+    "description": { "type": "string" },
+    "name": {
+      "type": "string",
+      "description": "Display name from meta.name -- audit/UI context, not an identifier; nothing references it."
+    },
+    "dsl_version": {
+      "type": "string",
+      "description": "IR dsl_version the source document conformed to, e.g. '0.2'."
+    },
+    "source_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256 (lowercase hex) over the canonical serialization of the validated source document. strategy_id embeds its first 12 hex."
+    },
+    "signals": {
+      "type": "array",
+      "$comment": "BREAKING (replaces the former bare-string id list; migration is mechanical: 'btc_mid' -> {signal_id:'btc_mid', staleness_policy:'proceed'}; bump schema_version and coordinate with SME owners -- batch with the condition-tree change, one plumbing release). This object is the subscription ROW -- the first column of the eventual registration bundle. Every future per-subscription fact (payload inclusion, field selection, per-signal dead-bands) lands here additively; the breaking shape change is paid exactly once, now.",
+      "description": "Per-signal subscription rows: which signals this strategy subscribes to, and what the SME/harness does at activation-assembly time if one is stale. Bound on the feed (signal-definition.staleness_bound), policy on the subscriber (here): two halves of one mechanism.",
+      "items": {
+        "type": "object",
+        "required": ["signal_id", "staleness_policy"],
+        "properties": {
+          "signal_id": { "type": "string" },
+          "staleness_policy": {
+            "type": "string",
+            "enum": ["proceed", "refuse", "degrade"],
+            "description": "Checked at activation assembly against the signal's staleness_bound. 'proceed': deliver the last value regardless of age. 'refuse': suppress this activation entirely -- the strategy does not wake; suppression is itself a LOGGED event (strategy, signal, age, bound), so replay reproduces it and 'why didn't my bot fire at 2:14' has an answer of the same quality as 'why did it'. 'degrade': deliver the value with is_stale=true and its age visible in the payload; guards may branch on it (note for Tier 5 layout work: degradable signals grow an is_stale/age field in the payload layout). Age is measured in AVAILABILITY-TIME -- the stamp assigned when the event entered the system -- against the triggering event's availability-time; never venue timestamps (cross-feed skew), never wall clock (nondeterministic under replay). Same clock rule as lazy windows."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "watch_fields": {
+      "type": "array",
+      "description": "Specific (signal, field) pairs to record and index.",
+      "items": {
+        "type": "object",
+        "required": ["signal_id", "field"],
+        "properties": {
+          "signal_id": { "type": "string" },
+          "field": { "type": "string" },
+          "type": { "$ref": "common.schema.json#/$defs/TypeName" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "triggers": {
+      "$comment": "AMENDED (compiler pin): now the ALWAYS-PRESENT document-level trigger table -- one row per trigger, one edge/rearm state, document order; lifecycle_stages (when present) only mask delivery per leg. Absent lifecycle_stages = the flat MVP form (single implicit resident leg arming everything), unchanged.",
+      "type": "array",
+      "description": "The document-level trigger table: every trigger the strategy can ever arm, registered once and evaluated continuously for the strategy's whole life. Also the row set a runner forwards into strategy-registration.triggers verbatim.",
+      "items": { "$ref": "common.schema.json#/$defs/Trigger" }
+    },
+    "envelope": {
+      "$comment": "AMENDED (compiler pin): member set replaced with the v0.2 submission envelope, carried verbatim; values are canonical decimal STRINGS -- also fixes the old raw-number violation of the family's decimals-as-strings convention.",
+      "description": "The user's risk limits, supplied with the submission (never LLM-authored) and enforced by the risk gate reading THIS -- never the compiled code, which merely inlines the same values as constants. A strategy without an envelope does not load.",
+      "type": "object",
+      "required": ["allocation", "loss_budget", "max_order_size"],
+      "properties": {
+        "allocation": { "$ref": "#/$defs/DecimalString", "description": "Escrowed sub-account capital (USDC); the structural floor." },
+        "loss_budget": { "$ref": "#/$defs/DecimalString", "description": "Hard stop via worst-case accounting (USDC): realized loss + open cost basis + resting order notional may never exceed this." },
+        "round_budget": { "$ref": "#/$defs/DecimalString", "$comment": "AMENDED (compiler pin, additive): optional per-window budget.", "description": "Per-window budget (USDC): the most one market window may commit -- this window's realized loss + open cost basis + opening notional of resting orders + the next order's opening cost; closing orders are free. Resets with the window. Absent: no per-window cap. At most allocation. Readable from strategy expressions." },
+        "max_order_size": { "$ref": "#/$defs/DecimalString", "description": "Per-intent size cap (tokens); the primary magnitude strategies read." },
+        "max_exposure_fraction": { "$ref": "#/$defs/DecimalString", "description": "In-flight worst-case exposure fraction of remaining budget. Absent: 1 (no proportional shrinkage). Gate parameter -- not readable from strategy expressions." },
+        "pause_at_consumed": { "$ref": "#/$defs/DecimalString", "description": "Fraction of loss budget consumed at which the gate pauses and notifies. Absent: no checkpoint. Gate parameter -- not readable from strategy expressions." },
+        "max_position_per_market": { "$ref": "#/$defs/DecimalString", "description": "Per-instrument inventory/concentration cap (tokens)." },
+        "max_open_orders": { "$ref": "#/$defs/DecimalString", "description": "Maker book-footprint cap (count). Absent: venue default." }
+      },
+      "additionalProperties": false
+    },
+    "state_layout": {
+      "$comment": "Per-kind requirements (key_types/max_keys iff map; entry_type/capacity iff window; value_type vs value_window mutually exclusive on map) are enforced by the validator / shared crate, NOT by schema conditionals -- five interlocking if/thens across three kinds is gymnastics, and the crate's Rust enums make the invalid states unconstructible (Kind::Map { key_types, max_keys } cannot even be built wrong). This is a live argument for the shared crate: the schema file is the weaker representation here. THE ALGEBRA'S CEILING, deliberate (like DNF for triggers): containers hold primitives or structs; ONE nesting level exists -- map-of-windows ('last 5 shots per player' = map<player, window<shot,5>>, allocation = max_keys x capacity x entry_size, bounded x bounded = bounded). No maps of maps, no structs of structs, no deeper nesting: full recursion makes layout, cost stamping, and the English decompilation arbitrarily hard for expressiveness no corpus strategy demanded. CLAIM: any bounded state decomposes into scalar | map | window over primitives-or-structs with map-of-windows as the one nesting; a strategy that does not fit is a design conversation, not a schema tweak -- 'I cannot state my bound' has so far always meant 'I am actually a signal' (signal-layer work: platform time-series processor or private feed, and the strategy triggers on the resulting number). Absent state_layout = stateless strategy.",
+      "type": "array",
+      "description": "Allocation contract: every memory slot this strategy owns. The harness allocates from this list; the compiled code addresses these slots. NO update logic here -- folds, resets, and sets are compiled into the executable; this section only answers 'how much memory, shaped how'. Map overflow policy (refuse-update vs evict) is IR-side, baked into the executable and disclosed in the decompilation -- the harness needs only the size; do not add a policy enum here. Byte offsets deliberately absent for the name-keyed era; when offsets arrive they are ADDED here (manifest owns layout) -- consumers must not assume this list is the final layout authority yet.",
+      "items": {
+        "type": "object",
+        "required": ["name", "kind", "region"],
+        "properties": {
+          "name": { "type": "string" },
+          "region": {
+            "type": "string",
+            "enum": ["strategy", "platform"],
+            "description": "strategy: written by compiled code (via set/folds), read/write. platform: written ONLY by the harness from exchange lifecycle events (position, entry fill price/qty, realized PnL); READ-ONLY to strategy code. The compiler declares platform slots so cross-leg references ('entry price x 1.02') have an allocated home; the harness enforces the write boundary -- a compiled artifact whose writes touch a platform slot is refused (validator check; this field is what makes it checkable)."
+          },
+          "kind": { "type": "string", "enum": ["scalar", "map", "window"] },
+          "value_type": {
+            "oneOf": [
+              { "$ref": "common.schema.json#/$defs/TypeName" },
+              { "$ref": "common.schema.json#/$defs/StructType" }
+            ],
+            "description": "scalar: the slot's type. map: the value type per key (mutually exclusive with value_window)."
+          },
+          "key_types": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "common.schema.json#/$defs/TypeName" },
+            "description": "map only: the key tuple's component types, e.g. [u8, u8] for (team, quarter). Needed to size an entry."
+          },
+          "max_keys": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "map only: hard capacity, fixed at compile time. Allocation = max_keys x entry size. REQUIRED for kind=map (validator-enforced)."
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "window only: max retained entries. Overflow is drop-oldest, fixed platform-wide (the behavioral consequence -- a by-age window may undercount in a burst -- is disclosed in the decompilation, not configured here). REQUIRED for kind=window (validator-enforced)."
+          },
+          "entry_type": {
+            "oneOf": [
+              { "$ref": "common.schema.json#/$defs/TypeName" },
+              { "$ref": "common.schema.json#/$defs/StructType" }
+            ],
+            "description": "window only: type of each retained entry -- a primitive or a struct ((price, size) together)."
+          },
+          "value_window": {
+            "type": "object",
+            "required": ["entry_type", "capacity"],
+            "properties": {
+              "entry_type": {
+                "oneOf": [
+                  { "$ref": "common.schema.json#/$defs/TypeName" },
+                  { "$ref": "common.schema.json#/$defs/StructType" }
+                ]
+              },
+              "capacity": { "type": "integer", "minimum": 1 }
+            },
+            "additionalProperties": false,
+            "description": "map only, THE one permitted nesting: each map value is itself a window (map-of-windows). Mutually exclusive with value_type (validator-enforced). Allocation = max_keys x capacity x entry size."
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "RESERVED, name-keyed era: absent. Compiler-assigned byte offset within the state block when layouts go physical."
+          },
+          "slot_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Compiler-computed size of this slot: scalars by type; maps = max_keys x (key tuple + value); windows = capacity x entry + ring bookkeeping. Present NOW even in the name-keyed era -- it feeds the cost stamp and admission math, and it's how the decompilation can say 'this strategy uses 2.1 KB of memory'. Sizes don't constrain the runtime representation; offsets ARE the runtime representation, which is why slot_bytes ships now and offset stays reserved."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "layout_hash": {
+      "type": "string",
+      "description": "Hex hash of the canonicalized layout-relevant sections: payload_layouts, state_layout (with sizes), scratch_bytes, max_intents_per_activation -- same canonicalization discipline as signal-id.md (sorted keys, canonical numbers; one hashing implementation in the shared crate, two users). Deliberately EXCLUDED: envelope, triggers, cost stamp -- behavioral facts, not layout facts; changing a cooldown must not invalidate resident activations. Stamped on every activation; the harness refuses mismatches -- a strategy compiled in March resident in July under a redeployed SME gets a loud refusal and an alert, never a name-keyed silent misread or a byte-offset garbage-read-traded-on."
+    },
+    "scratch_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Worst-case ephemeral space for expression evaluation across ALL legs (fixed-depth stack; iterative builtins at compiler-computed worst case). Harness-allocated once, zeroed per activation, invisible to the author. Computable exactly BECAUSE the language has no loops or allocation -- this field existing is the proof that 'runtime allocation does not exist' is enforceable rather than aspirational."
+    },
+    "max_intents_per_activation": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Countable at compile time: the largest number of intents any single activation can emit (max over legs of intents reachable in one firing). The harness preallocates the output buffer to this; the compiled function writes into it and CANNOT overflow it, because emitting more than this many intents is unexpressible in the language."
+    },
+    "total_state_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Sum of all state_layout slot_bytes, including platform-region slots. The harness's single allocation number (one alloc(total) instead of per-slot bookkeeping); the admission controller's memory input. Validator: must equal the sum of the declared slot_bytes."
+    },
+    "payload_layouts": {
+      "type": "object",
+      "$comment": "VALIDATOR RULES (shared crate): every key names a declared leg (for the flat-trigger form, the single implicit leg's layout is keyed by the reserved name 'main'); every (signal_id, field) references a subscribed signal at its declared version; staleness_meta=true only where the subscription's staleness_policy is 'degrade'.",
+      "description": "Per-leg activation payload contract, keyed by leg name. The SME assembles each activation in EXACTLY this order with exactly these entries -- the full declared context, not just the field that flipped -- and compiled code reads assuming it; the manifest is what keeps assembler and reader agreeing without ever talking. Per-leg because legs need different signal sets (the quoter's management leg wants inventory and vol; the hunting leg doesn't) and shipping the union to every activation is waste that grows with strategy complexity. NAME-KEYED ERA: entries are matched by (signal_id, field) name; 'offset' is absent. When byte-offset payloads arrive, offsets are ADDED to these entries and the list order becomes physical order -- consumers must already treat this list as the layout authority, not the dict's key set.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["signal_id", "field", "type"],
+          "properties": {
+            "signal_id": { "type": "string" },
+            "field": { "type": "string" },
+            "type": { "$ref": "common.schema.json#/$defs/TypeName" },
+            "staleness_meta": {
+              "type": "boolean",
+              "description": "true when this subscription's policy is 'degrade': the payload carries is_stale + age_ms alongside the value. This is Tier 2's degrade consequence, landing exactly where predicted."
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "RESERVED for the byte-offset era. Absent = name-keyed. Present in the schema now so no consumer builds assume-it's-always-a-dict code that would make the migration painful."
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "lifecycle_stages": {
+      "$comment": "AMENDED (compiler pin): rules/transitions/partial_fill_policy/on_exit_orders deleted -- trigger state is document-level and continuous (see 'triggers'), so a stage is just a named delivery mask ('arm'); order-outcome transitions moved to the per-intent index ('intent_index'). Fresh-on-leg-entry registration semantics are gone: arming and disarming never register, reset, or rewind trigger bookkeeping (timers excepted -- per-arming by ratified IR semantics).",
+      "type": "array",
+      "minItems": 1,
+      "description": "The leg machine. Exactly one leg is active at a time; the initial leg is the first array element. 'arm' lists which document-level triggers are DELIVERED while the leg is active -- a mask, nothing more. Guards, bodies, and intents live in the compiled artifact.",
+      "items": {
+        "type": "object",
+        "required": ["name", "resident", "arm"],
+        "properties": {
+          "name": { "type": "string", "description": "Unique leg name; 'stay' is reserved and may not be used." },
+          "resident": {
+            "type": "boolean",
+            "description": "true: this leg may legitimately never exit and is exempt from the liveness check. false: the validator requires at least one path out."
+          },
+          "arm": {
+            "type": "array",
+            "minItems": 0,
+            "items": { "type": "string" },
+            "description": "Ids of the document-level triggers delivered while this leg is active. Empty = a terminal leg that wakes for nothing. Every id names an entry in 'triggers' (validator rule)."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "intent_index": {
+      "$comment": "NEW (compiler pin): per-intent totalized transition tables + bounds, replacing the per-leg transitions machinery. Executed mechanically by the runner (no strategy code runs on order events) and snapshotted onto each order at placement, so tables survive later leg changes. 'stay'-or-declared-leg-name on destinations is a validator rule -- the schema cannot see the leg set.",
+      "type": "object",
+      "description": "intent_id -> transition table and bounds. intent_id is '<leg>.<block>.<do-index>' -- the validator-diagnostic path vocabulary; an opaque key plus provenance, never parsed for semantics.",
+      "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9_]*\\.[A-Za-z][A-Za-z0-9_]*\\.(0|[1-9][0-9]*)$" },
+      "additionalProperties": { "$ref": "#/$defs/IntentEntry" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "DecimalString": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]*[1-9])?$",
+      "description": "Canonical unsigned decimal string: no exponents, no leading '+', no leading/trailing dot, no leading zeros on the integer part, no trailing fractional zeros."
+    },
+    "IntentEntry": {
+      "$comment": "The five-key alphabet is PINNED without 'replaced' -- v0.2's ratified order-event alphabet; if AJ's cancel_replace-ack answer keeps 'replaced' in common.OrderEvent, this table gains the key (compiler totalizes it to 'stay') in the same commit.",
+      "type": "object",
+      "required": ["on", "max_size"],
+      "properties": {
+        "on": {
+          "type": "object",
+          "required": ["fill", "partial", "reject", "cancel_ack", "expiry"],
+          "description": "TOTAL transition table: every key present, defaults materialized as 'stay', never implied. Each value is 'stay' or a declared leg name (validator rule).",
+          "properties": {
+            "fill": { "type": "string" },
+            "partial": { "type": "string" },
+            "reject": { "type": "string" },
+            "cancel_ack": { "type": "string" },
+            "expiry": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "max_size": {
+          "$ref": "#/$defs/DecimalString",
+          "description": "Resolved per-intent size bound -- the risk path enforces this without trusting the code's arithmetic."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

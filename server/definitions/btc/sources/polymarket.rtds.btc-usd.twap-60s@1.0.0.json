@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "source_id": "polymarket.rtds.btc-usd.twap-60s",
+  "version": "1.0.0",
+  "name": "Polymarket RTDS Chainlink BTC/USD 60-second TWAP",
+  "description": "Keyless Polymarket RTDS relay of the Chainlink-computed BTC/USD 60-second TWAP. The adapter subscribes to crypto_prices_twap_sixty with the exact compact btc/usd filter, divides the positive base-10 E18 full_accuracy_value integer by 10^18 using decimal arithmetic, and never uses the display-only numeric value. event_time is the Chainlink observation timestamp; published_at is the outer RTDS timestamp. The stream has no initial snapshot or history, so an opening strike is unavailable unless its exact boundary observation was retained live.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    { "name": "symbol", "type": "string", "location": "internal" },
+    { "name": "window_seconds", "type": "u32", "location": "internal" },
+    { "name": "twap_price", "type": "decimal", "location": "external" },
+    { "name": "event_time", "type": "timestamp", "location": "external" },
+    { "name": "published_at", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

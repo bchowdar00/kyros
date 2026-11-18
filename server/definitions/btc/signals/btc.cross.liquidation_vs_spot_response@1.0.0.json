@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.cross.liquidation_vs_spot_response",
+  "version": "1.0.0",
+  "name": "Spot response to a perpetual liquidation cascade",
+  "description": "Event-shaped reading of how the composite spot reference moved after a perpetual liquidation cascade. A cascade begins at the first decision instant at which any configured derivatives venue's published btc.<v>.liquidation_pressure@1.0.0 clustering_state transitions into cascade; that instant is burst_time, burst_sequence increments by one, reference_price_at_burst is the ready reference_price of btc.external.spot_reference@1.0.0 at that instant, burst_notional_usd is the sum of the fresh configured venues' published notional_usd_60s, and burst_side follows the upstream normalized side skew: btc.<v>.liquidation_pressure@1.0.0 publishes side_skew_60s as (long_notional_usd_60s minus short_notional_usd_60s) divided by their total over the 60 second window, where a buy-side liquidation is counted as a long position being liquidated (Bybit allLiquidation S=Buy, ruling E55), so a summed side_skew_60s above zero is longs_liquidated, below zero is shorts_liquidated, and exactly zero is balanced; the summed value stays within [-1, 1]. feed_completeness is carried verbatim from the triggering venue because Binance forceOrder is throttled and is a cross-check, not a census. response_bps_5s and response_bps_30s are (reference_price at the horizon minus reference_price_at_burst) divided by reference_price_at_burst times ten thousand, where the horizon reading is the ready spot-reference decision with the greatest reference_time at or before burst_time plus the horizon and within 10000 milliseconds of it; an unresolved horizon publishes zero and is identified only by horizon_state, which is the authoritative field for what has resolved. expected_direction is down for longs_liquidated, up for shorts_liquidated and none for balanced. follow_through is follow_through when the sign of response_bps_30s matches expected_direction and its absolute value is at or above response_threshold_bps, fade when the sign is opposite and the absolute value is at or above the threshold, muted when the absolute value is below the threshold, and unresolved until horizon_state reaches both_resolved; response_threshold_bps defaults to 5. State is bounded to exactly one tracked cascade: a new cascade arriving before the horizons resolve replaces the tracked one, and a replaced cascade's unresolved horizons are never revised. Before the first cascade of the publisher epoch the instance is warming with reason liquidation_burst_not_observed; afterwards the identity restates the latest cascade on the interval refresh. time_since_burst_ms is a duration and therefore outside the change key, so it refreshes on the interval rather than triggering a publication (docs/CONTRACTS.md publication cadence). The Binance USD-M forceOrder stream is not carried from our hosts (rulings E30/E34/E62), so only a Bybit cascade triggers this identity; a Bybit-only cascade publishes burst_side from the E55 skew sign (a positive side_skew_60s is longs_liquidated with expected_direction down, a negative is shorts_liquidated with expected_direction up) and publishes the skew verbatim in burst_side_skew. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.external.spot_reference",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.bybit.liquidation_pressure",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "burst_sequence",
+      "type": "u64",
+      "location": "internal"
+    },
+    {
+      "name": "burst_time",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "burst_venue",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "bybit"
+      ]
+    },
+    {
+      "name": "burst_side",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "longs_liquidated",
+        "shorts_liquidated",
+        "balanced"
+      ]
+    },
+    {
+      "name": "burst_notional_usd",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "burst_side_skew_60s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "burst_venue_count",
+      "type": "u8",
+      "location": "internal"
+    },
+    {
+      "name": "feed_completeness",
+      "type": "enum",
+      "location": "external",
+      "variants": [
+        "complete",
+        "throttled"
+      ]
+    },
+    {
+      "name": "reference_price_at_burst",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "response_bps_5s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "response_bps_30s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "horizon_state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "none_resolved",
+        "five_resolved",
+        "both_resolved"
+      ]
+    },
+    {
+      "name": "expected_direction",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "up",
+        "down",
+        "none"
+      ]
+    },
+    {
+      "name": "follow_through",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "follow_through",
+        "fade",
+        "muted",
+        "unresolved"
+      ]
+    },
+    {
+      "name": "response_threshold_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "time_since_burst_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "max_input_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

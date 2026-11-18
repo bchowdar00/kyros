@@ -1,0 +1,151 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Set {
+        slot: Spanned {
+            node: "made_threes",
+            span: Span {
+                start: 10,
+                end: 21,
+            },
+        },
+        index: Some(
+            [
+                Spanned {
+                    node: Ref(
+                        Ref {
+                            namespace: Event,
+                            path: [
+                                Spanned {
+                                    node: "team",
+                                    span: Span {
+                                        start: 28,
+                                        end: 32,
+                                    },
+                                },
+                            ],
+                            index: None,
+                        },
+                    ),
+                    span: Span {
+                        start: 22,
+                        end: 32,
+                    },
+                },
+                Spanned {
+                    node: Ref(
+                        Ref {
+                            namespace: Event,
+                            path: [
+                                Spanned {
+                                    node: "quarter",
+                                    span: Span {
+                                        start: 40,
+                                        end: 47,
+                                    },
+                                },
+                            ],
+                            index: None,
+                        },
+                    ),
+                    span: Span {
+                        start: 34,
+                        end: 47,
+                    },
+                },
+            ],
+        ),
+        rhs: Spanned {
+            node: Arith {
+                op: Add,
+                lhs: Spanned {
+                    node: Ref(
+                        Ref {
+                            namespace: State,
+                            path: [
+                                Spanned {
+                                    node: "made_threes",
+                                    span: Span {
+                                        start: 57,
+                                        end: 68,
+                                    },
+                                },
+                            ],
+                            index: Some(
+                                [
+                                    Spanned {
+                                        node: Ref(
+                                            Ref {
+                                                namespace: Event,
+                                                path: [
+                                                    Spanned {
+                                                        node: "team",
+                                                        span: Span {
+                                                            start: 75,
+                                                            end: 79,
+                                                        },
+                                                    },
+                                                ],
+                                                index: None,
+                                            },
+                                        ),
+                                        span: Span {
+                                            start: 69,
+                                            end: 79,
+                                        },
+                                    },
+                                    Spanned {
+                                        node: Ref(
+                                            Ref {
+                                                namespace: Event,
+                                                path: [
+                                                    Spanned {
+                                                        node: "quarter",
+                                                        span: Span {
+                                                            start: 87,
+                                                            end: 94,
+                                                        },
+                                                    },
+                                                ],
+                                                index: None,
+                                            },
+                                        ),
+                                        span: Span {
+                                            start: 81,
+                                            end: 94,
+                                        },
+                                    },
+                                ],
+                            ),
+                        },
+                    ),
+                    span: Span {
+                        start: 51,
+                        end: 95,
+                    },
+                },
+                rhs: Spanned {
+                    node: Literal(
+                        Decimal(
+                            "1",
+                        ),
+                    ),
+                    span: Span {
+                        start: 98,
+                        end: 99,
+                    },
+                },
+            },
+            span: Span {
+                start: 51,
+                end: 99,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 99,
+    },
+}

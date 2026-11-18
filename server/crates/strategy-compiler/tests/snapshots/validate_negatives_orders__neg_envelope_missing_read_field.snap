@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_orders.rs
+expression: "common::render(&diagnostics)"
+---
+error[envelope-missing-read-field] at envelope.max_position_per_market: the program reads envelope.max_position_per_market but the supplied envelope omits it
+  = help: supply the field, or drop the read — an envelope missing a read field does not load

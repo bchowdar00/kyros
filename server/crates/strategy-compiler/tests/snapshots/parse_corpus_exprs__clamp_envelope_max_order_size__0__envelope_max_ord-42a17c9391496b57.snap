@@ -1,0 +1,72 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Call {
+        builtin: Clamp,
+        name_span: Span {
+            start: 0,
+            end: 5,
+        },
+        args: [
+            Spanned {
+                node: Ref(
+                    Ref {
+                        namespace: Envelope,
+                        path: [
+                            Spanned {
+                                node: "max_order_size",
+                                span: Span {
+                                    start: 15,
+                                    end: 29,
+                                },
+                            },
+                        ],
+                        index: None,
+                    },
+                ),
+                span: Span {
+                    start: 6,
+                    end: 29,
+                },
+            },
+            Spanned {
+                node: Literal(
+                    Decimal(
+                        "0",
+                    ),
+                ),
+                span: Span {
+                    start: 31,
+                    end: 32,
+                },
+            },
+            Spanned {
+                node: Ref(
+                    Ref {
+                        namespace: Envelope,
+                        path: [
+                            Spanned {
+                                node: "max_order_size",
+                                span: Span {
+                                    start: 43,
+                                    end: 57,
+                                },
+                            },
+                        ],
+                        index: None,
+                    },
+                ),
+                span: Span {
+                    start: 34,
+                    end: 57,
+                },
+            },
+        ],
+    },
+    span: Span {
+        start: 0,
+        end: 58,
+    },
+}

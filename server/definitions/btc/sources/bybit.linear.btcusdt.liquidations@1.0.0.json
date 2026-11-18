@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "source_id": "bybit.linear.btcusdt.liquidations",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT all-liquidations",
+  "description": "Bybit v5 allLiquidation.BTCUSDT on the linear public socket, pushed every 500 ms and carrying every liquidation in the interval (the deprecated per-symbol liquidation topic carried at most one). This definition adopts, without changing a field, the identity the capture-only adapter already emits at crates/btc-feeds/src/bybit.rs: one event per array entry with side from S, mapped Buy->buy and Sell->sell, carrying the venue's position-side meaning as the shipped adapter asserts at crates/btc-feeds/src/bybit.rs (buy = a long position was liquidated, sell = a short position was liquidated) rather than an order-side reading. This position-side reading is confirmed: Bybit's v5 allLiquidation field table documents S as \"Position side. Buy,Sell. When you receive a Buy update, this means that a long position has been liquidated\", and the R1 step-2 observed-contract check named in build/A4-bybit-linear-feeds.md passed against the live capture (7 liquidation events on 2026-09-04, all Buy), so side-keyed signals may now consume this field, size from v in base units, bankruptcy_price from p (the bankruptcy price of the liquidated position, never a traded price), and event_time from T with event_time_basis source, the only declared basis: there is no receipt fallback and an entry without a usable T is refused. The venue documents no cross-message ordering guarantee for this topic, so no sequence, gap or duplicate semantics are asserted; each entry is validated and emitted. An array longer than 8192 entries is refused; an empty array is a StateInconsistent notice with no event. expected_heartbeat_ms is 3600000, a silence bound the feed-health board applies to event arrival, not a cadence (ruling E31): liquidation is event-driven and legitimately quiet for minutes — the R1 linear capture showed 6 gaps over 60 s across 35 min (max 930 s), and the R3 full hour showed only 4 liquidations with a max silence of 2334 s (well under the 3600 s bound) — so socket liveness is carried by the ping/pong Heartbeat notice, not by this bound. Rights-gated: the Bybit row in knowledge/RIGHTS-LEDGER.md is unverified and the lane refuses to start unless SIGNALS_ENABLED_VENUES lists bybit.",
+  "status": "approved",
+  "transport": "websocket",
+  "expected_heartbeat_ms": 3600000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "side",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "buy",
+        "sell"
+      ]
+    },
+    {
+      "name": "size",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "bankruptcy_price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "event_time_basis",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "source"
+      ]
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time"
+}

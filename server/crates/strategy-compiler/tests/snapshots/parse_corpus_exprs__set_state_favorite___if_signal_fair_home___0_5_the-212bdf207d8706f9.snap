@@ -1,0 +1,102 @@
+---
+source: crates/compiler/tests/parse_corpus_exprs.rs
+expression: ast
+---
+Spanned {
+    node: Set {
+        slot: Spanned {
+            node: "favorite",
+            span: Span {
+                start: 10,
+                end: 18,
+            },
+        },
+        index: None,
+        rhs: Spanned {
+            node: If {
+                arms: [
+                    IfArm {
+                        condition: Spanned {
+                            node: Cmp {
+                                op: Gt,
+                                lhs: Spanned {
+                                    node: Ref(
+                                        Ref {
+                                            namespace: Signal,
+                                            path: [
+                                                Spanned {
+                                                    node: "fair",
+                                                    span: Span {
+                                                        start: 31,
+                                                        end: 35,
+                                                    },
+                                                },
+                                                Spanned {
+                                                    node: "home",
+                                                    span: Span {
+                                                        start: 36,
+                                                        end: 40,
+                                                    },
+                                                },
+                                            ],
+                                            index: None,
+                                        },
+                                    ),
+                                    span: Span {
+                                        start: 24,
+                                        end: 40,
+                                    },
+                                },
+                                rhs: Spanned {
+                                    node: Literal(
+                                        Decimal(
+                                            "0.5",
+                                        ),
+                                    ),
+                                    span: Span {
+                                        start: 43,
+                                        end: 46,
+                                    },
+                                },
+                            },
+                            span: Span {
+                                start: 24,
+                                end: 46,
+                            },
+                        },
+                        value: Spanned {
+                            node: Literal(
+                                Variant(
+                                    "home",
+                                ),
+                            ),
+                            span: Span {
+                                start: 52,
+                                end: 58,
+                            },
+                        },
+                    },
+                ],
+                else_value: Spanned {
+                    node: Literal(
+                        Variant(
+                            "away",
+                        ),
+                    ),
+                    span: Span {
+                        start: 64,
+                        end: 70,
+                    },
+                },
+            },
+            span: Span {
+                start: 21,
+                end: 70,
+            },
+        },
+    },
+    span: Span {
+        start: 0,
+        end: 70,
+    },
+}

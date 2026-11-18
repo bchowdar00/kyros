@@ -1,0 +1,14 @@
+{
+  "title": "Perp RSI",
+  "description": "Relative strength of the perpetual over the last fourteen one-minute bars, from zero to one hundred. It compares the size of recent gains with recent losses.",
+  "fields": {
+    "rsi_14": {
+      "label": "RSI",
+      "description": "Recent gains against recent losses on a scale from zero to one hundred. Above seventy is stretched to the upside, below thirty to the downside."
+    },
+    "regime": {
+      "label": "RSI zone",
+      "description": "Overbought above seventy, oversold below thirty, neutral in between. Stretched readings tend to come back."
+    }
+  }
+}

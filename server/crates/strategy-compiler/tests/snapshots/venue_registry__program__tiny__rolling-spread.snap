@@ -1,0 +1,325 @@
+---
+source: crates/strategy-compiler/tests/venue_registry.rs
+expression: artifacts.program_json
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_7c230967535e",
+  "source_hash": "7c230967535e2f33c81a271375fad8e5d1068d0051b0d72dc5a07caf649a3959",
+  "name": "Rolling Spread",
+  "description": "On the one-minute BTC up/down: record fair minus ask on every book change into a rolling window of the last 20 readings. Once at least 10 readings are in, buy up at market when the average discount is over 3 cents, the readings are tight (range under 2 cents), at least 3 of them exceeded 5 cents, and the discount is not shrinking (newest at least the oldest). Once per window.",
+  "dsl_version": "0.3",
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+  "subscriptions": [
+    "btc_usd.updown_1m.current.price.v1",
+    "platform.btc_usd.updown_1m.current.fair.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [
+    {
+      "kind": "window",
+      "name": "spreads",
+      "capacity": 20
+    }
+  ],
+  "params": [
+    {
+      "name": "mid",
+      "type": {
+        "kind": "decimal"
+      },
+      "default": {
+        "op": "decimal",
+        "value": "0.05"
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "name": "book_tick",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "always",
+            "signal_id": "btc_usd.updown_1m.current.price.v1"
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    }
+  ],
+  "legs": [
+    {
+      "name": "sampling",
+      "resident": true,
+      "arm": [
+        "book_tick"
+      ],
+      "blocks": [
+        {
+          "name": "record",
+          "guard": {
+            "op": "triggered",
+            "name": "book_tick"
+          },
+          "reads": [
+            {
+              "signal_id": "btc_usd.updown_1m.current.price.v1",
+              "field": "ask"
+            },
+            {
+              "signal_id": "platform.btc_usd.updown_1m.current.fair.v1",
+              "field": "up"
+            }
+          ],
+          "items": [
+            {
+              "kind": "push",
+              "slot": "spreads",
+              "value": {
+                "op": "-",
+                "lhs": {
+                  "op": "signal",
+                  "signal_id": "platform.btc_usd.updown_1m.current.fair.v1",
+                  "field": "up"
+                },
+                "rhs": {
+                  "op": "signal",
+                  "signal_id": "btc_usd.updown_1m.current.price.v1",
+                  "field": "ask"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "buy_up",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "and",
+              "lhs": {
+                "op": "and",
+                "lhs": {
+                  "op": "and",
+                  "lhs": {
+                    "op": "and",
+                    "lhs": {
+                      "op": ">=",
+                      "lhs": {
+                        "op": "reduce",
+                        "reducer": "count",
+                        "slot": "spreads"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "10"
+                      }
+                    },
+                    "rhs": {
+                      "op": ">",
+                      "lhs": {
+                        "op": "/",
+                        "lhs": {
+                          "op": "reduce",
+                          "reducer": "sum",
+                          "slot": "spreads"
+                        },
+                        "rhs": {
+                          "op": "reduce",
+                          "reducer": "count",
+                          "slot": "spreads"
+                        }
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "0.03"
+                      }
+                    }
+                  },
+                  "rhs": {
+                    "op": "<",
+                    "lhs": {
+                      "op": "-",
+                      "lhs": {
+                        "op": "reduce",
+                        "reducer": "max_of",
+                        "slot": "spreads"
+                      },
+                      "rhs": {
+                        "op": "reduce",
+                        "reducer": "min_of",
+                        "slot": "spreads"
+                      }
+                    },
+                    "rhs": {
+                      "op": "decimal",
+                      "value": "0.02"
+                    }
+                  }
+                },
+                "rhs": {
+                  "op": ">=",
+                  "lhs": {
+                    "op": "reduce",
+                    "reducer": "count_where",
+                    "slot": "spreads",
+                    "predicate": {
+                      "op": ">",
+                      "lhs": {
+                        "op": "call",
+                        "builtin": "abs",
+                        "args": [
+                          {
+                            "op": "-",
+                            "lhs": {
+                              "op": "entry"
+                            },
+                            "rhs": {
+                              "op": "param",
+                              "name": "mid"
+                            }
+                          }
+                        ]
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "0.05"
+                      }
+                    }
+                  },
+                  "rhs": {
+                    "op": "decimal",
+                    "value": "3"
+                  }
+                }
+              },
+              "rhs": {
+                "op": ">=",
+                "lhs": {
+                  "op": "reduce",
+                  "reducer": "count_where",
+                  "slot": "spreads",
+                  "predicate": {
+                    "op": "if",
+                    "arms": [
+                      {
+                        "condition": {
+                          "op": ">",
+                          "lhs": {
+                            "op": "entry"
+                          },
+                          "rhs": {
+                            "op": "decimal",
+                            "value": "0"
+                          }
+                        },
+                        "value": {
+                          "op": "bool",
+                          "value": true
+                        }
+                      }
+                    ],
+                    "else": {
+                      "op": "bool",
+                      "value": false
+                    }
+                  }
+                },
+                "rhs": {
+                  "op": "decimal",
+                  "value": "1"
+                }
+              }
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "reduce",
+                "reducer": "newest",
+                "slot": "spreads"
+              },
+              "rhs": {
+                "op": "reduce",
+                "reducer": "oldest",
+                "slot": "spreads"
+              }
+            }
+          },
+          "reads": [],
+          "items": [
+            {
+              "kind": "place",
+              "intent_id": "sampling.buy_up.0",
+              "order": {
+                "instrument_id": "btc_usd.updown_1m.current",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "entry",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "done"
+        }
+      ]
+    },
+    {
+      "name": "done",
+      "resident": true,
+      "arm": [],
+      "blocks": []
+    }
+  ],
+  "initial_leg": "sampling",
+  "intents": {
+    "sampling.buy_up.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "sampling",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

@@ -1,0 +1,7 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[entry-outside-reducer] at legs[0].body[0].if: entry.value is the element under a count_where predicate and means nothing outside one
+  entry.price > 0
+  ^^^^^^^^^^^

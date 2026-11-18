@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.multi.prediction_dislocation",
+  "version": "1.0.0",
+  "name": "Polymarket versus Kalshi BTC window dislocation",
+  "scope_kind": "multi_market",
+  "description": "Cross-venue comparison of the market-implied up probability for two BTC up/down contracts whose settlement windows close at the same instant. The instance is multi-market scoped with exactly two legs, kalshi then polymarket in sorted order, and binds only when the two bound market generations satisfy the alignment rule: window_close is byte-identical after RFC 3339 normalization to UTC (exact_close), the two windows overlap, and both markets are open. Any other relation publishes non-ready with window_alignment_mismatch and no instance is bound. implied_up_<venue> is that venue's affirmative_midpoint from btc.<venue>.prediction_quote and the bid/ask legs are its affirmative_bid and affirmative_ask. dislocation is implied_up_polymarket minus implied_up_kalshi in probability units and dislocation_bps is that times ten thousand. The two contracts settle on different benchmarks (Chainlink BTC/USD 60-second TWAP versus the CF Benchmarks BRTI sixty-print average) at different strikes, so the raw difference is not an arbitrage: strike_difference_absolute is polymarket strike minus kalshi strike and strike_difference_bps divides it by the kalshi strike times ten thousand. model_adjustment is the strike difference expressed in probability by the in-stack model, phi_cdf of the polymarket standardized moneyness minus phi_cdf of the kalshi standardized moneyness, taken verbatim as the published probability fields of btc.polymarket.fair_up_probability@1.0.0 and btc.kalshi.fair_up_probability@1.0.0; this identity does no modelling of its own. strike_adjusted_dislocation is dislocation minus model_adjustment. state is dislocated when the absolute strike_adjusted_dislocation exceeds dislocation_threshold and aligned otherwise; dislocation_threshold defaults to 0.02. direction names which venue is rich on the adjusted reading. underlying_mismatch is true whenever the two rules cards declare different settlement_benchmark values and tie_rule_mismatch is true whenever comparator or tie_outcome differ; both are published on every update because they are the standing caveat on the reading, and on the currently listed contracts underlying_mismatch is true and tie_rule_mismatch is false. Ready output requires both legs bound, both quotes uncrossed and no more than 10000 milliseconds old, both fair probability inputs ready, and time_to_close_ms strictly positive. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.prediction_quote",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.prediction_quote",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.fair_up_probability",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.polymarket.fair_up_probability",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "kalshi_market_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_market_generation",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_market_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_market_generation",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "implied_up_kalshi",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "implied_up_polymarket",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_up_bid",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "kalshi_up_ask",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_up_bid",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_up_ask",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "dislocation",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "dislocation_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "model_adjustment",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "strike_adjusted_dislocation",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "kalshi_strike",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "polymarket_strike",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "strike_difference_absolute",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "strike_difference_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "direction",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "polymarket_rich",
+        "kalshi_rich",
+        "tied"
+      ]
+    },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "aligned",
+        "dislocated"
+      ]
+    },
+    {
+      "name": "dislocation_threshold",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "window_alignment",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "exact_close"
+      ]
+    },
+    {
+      "name": "underlying_mismatch",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "tie_rule_mismatch",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "time_to_close_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "max_input_age_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Perp MACD",
+  "description": "Fast trend against slow trend on the perpetual, as the gap between two moving averages. When the gap widens the trend is gathering pace.",
+  "fields": {
+    "macd_bps": {
+      "label": "MACD",
+      "description": "The fast moving average minus the slow one, in basis points. Positive means the trend is up."
+    },
+    "signal_bps": {
+      "label": "Signal",
+      "description": "A smoothed copy of the MACD line, in basis points. The MACD crossing above it is the classic buy read."
+    },
+    "histogram_bps": {
+      "label": "Histogram",
+      "description": "MACD minus its signal line, in basis points. Growing bars mean the trend is accelerating."
+    }
+  }
+}

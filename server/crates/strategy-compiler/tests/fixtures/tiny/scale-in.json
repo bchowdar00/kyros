@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "name": "Scale In",
+    "description": "On the one-minute BTC up/down: when the up price crosses above 55 cents, buy up at once with a quarter of the round budget and remember the price paid. While holding, every time the ask sits at least 5 cents under the last entry, add another quarter and remember the new price, at most three adds per round. Hold to settlement. Ten seconds before the close, stop adding.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1"
+  },
+
+  "state": [
+    { "name": "adds", "kind": "scalar", "value_type": "u8" },
+    { "name": "last_entry", "kind": "scalar", "value_type": "decimal" }
+  ],
+
+  "triggers": [
+    { "name": "up_rich",
+      "condition": { "signal": "book", "field": "up", "comparator": ">", "value": "0.55" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "book_tick",
+      "condition": { "signal": "book" },
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "last_10s",
+      "timer": { "kind": "window_clock", "instrument": "market", "remaining": "10s" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "hunting",
+      "resident": true,
+      "arm": ["up_rich", "last_10s"],
+      "body": [
+        { "name": "buy_up",
+          "if": "triggered(up_rich)",
+          "do": [
+            "set state.last_entry = signal.book.ask + 0.01",
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "limit", "tif": "ioc",
+                "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(floor(envelope.round_budget * 0.25 / (signal.book.ask + 0.01)), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "entry",
+                "on": { "reject": "hunting", "expiry": "hunting" }
+            }}
+          ],
+          "then": "holding" },
+
+        { "name": "stop",
+          "if": "triggered(last_10s)",
+          "do": [],
+          "then": "done" }
+      ] },
+
+    { "name": "holding",
+      "resident": true,
+      "arm": ["book_tick", "last_10s"],
+      "body": [
+        { "name": "add",
+          "if": "triggered(book_tick) and state.adds < 3 and signal.book.ask <= state.last_entry - 0.05",
+          "do": [
+            "set state.adds = state.adds + 1",
+            "set state.last_entry = signal.book.ask + 0.01",
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "limit", "tif": "ioc",
+                "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(floor(envelope.round_budget * 0.25 / (signal.book.ask + 0.01)), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "add"
+            }}
+          ] },
+
+        { "name": "stop",
+          "if": "triggered(last_10s)",
+          "do": [],
+          "then": "done" }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

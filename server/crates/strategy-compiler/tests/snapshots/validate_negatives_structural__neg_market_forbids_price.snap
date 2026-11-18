@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[market-forbids-price] at legs[0].body[0].do[0].place: a market order carries no price — remove `price` and `price_band`
+  = help: a slippage-capped take is the limit-ify pattern: a limit order at a clamped price with tif: ioc

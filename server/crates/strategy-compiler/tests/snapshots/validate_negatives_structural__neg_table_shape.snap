@@ -1,0 +1,15 @@
+---
+source: crates/compiler/tests/validate_negatives_structural.rs
+expression: rendered
+---
+error[table-length-mismatch] at expressions.tables.short: table `short` has 1 keys but 2 values
+  = help: every key needs exactly one value
+
+error[table-too-small] at expressions.tables.short: table `short` has fewer than 2 entries
+  = help: a curve needs at least two points; a constant needs no table
+
+error[table-keys-not-increasing] at expressions.tables.unsorted.keys: table `unsorted` keys are not strictly increasing at `1` -> `1`
+  = help: sort the keys ascending and remove duplicates
+
+error[table-keys-not-increasing] at expressions.tables.unsorted.keys: table `unsorted` keys are not strictly increasing at `1` -> `0`
+  = help: sort the keys ascending and remove duplicates

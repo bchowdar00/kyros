@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTC Signal Package Verification Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "verifier_version", "manifest_sha256", "package_id"
+  ],
+  "properties": {
+    "schema_version": { "const": "btc.signals.verification-receipt/v1" },
+    "verifier_version": { "type": "string", "minLength": 1 },
+    "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "package_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

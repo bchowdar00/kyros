@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "source_id": "binance.usdm.btcusdt.book-levels",
+  "version": "1.0.0",
+  "name": "Binance USD-M BTCUSDT perpetual partial book levels (top 20, 100 ms)",
+  "description": "Flattened absolute price levels from the Binance USD-M `btcusdt@depth20@100ms` partial-depth stream on wss://fstream.binance.com/public. Each message is a COMPLETE top-20 bid and ask replacement, not a diff: rows sharing `update_group` form one atomic source message, must be applied in `update_index` order, and a level absent from the message is gone from the top of book. `update_kind` is therefore always `snapshot` and no REST snapshot seeding or diff-continuity machinery applies. `last_update_id` (the venue `u`) is the ordering cursor and must strictly increase; an equal value is a duplicate and a lower value out of order, both dropped. `previous_final_update_id` (the venue `pu`) is carried for evidence: a discontinuity against the previous `last_update_id` is reported as an informational state-inconsistency, not a gap, because a full-replace message loses no state. Unlike the Binance spot partial-depth stream this message carries venue clocks, so `event_time_basis` is `source` and both the event time and the matching-engine transaction time are preserved. The partial-depth stream does not display Retail Price Improvement orders, so this is the displayed top-20 book and not the whole book. Refusal-gated: Binance redistribution requires written consent (see RIGHTS-LEDGER.md). OBSERVED against a 65-minute capture on 2026-09-03 (08:08Z-09:13Z, US host: `fstream.binance.com` is reachable from there and blackholed from the Tokyo box, ruling E27), 36,921 frames, one connection, no reconnect and no idle timeout. Every frame carried `e`, `E`, `T`, `s`, `U`, `u`, `pu`, `b` and `a`, so event time is source-based as drafted; `U <= u` held on every frame and `u` increased strictly across the whole hour. Two fields the drafted table did not name are present on every frame and are accepted without being published: `ps`, the contract pair symbol, which equals `s` on a perpetual; and `st`, an integer that was 1 on all 36,921 frames, whose meaning a single observed value cannot establish. `pu` is SIGNED: -1 is the venue's resync marker, observed once in the hour immediately after its longest stall (5,299 ms) with 25,030 update ids never delivered; the adapter reports it as a chain break naming the skipped count and still applies the full-replace image. Every other frame (36,920) chained exactly to its predecessor's `u`, so a broken chain is a real event and not routine. Every frame carried exactly 20 bids and 20 asks, prices at two fractional digits and sizes at three, with no zero-size level. Inter-frame spacing measured on the venue clock: minimum 102 ms, median 102 ms, 95th percentile 108 ms, 99th percentile 180 ms, maximum 5,299 ms - so the nominal 100 ms is really 102 ms and the tail is seconds, not milliseconds. `expected_heartbeat_ms` is 20000 as a CADENCE BOUND (ruling E31a), not a socket-liveness value: it bounds the observed maximum with room for a worse hour, and socket liveness is the ping/pong notice instead.",
+  "status": "approved",
+  "transport": "websocket",
+  "expected_heartbeat_ms": 20000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "update_group",
+      "type": "string",
+      "location": "internal"
+    },
+    {
+      "name": "update_index",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "update_count",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "update_kind",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "snapshot",
+        "delta"
+      ]
+    },
+    {
+      "name": "side",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "bid",
+        "ask"
+      ]
+    },
+    {
+      "name": "price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "size",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "first_update_id",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "last_update_id",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "previous_final_update_id",
+      "type": "i64",
+      "location": "external"
+    },
+    {
+      "name": "event_time_basis",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "source",
+        "receipt"
+      ]
+    },
+    {
+      "name": "transaction_time",
+      "type": "timestamp",
+      "location": "external"
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time"
+}

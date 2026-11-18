@@ -1,0 +1,14 @@
+{
+  "title": "Price impact",
+  "description": "How much each unit of flow moves the price, and whether that is rising. Rising impact means the book is getting thinner for its size.",
+  "fields": {
+    "kyle_lambda": {
+      "label": "Price impact",
+      "description": "The slope of price change against signed flow over the current window. Higher means the same trade moves the price more."
+    },
+    "lambda_drift": {
+      "label": "Impact change",
+      "description": "Price impact now against the previous window. Positive means flow is moving the price more than it did."
+    }
+  }
+}

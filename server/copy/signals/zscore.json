@@ -1,0 +1,18 @@
+{
+  "title": "Z-score",
+  "description": "How unusual the current price is against its recent average, in standard deviations. Beyond two either way is rare.",
+  "fields": {
+    "z_1m": {
+      "label": "Z 1m",
+      "description": "Distance from the one-minute mean in standard deviations. Beyond plus or minus two is a stretched reading."
+    },
+    "z_5m": {
+      "label": "Z 5m",
+      "description": "Distance from the five-minute mean in standard deviations. Slower to move than the one-minute read."
+    },
+    "z_15m": {
+      "label": "Z 15m",
+      "description": "Distance from the fifteen-minute mean in standard deviations. The slow baseline behind the shorter reads."
+    }
+  }
+}

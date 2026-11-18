@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "name": "Post-Only Maker",
+    "description": "On the one-minute BTC up/down: whenever fair is at least 3 cents over the ask, rest a post-only bid one cent under fair that expires on its own after 15 seconds. Once holding, bring the position to flat with a reduce-only target when the bid on up rises 5 cents over the average entry; with 10 seconds left, pull the bid and target flat regardless.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1"
+  },
+
+  "state": [],
+
+  "triggers": [
+    { "name": "cheap",
+      "condition": { "expr": "signal.fair.up - signal.book.ask", "comparator": ">=", "value": "0.03" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } },
+
+    { "name": "book_tick",
+      "condition": { "signal": "book" },
+      "fire": "if_true", "rearm": { "mode": "immediate" } },
+
+    { "name": "last_10s",
+      "timer": { "kind": "window_clock", "instrument": "market", "remaining": "10s" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "hunting",
+      "resident": true,
+      "arm": ["cheap", "last_10s"],
+      "body": [
+        { "name": "bid_up",
+          "if": "triggered(cheap)",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "limit", "tif": "gtc",
+                "post_only": true, "expire_after": "15s",
+                "price": "clamp(signal.fair.up - 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(envelope.max_order_size, 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "bid",
+                "on": { "fill": "holding", "partial": "holding", "expiry": "hunting", "reject": "hunting" }
+            }}
+          ] },
+
+        { "name": "stop",
+          "if": "triggered(last_10s)",
+          "do": [ { "cancel": { "tag": "bid" } } ],
+          "then": "done" }
+      ] },
+
+    { "name": "holding",
+      "resident": true,
+      "arm": ["book_tick", "last_10s"],
+      "body": [
+        { "name": "flatten",
+          "if": "triggered(last_10s) or signal.book.bid >= platform.position.avg_cost + 0.05",
+          "do": [
+            { "cancel": { "tag": "bid" } },
+            { "target_position": {
+                "instrument": "market", "outcome": "up",
+                "reduce_only": true,
+                "size": "clamp(0, 0, envelope.max_position_per_market)",
+                "max_size": "envelope.max_order_size",
+                "tag": "flat",
+                "on": { "fill": "done", "reject": "holding" }
+            }}
+          ] }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

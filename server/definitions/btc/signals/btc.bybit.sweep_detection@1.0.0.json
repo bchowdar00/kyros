@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.bybit.sweep_detection",
+  "version": "1.0.0",
+  "name": "Bybit BTC/USDT multi-level taker sweep",
+  "description": "Within one ingested Bybit BTC/USDT trade batch sharing one event timestamp, aggressive flow on one side that consumes at or above min_levels (K) distinct prices is a sweep. detection_state is sweep when a side qualifies and quiet otherwise; a batch spanning exactly K-1 distinct prices does not fire. On detection the signal emits swept_levels (distinct prices consumed), swept_size (total consumed base size on that side), and direction (buy or sell). This is a state-shaped signal with a latest-sweep payload and a quiet default: the adopted spot set has no emit-only-on-detection signal to mirror, so a non-sweeping batch publishes detection_state = quiet and leaves the retained latest sweep unchanged. Every state-dependent field is always present: before any sweep has fired there is nothing retained, so the payload is the explicit sentinel direction = none with swept_levels 0 and swept_size 0 rather than a missing field. When both sides qualify in one batch the deeper level count wins, then the larger swept size, then buy, so the choice is deterministic. min_levels defaults to 3. This identity is single-venue by construction: the measurement compares one venue's own trades and book against each other, so it reads only Bybit inputs and is ready whenever the Bybit book-and-trade join is fresh, independently of the other adopted spot venue. No blended `btc.external.*` variant of this measurement is published: a cross-venue form would have to rule which venue's book prices another venue's trade, and that ruling is deferred pending evidence (ADR 0023 amendment and ADR 0024, both 2026-09-02). Decimal outputs are rounded to eight places using round-half-to-even. Venue port (B1): this identity is the Bybit sibling of `btc.coinbase.sweep_detection@1.0.0` and reuses that definition's formulas, windows, thresholds, warm-up, staleness bound, field set, field types and eight-place round-half-to-even rounding verbatim; only the source ids differ (`crates/btc-signals/src/spot_signals.rs`, `crates/btc-signals/src/candidate_spot_signals.rs`). The instrument is Bybit spot BTCUSDT; this identity publishes no price-level field, so its outputs (base sizes, basis points, imbalances, ratios, counts) are quote-currency neutral and nothing is converted. Bybit inputs are rights-gated (`signals/knowledge/RIGHTS-LEDGER.md`): the lane is built and tested to the adopted standard, and its runtime refuses to start unless the environment allow-list `SIGNALS_ENABLED_VENUES` names `bybit`, which the deployment sets only after that row clears. The Bybit book input is the `orderbook.200.BTCUSDT` stream (100 ms, snapshot plus delta, 200 levels per side). `update_kind` carries the venue's own snapshot/delta semantics, so the Coinbase snapshot and delta rules port unchanged. Event time is the venue `cts` when present (`event_time_basis` = `source`) and the local receipt time otherwise (`receipt`). Ordering is the per-topic `update_id`; a repeated or lower id is dropped, and a delta before a seeding snapshot awaits a fresh snapshot. The Bybit trade input is the `publicTrade.BTCUSDT` stream: one message carries up to 1024 individual fills, each with its own `event_time`, `aggressor_side` and provider `trade_id`. `cross_sequence` is a relative-ordering token only, with no documented gap semantics, so no gap logic reads it and no valid trade is ever discarded on its account. quote_currency is emitted on every decision and is the constant \"usd\" for this venue: this identity publishes no price-denominated field — its outputs are base sizes, ratios, basis-point and count fields, all quote-currency neutral — so nothing is converted. E47 (USD quoting): this identity quotes in USD and publishes no price, notional or quote-denominated cost field — its outputs are base sizes, counts, basis-point ratios and durations, which are quote-currency neutral — so nothing is converted and no usdt_usd_rate is published. quote_currency is the constant \"usd\".",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.book-levels",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "bybit.spot.btcusdt.trades",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "detection_state",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "sweep",
+        "quiet"
+      ]
+    },
+    {
+      "name": "direction",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "buy",
+        "sell",
+        "none"
+      ]
+    },
+    {
+      "name": "swept_levels",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "swept_size",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "min_levels",
+      "type": "u32",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

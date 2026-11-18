@@ -1,0 +1,18 @@
+{
+  "title": "Liquidity shock",
+  "description": "How much the book has thinned or widened in the last minute. Depth and spread right now are compared with their average over the last sixty seconds.",
+  "fields": {
+    "state": {
+      "label": "Liquidity state",
+      "description": "Normal, thinning or shocked, read from depth and spread against the last minute. Shocked means the book cannot absorb a normal order without moving."
+    },
+    "depth_ratio_60s": {
+      "label": "Depth vs 60s",
+      "description": "Size resting near the touch now, as a change against its one-minute average. Negative means the book has thinned."
+    },
+    "spread_ratio_60s": {
+      "label": "Spread vs 60s",
+      "description": "The bid-ask spread now, as a change against its one-minute average. Positive means trading has got more expensive."
+    }
+  }
+}

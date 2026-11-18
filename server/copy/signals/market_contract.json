@@ -1,0 +1,5 @@
+{
+  "title": "Venue contract",
+  "description": "The terms of this venue's current BTC market: its strike, its window and how it settles. Reference data for strategies rather than a reading to watch.",
+  "fields": {}
+}

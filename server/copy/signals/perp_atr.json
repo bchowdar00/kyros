@@ -1,0 +1,14 @@
+{
+  "title": "Perp average true range",
+  "description": "The typical size of a one-minute bar on the perpetual, counting any gap from the previous close. A plain measure of how far the price usually travels in a minute.",
+  "fields": {
+    "atr": {
+      "label": "Bar range",
+      "description": "The average high-to-low range of recent one-minute bars, in dollars. Bigger means each minute carries the price further."
+    },
+    "atr_bps": {
+      "label": "Bar range",
+      "description": "The same average range as a share of price, in basis points. Easier to compare across price levels."
+    }
+  }
+}

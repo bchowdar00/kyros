@@ -1,0 +1,38 @@
+---
+source: crates/compiler/tests/lower_blocks.rs
+expression: reads
+---
+[
+    (
+        "watching.bid_home",
+        [
+            "fair.home",
+        ],
+    ),
+    (
+        "watching.bid_away",
+        [
+            "fair.away",
+        ],
+    ),
+    (
+        "quoting_home.requote",
+        [
+            "fair.home",
+        ],
+    ),
+    (
+        "quoting_home.pull",
+        [],
+    ),
+    (
+        "quoting_away.requote",
+        [
+            "fair.away",
+        ],
+    ),
+    (
+        "quoting_away.pull",
+        [],
+    ),
+]

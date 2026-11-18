@@ -1,0 +1,287 @@
+{
+  "id": "shooting-streak",
+  "title": "Hot Hand",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-06.jpg" },
+  "series": ["nba-h2h"],
+  "logic": "Counts each team's shots from the play-by-play. When a team has made four in a row, it buys that team and holds to the final, once per game.",
+  "inverse_logic": "Counts each team's shots from the play-by-play. When a team has missed five in a row, it bets on the bounce back and buys that team. Sells after a four-cent gain and looks for the next cold streak, otherwise holds to the final.",
+  "envelope": {
+    "loss_budget_fraction": "1",
+    "order_fraction": "0.08",
+    "max_order_size": "200",
+    "max_open_orders": "1",
+    "max_position_per_market": "200"
+  },
+  "substitutions": {
+    "nba-h2h": { "hot": "4", "cold": "5", "gain": "0.04", "check": "1s" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Hot Hand",
+      "description": "On every two or three in play, the shooting team's made-streak counter goes up on a make and back to zero on a miss. When Home's counter reaches the hot count take Home, and when Away's does take Away, with an immediate-or-cancel limit two cents over the ask while it is under 95 cents, once per round, and hold to the final.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "pbp": "nba.sim.pbp.v1"
+    },
+    "state": [
+      { "name": "home_hot", "kind": "scalar", "value_type": "decimal" },
+      { "name": "away_hot", "kind": "scalar", "value_type": "decimal" }
+    ],
+    "triggers": [
+      {
+        "name": "two",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "pbp", "field": "action", "comparator": "==", "value": "two_pointer" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate" }
+      },
+      {
+        "name": "three",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "pbp", "field": "action", "comparator": "==", "value": "three_pointer" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "counting",
+        "resident": true,
+        "arm": ["two", "three"],
+        "body": [
+          {
+            "name": "home_made",
+            "if": "(triggered(two) or triggered(three)) and signal.pbp.team == signal.pbp.home_team and signal.pbp.result == 'made'",
+            "do": ["set state.home_hot = state.home_hot + 1"]
+          },
+          {
+            "name": "home_missed",
+            "if": "(triggered(two) or triggered(three)) and signal.pbp.team == signal.pbp.home_team and signal.pbp.result == 'missed'",
+            "do": ["set state.home_hot = 0"]
+          },
+          {
+            "name": "away_made",
+            "if": "(triggered(two) or triggered(three)) and signal.pbp.team == signal.pbp.away_team and signal.pbp.result == 'made'",
+            "do": ["set state.away_hot = state.away_hot + 1"]
+          },
+          {
+            "name": "away_missed",
+            "if": "(triggered(two) or triggered(three)) and signal.pbp.team == signal.pbp.away_team and signal.pbp.result == 'missed'",
+            "do": ["set state.away_hot = 0"]
+          },
+          {
+            "name": "ride_home",
+            "if": "(triggered(two) or triggered(three)) and state.home_hot >= {{hot}} and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "ride_home",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "counting", "cancel_ack": "counting", "expiry": "counting" }
+                }
+              }
+            ],
+            "then": "holding"
+          },
+          {
+            "name": "ride_away",
+            "if": "(triggered(two) or triggered(three)) and state.away_hot >= {{hot}} and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "ride_away",
+                  "on": { "fill": "holding", "partial": "holding", "reject": "counting", "cancel_ack": "counting", "expiry": "counting" }
+                }
+              }
+            ],
+            "then": "holding"
+          }
+        ]
+      },
+      { "name": "holding", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Buy the Bricks",
+      "description": "On every two or three in play, the shooting team's missed-streak counter goes up on a miss and back to zero on a make. When Home's counter reaches the cold count take Home, and when Away's does take Away, with an immediate-or-cancel limit two cents over the ask while it is under 95 cents. While holding, sell out with an immediate-or-cancel once that side's bid is the gain above the entry and count again; otherwise hold to the final.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "pbp": "nba.sim.pbp.v1"
+    },
+    "state": [
+      { "name": "home_cold", "kind": "scalar", "value_type": "decimal" },
+      { "name": "away_cold", "kind": "scalar", "value_type": "decimal" }
+    ],
+    "triggers": [
+      {
+        "name": "two",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "pbp", "field": "action", "comparator": "==", "value": "two_pointer" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate" }
+      },
+      {
+        "name": "three",
+        "condition": {
+          "all": [
+            { "signal": "pbp", "field": "phase", "comparator": "==", "value": "in_play" },
+            { "signal": "pbp", "field": "action", "comparator": "==", "value": "three_pointer" }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate" }
+      },
+      {
+        "name": "tick",
+        "condition": { "signal": "book" },
+        "fire": "if_true",
+        "rearm": { "mode": "immediate", "cooldown": "{{check}}" }
+      }
+    ],
+    "legs": [
+      {
+        "name": "counting",
+        "resident": true,
+        "arm": ["two", "three"],
+        "body": [
+          {
+            "name": "home_missed",
+            "if": "(triggered(two) or triggered(three)) and signal.pbp.team == signal.pbp.home_team and signal.pbp.result == 'missed'",
+            "do": ["set state.home_cold = state.home_cold + 1"]
+          },
+          {
+            "name": "home_made",
+            "if": "(triggered(two) or triggered(three)) and signal.pbp.team == signal.pbp.home_team and signal.pbp.result == 'made'",
+            "do": ["set state.home_cold = 0"]
+          },
+          {
+            "name": "away_missed",
+            "if": "(triggered(two) or triggered(three)) and signal.pbp.team == signal.pbp.away_team and signal.pbp.result == 'missed'",
+            "do": ["set state.away_cold = state.away_cold + 1"]
+          },
+          {
+            "name": "away_made",
+            "if": "(triggered(two) or triggered(three)) and signal.pbp.team == signal.pbp.away_team and signal.pbp.result == 'made'",
+            "do": ["set state.away_cold = 0"]
+          },
+          {
+            "name": "buy_home",
+            "if": "(triggered(two) or triggered(three)) and state.home_cold >= {{cold}} and signal.book.ask < 0.95",
+            "do": [
+              "set state.home_cold = 0",
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "buy_home",
+                  "on": { "fill": "holding_home", "partial": "holding_home", "reject": "counting", "cancel_ack": "counting", "expiry": "counting" }
+                }
+              }
+            ],
+            "then": "holding_home"
+          },
+          {
+            "name": "buy_away",
+            "if": "(triggered(two) or triggered(three)) and state.away_cold >= {{cold}} and 1 - signal.book.bid < 0.95",
+            "do": [
+              "set state.away_cold = 0",
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "buy_away",
+                  "on": { "fill": "holding_away", "partial": "holding_away", "reject": "counting", "cancel_ack": "counting", "expiry": "counting" }
+                }
+              }
+            ],
+            "then": "holding_away"
+          }
+        ]
+      },
+      {
+        "name": "holding_home",
+        "resident": true,
+        "arm": ["tick"],
+        "body": [
+          {
+            "name": "take_profit",
+            "if": "triggered(tick) and platform.position.size >= 1 and signal.book.bid >= legs.counting.tag.buy_home.fill_price + {{gain}}",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "away", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(platform.position.size, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "counting", "partial": "holding_home", "reject": "holding_home", "cancel_ack": "holding_home", "expiry": "holding_home" }
+                }
+              }
+            ],
+            "then": "counting"
+          }
+        ]
+      },
+      {
+        "name": "holding_away",
+        "resident": true,
+        "arm": ["tick"],
+        "body": [
+          {
+            "name": "take_profit",
+            "if": "triggered(tick) and platform.position.size <= -1 and 1 - signal.book.ask >= legs.counting.tag.buy_away.fill_price + {{gain}}",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market", "outcome": "home", "side": "buy", "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": { "fill": "counting", "partial": "holding_away", "reject": "holding_away", "cancel_ack": "holding_away", "expiry": "holding_away" }
+                }
+              }
+            ],
+            "then": "counting"
+          }
+        ]
+      }
+    ]
+  }
+}

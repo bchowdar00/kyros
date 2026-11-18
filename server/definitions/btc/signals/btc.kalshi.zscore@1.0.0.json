@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.zscore",
+  "version": "1.0.0",
+  "name": "Kalshi BTC affirmative-probability z-score",
+  "description": "How far the affirmative midpoint of the YES outcome of the bound KXBTC15M market sits from its own recent mean, in standard deviations, over three trailing windows of one, five and fifteen minutes of one-second closes. For each window z = (p_now - mean_w) / sigma_w, where sigma_w is the population standard deviation over exactly the samples in that window (the window is the whole observed window, not a draw from a larger one) and p_now is the current midpoint; all three are in probability points. A window is used only when every one of its one-second samples is present - no gap bridging - and a window that is short or has a hole is reported absent through its *_present flag with its value left at zero. mean_1m and sigma_1m expose the statistics behind the readiness window. Readiness needs the one-minute window only, so the identity publishes early in a market window and the longer windows join as they fill; while that window is incomplete the instance-status reason is market_contract_warming_up. A complete one-minute window with zero dispersion has no defined z-score - a flat quote is not an extreme one - so the identity is not ready with the reason flat_window rather than dividing by zero or publishing a fabricated zero. The identity is market-scoped: it fails closed while the venue is unbound, the market contract is still warming, or the affirmative quote is missing, stale or crossed, and it publishes no value rather than a stale one. Its rolling history is per generation and is cleared at the market roll, so a reading never mixes two contracts (ruling E51, spec C3 \u00a72). The history is rolling market-relative state and is deliberately not checkpointed: it re-warms after a restart. All arithmetic is exact decimal and causal - every published number is a fold over admitted events at or before the decision instant. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.market_contract",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.prediction_quote",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "probability_points",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "z_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "mean_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "sigma_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "z_5m_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "z_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "z_15m_present",
+      "type": "bool",
+      "location": "internal"
+    },
+    {
+      "name": "z_15m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

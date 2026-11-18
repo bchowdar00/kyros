@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_lints.rs
+expression: rendered
+---
+warning[lint-coverage] at legs[0].body[0].if: guard requires signal.price.home < 0.35 but armed trigger `cheap` fires at < 0.4 — the block runs on a subset of wakes; one threshold is stale
+  triggered(cheap) and signal.price.home < 0.35
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = help: the trigger is the threshold's home — make the guard's number match or drop the guard comparison

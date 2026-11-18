@@ -1,0 +1,18 @@
+{
+  "title": "Perp rate of change",
+  "description": "The plain percentage move of the perpetual from the start of each window to now. The simplest read on which way and how fast.",
+  "fields": {
+    "roc_bps_10s": {
+      "label": "Change 10s",
+      "description": "The move over the last ten seconds, in basis points. Positive means up over the window."
+    },
+    "roc_bps_1m": {
+      "label": "Change 1m",
+      "description": "The move over the last minute, in basis points. Positive means up over the window."
+    },
+    "roc_bps_5m": {
+      "label": "Change 5m",
+      "description": "The move over the last five minutes, in basis points. Positive means up over the window."
+    }
+  }
+}

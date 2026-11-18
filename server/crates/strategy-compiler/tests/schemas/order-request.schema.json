@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/order-request.schema.json",
+  "title": "OrderRequest",
+  "$comment": "Harness -> risk gateway. Tagged union on 'kind'. MIGRATION: the previous place-only shape is 'kind: place' verbatim. client_order_id is DERIVED, never assigned: '{strategy_id}:{leg_id}:{activation_seq}[:{intent_index}]' -- same activation retried = same ID = engine dedupes; every order attributable to the exact activation that produced it (intent_index completes the key: one activation can emit multiple intents, e.g. a quoter re-quoting both sides). instrument_id is an opaque string: nothing in this schema may assume binary prediction markets (perps, RFQ'd OTC arrive later). AJ SIGN-OFF PENDING, three questions: (1) is cancel_replace acked as ONE lifecycle event ('replaced') or two ('cancel_ack' + 'ack')? -- settles Tier 4's transition alphabet before tables freeze; (2) can the engine key native dedup off client_order_id as specified, so harness retries are genuinely safe?; (3) bundle_unfillable added to RejectReason now (recommended -- additive) or when the engine ships?",
+  "type": "object",
+  "required": ["schema_version", "kind", "client_order_id", "strategy_id", "sub_account_id"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "kind": {
+      "type": "string",
+      "enum": ["place", "cancel", "cancel_replace", "atomic_bundle"]
+    },
+    "client_order_id": { "type": "string" },
+    "strategy_id": { "type": "string" },
+    "sub_account_id": { "type": "string" },
+    "place": {
+      "$ref": "#/$defs/PlaceBody",
+      "$comment": "Required when kind=place (enforced structurally; other bodies invalid)."
+    },
+    "cancel": {
+      "type": "object",
+      "required": ["target_client_order_id"],
+      "properties": {
+        "target_client_order_id": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "$comment": "Required when kind=cancel. Cancels by client_order_id -- the harness always knows the ID it derived; no exchange-assigned-ID round trip in the strategy path."
+    },
+    "cancel_replace": {
+      "type": "object",
+      "required": ["target_client_order_id", "replacement"],
+      "properties": {
+        "target_client_order_id": { "type": "string" },
+        "replacement": { "$ref": "#/$defs/PlaceBody" }
+      },
+      "additionalProperties": false,
+      "$comment": "Required when kind=cancel_replace. ATOMIC at the engine: never a window where old and new both rest, never both absent with the strategy believing it's quoted. Acked as ONE lifecycle event (see AJ question 1)."
+    },
+    "atomic_bundle": {
+      "type": "object",
+      "required": ["legs"],
+      "properties": {
+        "legs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/PlaceBody" }
+        }
+      },
+      "additionalProperties": false,
+      "$comment": "All-or-nothing: every leg fills at its stated-or-better price in one match, or nothing executes and the whole bundle rejects (reason: bundle_unfillable in RejectReason). Partial bundle fills are UNREPRESENTABLE by definition. Schema lands now; engine support later -- gateway rejects kind=atomic_bundle with 'unsupported' until then, which is still one reason-coded event the transition tables can answer."
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "place" } }, "required": ["kind"] },
+      "then": {
+        "required": ["place"],
+        "not": { "anyOf": [{ "required": ["cancel"] }, { "required": ["cancel_replace"] }, { "required": ["atomic_bundle"] }] }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "cancel" } }, "required": ["kind"] },
+      "then": {
+        "required": ["cancel"],
+        "not": { "anyOf": [{ "required": ["place"] }, { "required": ["cancel_replace"] }, { "required": ["atomic_bundle"] }] }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "cancel_replace" } }, "required": ["kind"] },
+      "then": {
+        "required": ["cancel_replace"],
+        "not": { "anyOf": [{ "required": ["place"] }, { "required": ["cancel"] }, { "required": ["atomic_bundle"] }] }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "atomic_bundle" } }, "required": ["kind"] },
+      "then": {
+        "required": ["atomic_bundle"],
+        "not": { "anyOf": [{ "required": ["place"] }, { "required": ["cancel"] }, { "required": ["cancel_replace"] }] }
+      }
+    }
+  ],
+  "$defs": {
+    "PlaceBody": {
+      "type": "object",
+      "required": ["instrument_id", "side", "order_type", "size", "tif"],
+      "properties": {
+        "instrument_id": { "type": "string" },
+        "side": { "type": "string", "enum": ["buy", "sell"] },
+        "order_type": { "type": "string", "enum": ["limit", "market"] },
+        "price": {
+          "type": "string",
+          "description": "Decimal-as-string. Required for limit; invalid for market (enforced structurally)."
+        },
+        "size": { "type": "string", "description": "Decimal-as-string." },
+        "tif": {
+          "type": "string",
+          "enum": ["ioc", "gtc"],
+          "description": "gtc is what a resting quote is; ioc-only was the taker assumption in miniature. Full TIF zoo (GTD, post-only) deferred until a corpus strategy demands it -- additive later."
+        },
+        "tag": {
+          "type": "string",
+          "description": "Strategy-meaningful role label, e.g. 'bid'/'ask'. Echoed on every lifecycle event for this order, so a quoter's transition logic can distinguish which quote filled without maintaining an ID map."
+        }
+      },
+      "additionalProperties": false,
+      "if": { "properties": { "order_type": { "const": "limit" } }, "required": ["order_type"] },
+      "then": { "required": ["price"] },
+      "else": { "not": { "required": ["price"] } }
+    }
+  }
+}

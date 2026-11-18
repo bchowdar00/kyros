@@ -1,0 +1,10 @@
+{
+  "title": "Microprice lean",
+  "description": "Which way the book is leaning, read from the size resting at the bid and the ask. More size on one side means the next tick is likelier to go the other way.",
+  "fields": {
+    "microprice_deviation_bps": {
+      "label": "Book lean",
+      "description": "How far the size-weighted price sits from the plain midpoint, in basis points. Positive means the bid is heavier and the price leans up."
+    }
+  }
+}

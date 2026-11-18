@@ -1,0 +1,11 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[reserved-name] at state[0].name: `count` is a builtin name and cannot name a state slot
+  = help: rename it; reserved words are the grammar's keywords, namespace heads, builtin names, and 'stay'
+
+error[unknown-state-slot] at legs[0].body[0].do[0]: reference to undeclared state slot `cuont`
+  set state.cuont = state.count + 1
+            ^^^^^
+  = help: declared state slots: count

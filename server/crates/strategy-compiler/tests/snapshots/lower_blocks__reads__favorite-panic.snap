@@ -1,0 +1,44 @@
+---
+source: crates/compiler/tests/lower_blocks.rs
+expression: reads
+---
+[
+    (
+        "hunting.capture_favorite",
+        [
+            "fair.home",
+        ],
+    ),
+    (
+        "hunting.count_threes",
+        [],
+    ),
+    (
+        "hunting.buy_home_favorite",
+        [
+            "pbp.quarter",
+        ],
+    ),
+    (
+        "hunting.buy_away_favorite",
+        [
+            "pbp.quarter",
+        ],
+    ),
+    (
+        "holding_home.take_profit",
+        [],
+    ),
+    (
+        "holding_home.cut_loss",
+        [],
+    ),
+    (
+        "holding_away.take_profit",
+        [],
+    ),
+    (
+        "holding_away.cut_loss",
+        [],
+    ),
+]

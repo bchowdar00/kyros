@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.aggressor_flow",
+  "version": "1.0.0",
+  "name": "BTC signed aggressor flow",
+  "description": "Each verified buyer-aggressed Coinbase or Kraken BTC/USD trade contributes positive price-times-size notional and positive base size; each seller-aggressed trade contributes negative values. Outputs sum those contributions over causal 1-, 10-, and 60-second receipt-time windows of (window close minus duration, window close]. Kraken subscription-snapshot rows are excluded. Ready output requires 60 seconds of uninterrupted observation and each venue demonstrably alive. A venue with no in-window trades but alive — any admitted input event from that venue within staleness_bound_ms — contributes truthful zeros (flow_direction_10s = \"flat\"); a venue with no admitted input within that bound keeps degrading as trade_venue_stale_or_missing. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.trades", "version": "1.0.0" },
+    { "kind": "source", "id": "kraken.spot.btc-usd.trades", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "signed_notional_usd_1s", "type": "decimal", "location": "internal" },
+    { "name": "signed_notional_usd_10s", "type": "decimal", "location": "internal", "label": "Signed Aggressor Flow 10s" },
+    { "name": "signed_notional_usd_60s", "type": "decimal", "location": "internal" },
+    { "name": "cumulative_volume_delta_base_10s", "type": "decimal", "location": "internal" },
+    { "name": "cumulative_volume_delta_base_60s", "type": "decimal", "location": "internal" },
+    { "name": "gross_notional_usd_60s", "type": "decimal", "location": "internal" },
+    { "name": "trade_count_60s", "type": "u32", "location": "internal" },
+    {
+      "name": "flow_direction_10s",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["sell", "flat", "buy"]
+    },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

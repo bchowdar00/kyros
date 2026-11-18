@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.executable_edge",
+  "version": "1.0.0",
+  "name": "Kalshi BTC executable edge",
+  "description": "Model-versus-market edge for the bound Kalshi market on both sides, gross of costs. edge_up is the fair up probability minus executable_up_price, the ask to buy the affirmative (up) outcome now; edge_down is one minus the fair up probability minus executable_down_price, the ask to buy the negative (down) outcome now. For Kalshi the down side is taken from the negative outcome quote (the NO complement quote where the venue quotes a single YES book). cost_model is a named limitation: V1 publishes GROSS edge with cost_model equal to none, declaring that fees and other execution costs are not yet modeled; fee-aware edge requires an approved fee specification and an explicit V1 amendment before production release or a new version afterward. The update fails closed when the required quote side is missing or crossed or when the fair up probability is unavailable. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.kalshi.fair_up_probability", "version": "1.0.0" },
+    { "kind": "signal", "id": "btc.kalshi.prediction_quote", "version": "1.0.0" },
+    { "kind": "signal", "id": "btc.kalshi.prediction_liquidity", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "edge_up", "type": "decimal", "location": "internal" },
+    { "name": "edge_down", "type": "decimal", "location": "internal" },
+    { "name": "probability", "type": "decimal", "location": "internal" },
+    { "name": "executable_up_price", "type": "decimal", "location": "external" },
+    { "name": "executable_down_price", "type": "decimal", "location": "external" },
+    { "name": "cost_model", "type": "enum", "location": "internal", "variants": ["none"] },
+    { "name": "observation_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "observation_time"
+}

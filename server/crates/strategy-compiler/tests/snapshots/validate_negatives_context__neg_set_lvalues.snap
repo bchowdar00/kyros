@@ -1,0 +1,25 @@
+---
+source: crates/compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[set-scalar-indexed] at legs[0].body[0].do[0]: state slot `s` is a scalar — it takes no index
+  set state.s[1] = 1
+            ^
+  = help: write `set state.s = ...`
+
+error[set-map-unindexed] at legs[0].body[1].do[0]: state slot `m` is a map — a set must index it
+  set state.m = 1
+            ^
+  = help: write `set state.m[<key>] = ...`
+
+error[index-arity-mismatch] at legs[0].body[2].do[0]: state slot `m` is keyed by 1 key(s); this set writes 2
+  set state.m['home', 2] = 1
+            ^
+
+error[index-type-mismatch] at legs[0].body[3].do[0]: 'blue' is not a variant of the declared key type (variants: away, home)
+  set state.m['blue'] = 1
+              ^^^^^^
+
+error[set-rhs-type-mismatch] at legs[0].body[4].do[0]: 'home' is a variant — the declared value type is not an enum
+  set state.s = 'home'
+                ^^^^^^

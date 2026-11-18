@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "source_id": "kalshi.btc.quotes",
+  "version": "1.0.0",
+  "name": "Kalshi BTC market ticker",
+  "description": "Normalized Kalshi ticker messages for one verified KXBTC15M market. YES bid/ask and their fixed-point sizes remain on the provider YES-price scale; event_time is the provider time field corroborated by ts_ms.",
+  "status": "approved",
+  "transport": "websocket",
+  "fields": [
+    { "name": "market_ticker", "type": "string", "location": "external" },
+    { "name": "last_price", "type": "decimal", "location": "external" },
+    { "name": "best_bid", "type": "decimal", "location": "external" },
+    { "name": "best_ask", "type": "decimal", "location": "external" },
+    { "name": "best_bid_size", "type": "decimal", "location": "external" },
+    { "name": "best_ask_size", "type": "decimal", "location": "external" },
+    { "name": "volume", "type": "decimal", "location": "external" },
+    { "name": "open_interest", "type": "decimal", "location": "external" },
+    { "name": "event_time", "type": "timestamp", "location": "external" }
+  ],
+  "event_time_field": "event_time"
+}

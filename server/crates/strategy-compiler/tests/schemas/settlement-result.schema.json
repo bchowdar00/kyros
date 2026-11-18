@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/settlement-result.schema.json",
+  "title": "SettlementResult",
+  "$comment": "Chain Settler -> runner. Mocked in the MVP (fake impl, real type). Source: mmarkets.excalidraw 'Chain Settler'.",
+  "type": "object",
+  "required": ["schema_version", "trade_id", "order_id", "status", "ts"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "trade_id": { "type": "string" },
+    "order_id": { "type": "string" },
+    "status": { "type": "string", "enum": ["pending", "settled", "failed"] },
+    "chain_ref": { "type": "string", "description": "On-chain tx / settlement reference once settled." },
+    "reason": { "type": "string" },
+    "ts": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  },
+  "additionalProperties": false
+}

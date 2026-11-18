@@ -1,0 +1,18 @@
+{
+  "title": "Sharp line",
+  "description": "A sharp book's fair win probabilities for the game in play or the next one, with the vig removed. It moves a little during the game and announces the next matchup the moment a game ends.",
+  "fields": {
+    "home_team": {
+      "label": "Home",
+      "description": "The home side of the game this line is for."
+    },
+    "away_team": {
+      "label": "Away",
+      "description": "The away side of the game this line is for."
+    },
+    "home_prob": {
+      "label": "Home win",
+      "description": "The book's probability that the home side wins, from 0.02 to 0.98. Before tipoff this is the pregame line the market opens on."
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.vwap_deviation",
+  "version": "1.0.0",
+  "name": "BTC rolling VWAP deviation",
+  "description": "Combined Coinbase and Kraken BTC/USD trade price times base-size divided by base volume over causal 10- and 60-second receipt-time windows of (window close minus duration, window close]. Kraken subscription-snapshot rows are excluded. Each deviation_bps is (reference_price minus VWAP) divided by VWAP times 10000, so a positive value means the ready spot reference is above the rolling VWAP. Ready output requires 60 seconds of uninterrupted observation measured from the first observed trade stream data after startup or recovery, positive volume in both windows, a ready reference, and a trade from each venue no more than 10 seconds old. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "signal", "id": "btc.external.spot_reference", "version": "1.0.0" },
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.trades", "version": "1.0.0" },
+    { "kind": "source", "id": "kraken.spot.btc-usd.trades", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "vwap_10s", "type": "decimal", "location": "internal" },
+    { "name": "vwap_60s", "type": "decimal", "location": "internal" },
+    { "name": "reference_price", "type": "decimal", "location": "internal" },
+    { "name": "deviation_bps_10s", "type": "decimal", "location": "internal" },
+    { "name": "deviation_bps_60s", "type": "decimal", "location": "internal" },
+    { "name": "base_volume_60s", "type": "decimal", "location": "internal" },
+    { "name": "trade_count_60s", "type": "u32", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

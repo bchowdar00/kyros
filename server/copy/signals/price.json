@@ -1,0 +1,22 @@
+{
+  "title": "Market price",
+  "description": "What the book is paying for Up right now, in cents on the dollar. Down is always one dollar minus Up.",
+  "fields": {
+    "up": {
+      "label": "Up",
+      "description": "The market's current odds that BTC finishes above the strike, as a price in cents. Fifty cents is a coin flip."
+    },
+    "bid": {
+      "label": "Best bid",
+      "description": "The highest price someone is waiting to pay for Up. Selling Up right now fills here."
+    },
+    "ask": {
+      "label": "Best ask",
+      "description": "The lowest price someone is waiting to sell Up at. Buying Up right now fills here."
+    },
+    "last": {
+      "label": "Last trade",
+      "description": "The price of the most recent fill in this round. It lags the book when nobody is trading."
+    }
+  }
+}

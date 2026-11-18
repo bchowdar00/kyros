@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "name": "Two-Sided Quoter",
+    "description": "On the one-minute BTC up/down: when the up spread is at least 4 cents wide, rest a bid one cent above the best bid and an ask one cent below the best ask, each spending a quarter of the round budget. Re-quote both every 2 seconds to follow the book; a filled side is simply not re-quoted. Ten seconds before the close, pull both and stop.",
+    "dsl_version": "0.3"
+  },
+
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1"
+  },
+
+  "state": [],
+
+  "triggers": [
+    { "name": "wide",
+      "condition": { "expr": "signal.book.ask - signal.book.bid", "comparator": ">=", "value": "0.04" },
+      "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "2s" } },
+
+    { "name": "every_2s",
+      "timer": { "kind": "interval", "every": "2s" },
+      "fire": "on_crossing", "rearm": { "mode": "immediate" } },
+
+    { "name": "last_10s",
+      "timer": { "kind": "window_clock", "instrument": "market", "remaining": "10s" },
+      "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+  ],
+
+  "legs": [
+    { "name": "hunting",
+      "resident": true,
+      "arm": ["wide", "last_10s"],
+      "body": [
+        { "name": "quote",
+          "if": "triggered(wide)",
+          "do": [
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "limit", "tif": "gtc",
+                "price": "clamp(signal.book.bid + 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(floor(envelope.round_budget * 0.25 / (signal.book.bid + 0.01)), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "bid"
+            }},
+            { "place": {
+                "instrument": "market", "outcome": "up", "side": "sell",
+                "order_type": "limit", "tif": "gtc",
+                "price": "clamp(signal.book.ask - 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(floor(envelope.round_budget * 0.25 / (1.01 - signal.book.ask)), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size",
+                "tag": "ask"
+            }}
+          ],
+          "then": "quoting" },
+
+        { "name": "stop",
+          "if": "triggered(last_10s)",
+          "do": [],
+          "then": "done" }
+      ] },
+
+    { "name": "quoting",
+      "resident": true,
+      "arm": ["every_2s", "last_10s"],
+      "body": [
+        { "name": "requote",
+          "if": "triggered(every_2s)",
+          "do": [
+            { "cancel_replace": {
+                "tag": "bid",
+                "instrument": "market", "outcome": "up", "side": "buy",
+                "order_type": "limit", "tif": "gtc",
+                "price": "clamp(signal.book.bid + 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(floor(envelope.round_budget * 0.25 / (signal.book.bid + 0.01)), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size"
+            }},
+            { "cancel_replace": {
+                "tag": "ask",
+                "instrument": "market", "outcome": "up", "side": "sell",
+                "order_type": "limit", "tif": "gtc",
+                "price": "clamp(signal.book.ask - 0.01, 0.01, 0.99)",
+                "price_band": ["0.01", "0.99"],
+                "size": "clamp(floor(envelope.round_budget * 0.25 / (1.01 - signal.book.ask)), 0, envelope.max_order_size)",
+                "max_size": "envelope.max_order_size"
+            }}
+          ] },
+
+        { "name": "pull",
+          "if": "triggered(last_10s)",
+          "do": [ { "cancel": { "tag": "bid" } }, { "cancel": { "tag": "ask" } } ],
+          "then": "done" }
+      ] },
+
+    { "name": "done", "resident": true, "arm": [], "body": [] }
+  ]
+}

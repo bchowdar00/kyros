@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.binance.funding_state",
+  "version": "1.0.0",
+  "name": "Binance USD-M BTCUSDT perpetual funding state",
+  "description": "Funding state of the Binance USD-M BTCUSDT perpetual contract. funding_rate is the venue's currently published rate for the upcoming settlement, a signed fraction of notional per interval; it is neither a realised settlement nor a forecast. funding_rate_bps is funding_rate times 10000. funding_interval_hours is 8 by configuration; interval_basis is venue_declared once a binance.usdm.btcusdt.funding-info reading no older than two poll intervals (7200000 milliseconds) is admitted, and configured before that; a missing or lapsed funding-info reading degrades as funding_info_missing while the identity keeps publishing with interval_basis = configured. annualised_rate_bps is funding_rate_bps times 8760 divided by funding_interval_hours. time_to_funding_ms is next_funding_time minus observation_time, clamped at zero. sign_regime is longs_pay when funding_rate_bps exceeds flat_band_bps, shorts_pay when it is below the negated band, otherwise flat; flat_band_bps is 0.1 and is published. A configured interval contradicted by an observed or venue-declared interval by more than 60 seconds degrades as funding_interval_mismatch rather than silently re-scaling the annualisation, and a next_funding_time more than one interval in the past is refused as a stalled venue clock. Rates are per the venue's own quote currency and are quote-currency neutral; quote_currency is \"usd\" for this instrument (this identity publishes no price-denominated field, so nothing is converted). Ready output requires 60 seconds of uninterrupted Binance USD-M observation and an admitted input no older than staleness_bound_ms; warm-up degrades as binance_warming_up, a lapsed bound as binance_stale, a closed socket as binance_disconnected, a recovery-required feed state as binance_recovery_required, a refused subscription as binance_subscription_rejected and a venue outage as binance_venue_unavailable. Decimal outputs are rounded to eight places using round-half-to-even. The Binance USD-M lane refuses to start (exit 78) unless SIGNALS_ENABLED_VENUES lists binance; the rights gate is a startup refusal, never an instance status. E47 (USD quoting): this identity quotes in USD and publishes no price, notional or quote-denominated cost field — its outputs are base sizes, counts, basis-point ratios and durations, which are quote-currency neutral — so nothing is converted and no usdt_usd_rate is published. quote_currency is the constant \"usd\".",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "binance.usdm.btcusdt.premium-index",
+      "version": "1.0.0"
+    },
+    {
+      "kind": "source",
+      "id": "binance.usdm.btcusdt.funding-info",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "funding_rate",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "funding_rate_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "funding_interval_hours",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "interval_basis",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "configured",
+        "observed",
+        "venue_declared"
+      ]
+    },
+    {
+      "name": "annualised_rate_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "next_funding_time",
+      "type": "timestamp",
+      "location": "internal"
+    },
+    {
+      "name": "time_to_funding_ms",
+      "type": "duration_ms",
+      "location": "internal"
+    },
+    {
+      "name": "sign_regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "shorts_pay",
+        "flat",
+        "longs_pay"
+      ]
+    },
+    {
+      "name": "flat_band_bps",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "quote_currency",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "usd"
+      ]
+    },
+    {
+      "name": "observation_time",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "observation_time"
+}

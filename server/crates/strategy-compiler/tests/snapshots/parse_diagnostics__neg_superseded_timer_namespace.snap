@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[superseded-timer-namespace]: the `timer.` namespace was removed in v0.2 — timers are triggers now
+  timer.analyze
+  ^^^^^
+  = help: declare a timer trigger in the triggers section and gate the block with triggered(<trigger name>)

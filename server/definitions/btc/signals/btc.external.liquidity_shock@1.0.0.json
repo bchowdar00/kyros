@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.external.liquidity_shock",
+  "version": "1.0.0",
+  "name": "BTC observable level-two liquidity shock",
+  "description": "Compares current combined observable five-basis-point base depth and mean venue spread in basis points with the arithmetic mean of the prior 60 valid one-second book observations. The Kraken input is pinned to its top-100-level subscription. depth_ratio_60s and spread_ratio_60s expose the continuous change. State is shock when depth is at or below 0.50 of baseline or spread is at or above 2.0 times baseline; thinning below 0.75 depth or above 1.5 spread; recovering when the immediately prior state was shock and the current observation has left shock but remains thinning; otherwise normal. The 0.50, 0.75, 1.5, and 2.0 classification boundaries are initial research thresholds that require empirical calibration. Missing, non-ready, or non-contiguous one-second book observations break continuity and restart warm-up. This level-two signal measures observable thinning and widening; it does not attribute a change to cancellation or execution. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    { "kind": "source", "id": "coinbase.exchange.btc-usd.book-levels", "version": "1.0.0" },
+    { "kind": "source", "id": "kraken.spot.btc-usd.book-levels", "version": "1.0.0" }
+  ],
+  "fields": [
+    { "name": "depth_ratio_60s", "type": "decimal", "location": "internal" },
+    { "name": "spread_ratio_60s", "type": "decimal", "location": "internal" },
+    { "name": "current_depth_base", "type": "decimal", "location": "internal" },
+    { "name": "baseline_depth_base", "type": "decimal", "location": "internal" },
+    { "name": "current_spread_bps", "type": "decimal", "location": "internal" },
+    { "name": "baseline_spread_bps", "type": "decimal", "location": "internal" },
+    {
+      "name": "state",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["normal", "thinning", "shock", "recovering"]
+    },
+    { "name": "sample_count", "type": "u16", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

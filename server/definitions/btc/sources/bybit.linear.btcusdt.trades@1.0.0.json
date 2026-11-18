@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "source_id": "bybit.linear.btcusdt.trades",
+  "version": "1.0.0",
+  "name": "Bybit linear BTCUSDT perpetual public trades",
+  "description": "Bybit v5 publicTrade.BTCUSDT on the linear (USDT perpetual) public socket. Field-for-field identical to the bybit.spot.btcusdt.trades identity the capture adapter already emits, on the perpetual tape: aggressor_side from S, size from v, price from p, trade_id from i, block_trade from BT, rpi from the RPI flag defaulting to false when absent, cross_sequence from seq, and event_time from T with event_time_basis source, which is the only declared basis on this identity: there is no receipt fallback and a fill without a usable T is refused. seq is a relative-ordering token with no documented gap semantics: a batch whose minimum seq falls below the running maximum raises an OutOfOrder notice and its trades are still emitted, and an equal seq is legal because one match fans out to several fills. An array longer than 8192 entries is refused. The perpetual tape additionally carries the futures-only L key, the direction of the price change relative to the previous trade, normalized as tick_direction with variants plus_tick, zero_plus_tick, minus_tick and zero_minus_tick. It is required on this identity and absent from the spot one: the shared trade struct denies unknown fields, so a linear tape parsed by the current spot-shaped struct is refused message for message, and modelling L is a precondition for this source existing at all. A linear trade missing L is refused. expected_heartbeat_ms is 60000, a silence bound the feed-health board applies to event arrival, not a cadence (E31): the tape is event-driven and can be quiet, so socket liveness is carried by the ping/pong Heartbeat notice. Rights-gated: the Bybit row in knowledge/RIGHTS-LEDGER.md is unverified and the lane refuses to start unless SIGNALS_ENABLED_VENUES lists bybit.",
+  "status": "approved",
+  "transport": "websocket",
+  "expected_heartbeat_ms": 60000,
+  "fields": [
+    {
+      "name": "instrument",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "trade_id",
+      "type": "string",
+      "location": "external"
+    },
+    {
+      "name": "price",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "size",
+      "type": "decimal",
+      "location": "external"
+    },
+    {
+      "name": "aggressor_side",
+      "type": "enum",
+      "location": "external",
+      "variants": [
+        "buy",
+        "sell"
+      ]
+    },
+    {
+      "name": "block_trade",
+      "type": "bool",
+      "location": "external"
+    },
+    {
+      "name": "tick_direction",
+      "type": "enum",
+      "location": "external",
+      "variants": [
+        "plus_tick",
+        "zero_plus_tick",
+        "minus_tick",
+        "zero_minus_tick"
+      ]
+    },
+    {
+      "name": "rpi",
+      "type": "bool",
+      "location": "external"
+    },
+    {
+      "name": "cross_sequence",
+      "type": "u64",
+      "location": "external"
+    },
+    {
+      "name": "event_time_basis",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "source"
+      ]
+    },
+    {
+      "name": "event_time",
+      "type": "timestamp",
+      "location": "external"
+    }
+  ],
+  "event_time_field": "event_time"
+}

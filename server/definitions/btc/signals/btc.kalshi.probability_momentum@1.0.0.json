@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.kalshi.probability_momentum",
+  "version": "1.0.0",
+  "name": "Kalshi BTC probability momentum",
+  "description": "Causal probability-point returns of the bound Kalshi market's own btc.kalshi.prediction_quote affirmative_midpoint over ten-second, one-minute, and five-minute horizons on a one-second causal sample ring. The affirmative_midpoint is a probability in [0,1]; return_pp_10s, return_pp_1m, and return_pp_5m are one hundred times the change in that probability over each horizon, so they are expressed in probability points. direction_1m is down, flat, or up from the full-precision one-minute probability-point return, with flat meaning exactly zero and no dead band. The ring is scoped to one market_generation: a window or generation roll resets it and restarts the warm-up, because a new market is a new series. Any missing or non-ready one-second observation breaks continuity and restarts the warm-up; the identity is ready only once the ring holds 301 contiguous one-second samples (the longest horizon, five minutes). Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 1000,
+  "staleness_bound_ms": 10000,
+  "inputs": [
+    {
+      "kind": "signal",
+      "id": "btc.kalshi.prediction_quote",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    {
+      "name": "return_pp_10s",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "return_pp_1m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "return_pp_5m",
+      "type": "decimal",
+      "location": "internal"
+    },
+    {
+      "name": "direction_1m",
+      "type": "enum",
+      "location": "internal",
+      "variants": [
+        "down",
+        "flat",
+        "up"
+      ]
+    },
+    {
+      "name": "window_close",
+      "type": "timestamp",
+      "location": "internal"
+    }
+  ],
+  "event_time_field": "window_close"
+}

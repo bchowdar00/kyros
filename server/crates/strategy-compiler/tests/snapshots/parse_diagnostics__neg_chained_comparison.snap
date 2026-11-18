@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[chained-comparison]: comparison operators cannot be chained
+  0 < signal.a.b < 1
+                 ^
+  = help: split into two comparisons joined with 'and'

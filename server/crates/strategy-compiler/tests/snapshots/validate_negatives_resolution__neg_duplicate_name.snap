@@ -1,0 +1,6 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[duplicate-name] at triggers[1].name: duplicate trigger name `tick` — first declared at triggers[0]
+  = help: every name in a section must be unique; rename one of them

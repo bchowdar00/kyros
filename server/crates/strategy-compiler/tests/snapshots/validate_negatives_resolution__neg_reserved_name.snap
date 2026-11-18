@@ -1,0 +1,9 @@
+---
+source: crates/compiler/tests/validate_negatives_resolution.rs
+expression: rendered
+---
+error[reserved-name] at state[0].name: `min` is a builtin name and cannot name a state slot
+  = help: rename it; reserved words are the grammar's keywords, namespace heads, builtin names, and 'stay'
+
+error[reserved-name] at legs[0].name: `stay` is the reserved leg destination and cannot name a leg
+  = help: rename it; reserved words are the grammar's keywords, namespace heads, builtin names, and 'stay'

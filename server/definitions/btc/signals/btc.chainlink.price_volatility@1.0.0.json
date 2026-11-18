@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "signal_id": "btc.chainlink.price_volatility",
+  "version": "1.0.0",
+  "name": "Chainlink BTC/USD price volatility",
+  "description": "Realized volatility of the Chainlink on-chain BTC/USD oracle, computed live on the oracle lane from the accepted-round answer series of source chainlink.ethereum.btc-usd.rounds (the same accepted-round fold that feeds btc.chainlink.oracle_reference). Chainlink rounds are sparse (a 0.5 percent deviation threshold OR a one-hour heartbeat), so sampling is per accepted round (event), not one-second. Consecutive accepted rounds are converted to simple basis-point returns. volatility_bps_15m, volatility_bps_1h, and volatility_bps_4h are the root mean square of the per-round returns whose newer endpoint falls inside the trailing fifteen-minute, one-hour, and four-hour windows; a window with no qualifying return reports 0. short_long_ratio is the fifteen-minute value divided by the four-hour value; when the four-hour value is zero the ratio is defined as 1 (the micro convention) and regime is stable. Regime is contracting at or below 0.8, expanding at or above 1.2, and stable between those boundaries; the 0.8 and 1.2 boundaries are initial research thresholds that require empirical calibration, while the return and root-mean-square formulas are not heuristic thresholds. rounds_in_4h is the count of accepted rounds inside the trailing four-hour window (the longest horizon). newest_round_age_ms is now minus the newest accepted round's publish time, floored at zero, so sparse periods are visible. The identity is ready when at least two accepted rounds fall inside the fifteen-minute window or the count horizon is satisfied (at least two accepted rounds observed); otherwise it is not ready with chainlink_rounds_sparse. Reads only Chainlink and predicts nothing. Instance-status reasons: oracle_rights_gated, chainlink_warming_up, chainlink_rounds_sparse. Decimal outputs are rounded to eight places using round-half-to-even.",
+  "status": "approved",
+  "approximate_interval_ms": 60000,
+  "staleness_bound_ms": 300000,
+  "inputs": [
+    {
+      "kind": "source",
+      "id": "chainlink.ethereum.btc-usd.rounds",
+      "version": "1.0.0"
+    }
+  ],
+  "fields": [
+    { "name": "volatility_bps_15m", "type": "decimal", "location": "internal" },
+    { "name": "volatility_bps_1h", "type": "decimal", "location": "internal" },
+    { "name": "volatility_bps_4h", "type": "decimal", "location": "internal" },
+    { "name": "short_long_ratio", "type": "decimal", "location": "internal" },
+    {
+      "name": "regime",
+      "type": "enum",
+      "location": "internal",
+      "variants": ["contracting", "stable", "expanding"]
+    },
+    { "name": "rounds_in_4h", "type": "u16", "location": "internal" },
+    { "name": "newest_round_age_ms", "type": "duration_ms", "location": "internal" },
+    { "name": "window_close", "type": "timestamp", "location": "internal" }
+  ],
+  "event_time_field": "window_close"
+}

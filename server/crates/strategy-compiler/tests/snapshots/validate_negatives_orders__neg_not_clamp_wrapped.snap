@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/validate_negatives_orders.rs
+expression: rendered
+---
+error[not-clamp-wrapped] at legs[0].body[0].do[0].place.size: a size expression must be clamp-wrapped
+  envelope.max_order_size * 0.5
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = help: write clamp(<expr>, <lo>, <hi>)

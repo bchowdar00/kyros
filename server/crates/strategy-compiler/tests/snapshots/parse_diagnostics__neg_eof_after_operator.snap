@@ -1,0 +1,8 @@
+---
+source: crates/compiler/tests/parse_diagnostics.rs
+expression: err.to_string()
+---
+error[unexpected-eof]: expression ended unexpectedly
+  1 + 
+      ^
+  = expected a value, found end of input

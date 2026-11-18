@@ -1,0 +1,384 @@
+---
+source: crates/strategy-compiler/tests/venue_registry.rs
+expression: artifacts.program_json
+---
+{
+  "format": "tiny-program/2",
+  "compiler_version": "0.1.0",
+  "strategy_id": "Strategy_0c5a5668cd44",
+  "source_hash": "0c5a5668cd4456c6c12ccb820312925fc4c55418ba3ae1f1fd37f206c47b5eea",
+  "name": "Entry Tracker",
+  "description": "On the one-minute BTC up/down: when the ask on up sits at least 4 cents under fair, buy up with an immediate limit a cent over the ask, spending half the round budget, and remember the ask as the entry price. Once holding, sell the whole position at market as soon as the bid on up is 5 cents above the remembered entry.",
+  "dsl_version": "0.3",
+  "signals": {
+    "book": "btc_usd.updown_1m.current.price.v1",
+    "fair": "platform.btc_usd.updown_1m.current.fair.v1"
+  },
+  "instruments": {
+    "market": "btc_usd.updown_1m.current"
+  },
+  "subscriptions": [
+    "btc_usd.updown_1m.current.price.v1",
+    "platform.btc_usd.updown_1m.current.fair.v1"
+  ],
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  },
+  "state": [
+    {
+      "kind": "scalar",
+      "name": "entry_px",
+      "default": {
+        "op": "decimal",
+        "value": "0"
+      }
+    },
+    {
+      "kind": "scalar",
+      "name": "holding",
+      "default": {
+        "op": "bool",
+        "value": false
+      }
+    }
+  ],
+  "params": [],
+  "triggers": [
+    {
+      "name": "cheap",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "field",
+            "signal_id": "btc_usd.updown_1m.current.price.v1",
+            "field": "ask",
+            "comparator": ">",
+            "value": {
+              "kind": "literal",
+              "value": "0"
+            }
+          },
+          {
+            "kind": "field",
+            "signal_id": "platform.btc_usd.updown_1m.current.fair.v1",
+            "field": "up",
+            "comparator": ">",
+            "value": {
+              "kind": "literal",
+              "value": "0"
+            }
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    },
+    {
+      "name": "book_tick",
+      "source": {
+        "kind": "all",
+        "leaves": [
+          {
+            "kind": "always",
+            "signal_id": "btc_usd.updown_1m.current.price.v1"
+          }
+        ]
+      },
+      "fire": "if_true",
+      "rearm": "immediate"
+    }
+  ],
+  "legs": [
+    {
+      "name": "hunting",
+      "resident": true,
+      "arm": [
+        "cheap"
+      ],
+      "blocks": [
+        {
+          "name": "buy_up",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "triggered",
+              "name": "cheap"
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "-",
+                "lhs": {
+                  "op": "signal",
+                  "signal_id": "platform.btc_usd.updown_1m.current.fair.v1",
+                  "field": "up"
+                },
+                "rhs": {
+                  "op": "signal",
+                  "signal_id": "btc_usd.updown_1m.current.price.v1",
+                  "field": "ask"
+                }
+              },
+              "rhs": {
+                "op": "decimal",
+                "value": "0.04"
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "btc_usd.updown_1m.current.price.v1",
+              "field": "ask"
+            },
+            {
+              "signal_id": "platform.btc_usd.updown_1m.current.fair.v1",
+              "field": "up"
+            }
+          ],
+          "items": [
+            {
+              "kind": "set",
+              "slot": "entry_px",
+              "value": {
+                "op": "signal",
+                "signal_id": "btc_usd.updown_1m.current.price.v1",
+                "field": "ask"
+              }
+            },
+            {
+              "kind": "set",
+              "slot": "holding",
+              "value": {
+                "op": "bool",
+                "value": true
+              }
+            },
+            {
+              "kind": "place",
+              "intent_id": "hunting.buy_up.2",
+              "order": {
+                "instrument_id": "btc_usd.updown_1m.current",
+                "outcome": "up",
+                "side": "buy",
+                "order_type": "limit",
+                "tif": "ioc",
+                "tag": "entry",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "call",
+                      "builtin": "floor",
+                      "args": [
+                        {
+                          "op": "/",
+                          "lhs": {
+                            "op": "*",
+                            "lhs": {
+                              "op": "envelope",
+                              "field": "round_budget",
+                              "value": "400"
+                            },
+                            "rhs": {
+                              "op": "decimal",
+                              "value": "0.5"
+                            }
+                          },
+                          "rhs": {
+                            "op": "+",
+                            "lhs": {
+                              "op": "signal",
+                              "signal_id": "btc_usd.updown_1m.current.price.v1",
+                              "field": "ask"
+                            },
+                            "rhs": {
+                              "op": "decimal",
+                              "value": "0.01"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_order_size",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "price": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "+",
+                      "lhs": {
+                        "op": "signal",
+                        "signal_id": "btc_usd.updown_1m.current.price.v1",
+                        "field": "ask"
+                      },
+                      "rhs": {
+                        "op": "decimal",
+                        "value": "0.01"
+                      }
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0.01"
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0.99"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "then": "holding"
+        }
+      ]
+    },
+    {
+      "name": "holding",
+      "resident": true,
+      "arm": [
+        "book_tick"
+      ],
+      "blocks": [
+        {
+          "name": "take_profit",
+          "guard": {
+            "op": "and",
+            "lhs": {
+              "op": "and",
+              "lhs": {
+                "op": "triggered",
+                "name": "book_tick"
+              },
+              "rhs": {
+                "op": "state",
+                "slot": "holding"
+              }
+            },
+            "rhs": {
+              "op": ">=",
+              "lhs": {
+                "op": "signal",
+                "signal_id": "btc_usd.updown_1m.current.price.v1",
+                "field": "bid"
+              },
+              "rhs": {
+                "op": "+",
+                "lhs": {
+                  "op": "state",
+                  "slot": "entry_px"
+                },
+                "rhs": {
+                  "op": "decimal",
+                  "value": "0.05"
+                }
+              }
+            }
+          },
+          "reads": [
+            {
+              "signal_id": "btc_usd.updown_1m.current.price.v1",
+              "field": "bid"
+            }
+          ],
+          "items": [
+            {
+              "kind": "set",
+              "slot": "holding",
+              "value": {
+                "op": "bool",
+                "value": false
+              }
+            },
+            {
+              "kind": "place",
+              "intent_id": "holding.take_profit.1",
+              "order": {
+                "instrument_id": "btc_usd.updown_1m.current",
+                "outcome": "up",
+                "side": "sell",
+                "order_type": "market",
+                "tif": "ioc",
+                "tag": "exit",
+                "size": {
+                  "op": "call",
+                  "builtin": "clamp",
+                  "args": [
+                    {
+                      "op": "call",
+                      "builtin": "abs",
+                      "args": [
+                        {
+                          "op": "platform",
+                          "read": "position_size"
+                        }
+                      ]
+                    },
+                    {
+                      "op": "decimal",
+                      "value": "0"
+                    },
+                    {
+                      "op": "envelope",
+                      "field": "max_position_per_market",
+                      "value": "200"
+                    }
+                  ]
+                },
+                "reduce_only": true
+              }
+            }
+          ],
+          "then": "done"
+        }
+      ]
+    },
+    {
+      "name": "done",
+      "resident": true,
+      "arm": [],
+      "blocks": []
+    }
+  ],
+  "initial_leg": "hunting",
+  "intents": {
+    "holding.take_profit.1": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "holding",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "200"
+    },
+    "hunting.buy_up.2": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "hunting",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "tables": {}
+}

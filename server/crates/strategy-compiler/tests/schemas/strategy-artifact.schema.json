@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://motionmarkets.dev/schemas/strategy-artifact.schema.json",
+  "title": "StrategyArtifact",
+  "$comment": "Compile -> store. The persisted bundle: compiled runnable + its schema.",
+  "type": "object",
+  "required": ["schema_version", "strategy_id", "version", "artifact_ref", "schema", "checksum", "compiler_version", "created_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "strategy_id": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1, "description": "Monotonic per strategy_id." },
+    "artifact_ref": { "type": "string", "description": "URI to the compiled runnable module in the artifact store." },
+    "schema": { "$ref": "strategy-schema.schema.json" },
+    "checksum": { "type": "string" },
+    "layout_hash": {
+      "type": "string",
+      "description": "Copied from the embedded schema for indexability. DISTINCT from checksum: checksum answers 'are these the artifact's exact bytes' (integrity); layout_hash answers 'does this code's memory contract match what the runtime will deliver' (compatibility). An intact artifact can still be layout-stale -- that second failure is the silent one."
+    },
+    "compiler_version": { "type": "string" },
+    "created_at": { "$ref": "common.schema.json#/$defs/Timestamp" }
+  },
+  "additionalProperties": false
+}

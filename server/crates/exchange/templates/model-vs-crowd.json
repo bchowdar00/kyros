@@ -1,0 +1,485 @@
+{
+  "id": "model-vs-crowd",
+  "title": "Buy the side the model says is cheap",
+  "creator": {
+    "handle": "@tiny",
+    "username": "Tiny",
+    "avatar": "strategy-01.jpg"
+  },
+  "series": [
+    "nba-h2h"
+  ],
+  "logic": "The public win-probability model prices the game from the score, the clock and the pregame line. Whenever either team is at least four cents under that number at the ask, buy it. Once the book comes back to the model, sell out and go back to hunting, so a game can be traded more than once. Nothing new is bought in the final stretch.",
+  "inverse_logic": "Use the sharp book's live line as fair instead of the model. Whenever either team is at least four cents under the line at the ask, buy it, and sell out when the book comes back to the line. The line moves more slowly than the model, so this fades the crowd.",
+  "envelope": {
+    "loss_budget_fraction": "1",
+    "order_fraction": "0.2",
+    "max_order_size": "200",
+    "max_open_orders": "2",
+    "max_position_per_market": "400"
+  },
+  "substitutions": {
+    "nba-h2h": {
+      "edge": "0.04",
+      "cutoff": "15000"
+    }
+  },
+  "primary": {
+    "meta": {
+      "name": "Model vs Crowd",
+      "description": "The public win-probability model prices the game from the score, the clock and the pregame line. When either side's ask sits at least the edge under the model, take it with an immediate-or-cancel at the ask; when the book's bid on that side reaches the model, sell out and go back to hunting. No new entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": {
+      "market": "{{series}}.current"
+    },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "model": "nba.sim.winprob.v1",
+      "window": "{{series}}.current.window.v1"
+    },
+    "state": [],
+    "expressions": {
+      "named": {
+        "fair": "signal.model.home"
+      }
+    },
+    "triggers": [
+      {
+        "name": "home_cheap",
+        "condition": {
+          "expr": "signal.model.home - signal.book.ask",
+          "comparator": ">=",
+          "value": "{{edge}}"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "away_cheap",
+        "condition": {
+          "expr": "signal.book.bid - signal.model.home",
+          "comparator": ">=",
+          "value": "{{edge}}"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "home_at_fair",
+        "condition": {
+          "expr": "signal.book.bid - signal.model.home",
+          "comparator": ">=",
+          "value": "0"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "away_at_fair",
+        "condition": {
+          "expr": "signal.model.home - signal.book.ask",
+          "comparator": ">=",
+          "value": "0"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      }
+    ],
+    "legs": [
+      {
+        "name": "hunting",
+        "resident": true,
+        "arm": [
+          "home_cheap",
+          "away_cheap"
+        ],
+        "body": [
+          {
+            "name": "buy_home",
+            "if": "triggered(home_cheap) and platform.window.remaining_ms > {{cutoff}} and abs(platform.position.size) < 1 and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "home",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": {
+                    "fill": "holding_home",
+                    "partial": "holding_home",
+                    "reject": "hunting",
+                    "cancel_ack": "hunting",
+                    "expiry": "hunting"
+                  }
+                }
+              }
+            ],
+            "then": "holding_home"
+          },
+          {
+            "name": "buy_away",
+            "if": "triggered(away_cheap) and platform.window.remaining_ms > {{cutoff}} and abs(platform.position.size) < 1 and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "away",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": {
+                    "fill": "holding_away",
+                    "partial": "holding_away",
+                    "reject": "hunting",
+                    "cancel_ack": "hunting",
+                    "expiry": "hunting"
+                  }
+                }
+              }
+            ],
+            "then": "holding_away"
+          }
+        ]
+      },
+      {
+        "name": "holding_home",
+        "resident": true,
+        "arm": [
+          "home_at_fair"
+        ],
+        "body": [
+          {
+            "name": "sell_home",
+            "if": "triggered(home_at_fair) and platform.position.size >= 1",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "away",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(platform.position.size, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": {
+                    "fill": "hunting",
+                    "partial": "holding_home",
+                    "reject": "holding_home",
+                    "cancel_ack": "holding_home",
+                    "expiry": "holding_home"
+                  }
+                }
+              }
+            ],
+            "then": "hunting"
+          }
+        ]
+      },
+      {
+        "name": "holding_away",
+        "resident": true,
+        "arm": [
+          "away_at_fair"
+        ],
+        "body": [
+          {
+            "name": "sell_away",
+            "if": "triggered(away_at_fair) and platform.position.size <= -1",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "home",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": {
+                    "fill": "hunting",
+                    "partial": "holding_away",
+                    "reject": "holding_away",
+                    "cancel_ack": "holding_away",
+                    "expiry": "holding_away"
+                  }
+                }
+              }
+            ],
+            "then": "hunting"
+          }
+        ]
+      }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Sharp vs Crowd",
+      "description": "The sharp book's live line, not the model, is fair. When either side's ask sits at least the edge under the sharp line, take it with an immediate-or-cancel at the ask; when the book's bid on that side reaches the line, sell out and hunt again. The line tracks the game more slowly than the model, so this fades the crowd's overreactions.",
+      "dsl_version": "0.3"
+    },
+    "instruments": {
+      "market": "{{series}}.current"
+    },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "sharp": "nba.sim.sharp_line.v1",
+      "window": "{{series}}.current.window.v1"
+    },
+    "state": [],
+    "expressions": {
+      "named": {
+        "fair": "signal.sharp.home_prob"
+      }
+    },
+    "triggers": [
+      {
+        "name": "home_cheap",
+        "condition": {
+          "expr": "signal.sharp.home_prob - signal.book.ask",
+          "comparator": ">=",
+          "value": "{{edge}}"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "away_cheap",
+        "condition": {
+          "expr": "signal.book.bid - signal.sharp.home_prob",
+          "comparator": ">=",
+          "value": "{{edge}}"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "home_at_fair",
+        "condition": {
+          "expr": "signal.book.bid - signal.sharp.home_prob",
+          "comparator": ">=",
+          "value": "0"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "away_at_fair",
+        "condition": {
+          "expr": "signal.sharp.home_prob - signal.book.ask",
+          "comparator": ">=",
+          "value": "0"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      }
+    ],
+    "legs": [
+      {
+        "name": "hunting",
+        "resident": true,
+        "arm": [
+          "home_cheap",
+          "away_cheap"
+        ],
+        "body": [
+          {
+            "name": "buy_home",
+            "if": "triggered(home_cheap) and platform.window.remaining_ms > {{cutoff}} and abs(platform.position.size) < 1 and signal.book.ask < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "home",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": {
+                    "fill": "holding_home",
+                    "partial": "holding_home",
+                    "reject": "hunting",
+                    "cancel_ack": "hunting",
+                    "expiry": "hunting"
+                  }
+                }
+              }
+            ],
+            "then": "holding_home"
+          },
+          {
+            "name": "buy_away",
+            "if": "triggered(away_cheap) and platform.window.remaining_ms > {{cutoff}} and abs(platform.position.size) < 1 and 1 - signal.book.bid < 0.95",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "away",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": {
+                    "fill": "holding_away",
+                    "partial": "holding_away",
+                    "reject": "hunting",
+                    "cancel_ack": "hunting",
+                    "expiry": "hunting"
+                  }
+                }
+              }
+            ],
+            "then": "holding_away"
+          }
+        ]
+      },
+      {
+        "name": "holding_home",
+        "resident": true,
+        "arm": [
+          "home_at_fair"
+        ],
+        "body": [
+          {
+            "name": "sell_home",
+            "if": "triggered(home_at_fair) and platform.position.size >= 1",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "away",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(platform.position.size, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": {
+                    "fill": "hunting",
+                    "partial": "holding_home",
+                    "reject": "holding_home",
+                    "cancel_ack": "holding_home",
+                    "expiry": "holding_home"
+                  }
+                }
+              }
+            ],
+            "then": "hunting"
+          }
+        ]
+      },
+      {
+        "name": "holding_away",
+        "resident": true,
+        "arm": [
+          "away_at_fair"
+        ],
+        "body": [
+          {
+            "name": "sell_away",
+            "if": "triggered(away_at_fair) and platform.position.size <= -1",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "home",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(abs(platform.position.size), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "exit",
+                  "on": {
+                    "fill": "hunting",
+                    "partial": "holding_away",
+                    "reject": "holding_away",
+                    "cancel_ack": "holding_away",
+                    "expiry": "holding_away"
+                  }
+                }
+              }
+            ],
+            "then": "hunting"
+          }
+        ]
+      }
+    ]
+  }
+}

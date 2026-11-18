@@ -1,0 +1,13 @@
+---
+source: crates/strategy-compiler/tests/validate_negatives_context.rs
+expression: rendered
+---
+error[legs-read-invalid] at legs[0].body[0].if: `fill_qty` is not a leg fill field
+  legs.main.fill_qty > 0
+            ^^^^^^^^
+  = help: a leg read is `legs.<leg>.<field>` or `legs.<leg>.tag.<tag>.<field>`; fields: filled_qty, fill_price, last_fill_price, fills
+
+error[legs-read-invalid] at legs[0].body[1].if: `tag` is not a leg fill field
+  legs.main.tag > 0
+            ^^^
+  = help: a leg read is `legs.<leg>.<field>` or `legs.<leg>.tag.<tag>.<field>`; fields: filled_qty, fill_price, last_fill_price, fills

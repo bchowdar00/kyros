@@ -1,0 +1,209 @@
+{
+  "id": "vwap-reversion",
+  "title": "Rubber Band",
+  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-06.jpg" },
+  "series": ["btc-2m", "btc-15m"],
+  "logic": "Compares BTC with the average price of the last minute of trading. When BTC has stretched a few basis points away from it, it bets on the snap back: bids for Up when BTC is below the average, Down when above, as long as that side is under sixty cents. Keeps the bid at the top of the book, pulls it before the close, and holds any fill to the end.",
+  "inverse_logic": "Compares BTC with the average price of the last minute of trading. When BTC has stretched a few basis points away from it, it bets the stretch continues: Up when BTC is above the average, Down when below. If BTC crosses back through the average, it closes and switches sides. Otherwise holds to the close.",
+  "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "2", "max_position_per_market": "400" },
+  "substitutions": {
+    "btc-2m": { "stretch_bps": "2", "ceiling": "0.6", "requote": "1s", "pull": "10s", "cutoff": "20s" },
+    "btc-15m": { "stretch_bps": "4", "ceiling": "0.6", "requote": "2s", "pull": "45s", "cutoff": "90s" }
+  },
+  "primary": {
+    "meta": {
+      "name": "Snap to Average",
+      "description": "When the blended sixty-second VWAP deviation is at least the stretch in either direction and the side that would profit from the pull back trades under the ceiling, rest a bid on that side at its best bid, re-quote it to the touch on every book tick, and pull it on the window clock before the close. A fill is held to settlement.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "vwap": "btc.external.vwap_deviation.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "stretched_down",
+        "condition": { "all": [
+          { "expr": "0 - signal.vwap.deviation_bps_60s", "comparator": ">=", "value": "{{stretch_bps}}" },
+          { "signal": "book", "field": "up", "comparator": "<", "value": "{{ceiling}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "stretched_up",
+        "condition": { "all": [
+          { "expr": "signal.vwap.deviation_bps_60s", "comparator": ">=", "value": "{{stretch_bps}}" },
+          { "signal": "book", "field": "down", "comparator": "<", "value": "{{ceiling}}" }
+        ] },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "tick",
+        "condition": { "signal": "book" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "{{requote}}" } },
+      { "name": "closing",
+        "timer": { "kind": "window_clock", "instrument": "market", "remaining": "{{pull}}" },
+        "fire": "on_crossing", "rearm": { "mode": "fresh_crossing" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["stretched_down", "stretched_up", "closing"],
+        "body": [
+          { "name": "bid_up",
+            "if": "triggered(stretched_down) and signal.book.bid > 0 and platform.window.remaining_ms > {{pull}}",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "gtc",
+                  "price": "clamp(signal.book.bid, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.bid, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "bid",
+                  "on": { "fill": "done", "partial": "quoting_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "quoting_up" },
+          { "name": "bid_down",
+            "if": "triggered(stretched_up) and signal.book.ask < 1 and platform.window.remaining_ms > {{pull}}",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "gtc",
+                  "price": "clamp(1 - signal.book.ask, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.ask), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "bid",
+                  "on": { "fill": "done", "partial": "quoting_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "quoting_down" },
+          { "name": "stop", "if": "triggered(closing)", "do": [], "then": "done" }
+        ] },
+      { "name": "quoting_up", "resident": true, "arm": ["tick", "closing"],
+        "body": [
+          { "name": "requote",
+            "if": "triggered(tick) and signal.book.bid > 0",
+            "do": [
+              { "cancel_replace": {
+                  "tag": "bid",
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "gtc",
+                  "price": "clamp(signal.book.bid, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.bid, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size"
+              } }
+            ] },
+          { "name": "pull", "if": "triggered(closing)", "do": [ { "cancel": { "tag": "bid" } } ], "then": "done" }
+        ] },
+      { "name": "quoting_down", "resident": true, "arm": ["tick", "closing"],
+        "body": [
+          { "name": "requote",
+            "if": "triggered(tick) and signal.book.ask < 1",
+            "do": [
+              { "cancel_replace": {
+                  "tag": "bid",
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "gtc",
+                  "price": "clamp(1 - signal.book.ask, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.ask), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size"
+              } }
+            ] },
+          { "name": "pull", "if": "triggered(closing)", "do": [ { "cancel": { "tag": "bid" } } ], "then": "done" }
+        ] },
+      { "name": "done", "resident": true, "arm": [], "body": [] }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Ride the Stretch",
+      "description": "When the blended sixty-second VWAP deviation is at least the stretch in either direction, take that side with an immediate-or-cancel limit two cents over the ask. While holding, a deviation of the stretch the other way flips the position: close it and take the same dollars on the opposite side. Held to settlement otherwise; no entries inside the cutoff before the close.",
+      "dsl_version": "0.3"
+    },
+    "instruments": { "market": "{{series}}.current" },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "vwap": "btc.external.vwap_deviation.v1"
+    },
+    "state": [],
+    "triggers": [
+      { "name": "stretched_up",
+        "condition": { "expr": "signal.vwap.deviation_bps_60s", "comparator": ">=", "value": "{{stretch_bps}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } },
+      { "name": "stretched_down",
+        "condition": { "expr": "0 - signal.vwap.deviation_bps_60s", "comparator": ">=", "value": "{{stretch_bps}}" },
+        "fire": "if_true", "rearm": { "mode": "immediate", "cooldown": "1s" } }
+    ],
+    "legs": [
+      { "name": "hunting", "resident": true, "arm": ["stretched_up", "stretched_down"],
+        "body": [
+          { "name": "ride_up",
+            "if": "triggered(stretched_up) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_up" },
+          { "name": "ride_down",
+            "if": "triggered(stretched_down) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "entry",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "hunting", "cancel_ack": "hunting", "expiry": "hunting" }
+              } }
+            ],
+            "then": "holding_down" }
+        ] },
+      { "name": "holding_up", "resident": true, "arm": ["stretched_down"],
+        "body": [
+          { "name": "flip_down",
+            "if": "triggered(stretched_down) and platform.window.remaining_ms > {{cutoff}} and 1 - signal.book.bid < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "down", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp((1 - signal.book.bid) + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(platform.position.size, 0) + envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_down", "partial": "holding_down", "reject": "holding_up", "cancel_ack": "holding_up", "expiry": "holding_up" }
+              } }
+            ],
+            "then": "holding_down" }
+        ] },
+      { "name": "holding_down", "resident": true, "arm": ["stretched_up"],
+        "body": [
+          { "name": "flip_up",
+            "if": "triggered(stretched_up) and platform.window.remaining_ms > {{cutoff}} and signal.book.ask < 0.9",
+            "do": [
+              { "place": {
+                  "instrument": "market", "outcome": "up", "side": "buy",
+                  "order_type": "limit", "tif": "ioc",
+                  "price": "clamp(signal.book.ask + 0.02, 0.01, 0.99)",
+                  "price_band": ["0.01", "0.99"],
+                  "size": "clamp(max(0 - platform.position.size, 0) + envelope.allocation * {{stake}} / signal.book.ask, 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "flip",
+                  "on": { "fill": "holding_up", "partial": "holding_up", "reject": "holding_down", "cancel_ack": "holding_down", "expiry": "holding_down" }
+              } }
+            ],
+            "then": "holding_up" }
+        ] }
+    ]
+  }
+}

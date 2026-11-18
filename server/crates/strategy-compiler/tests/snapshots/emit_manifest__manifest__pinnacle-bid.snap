@@ -1,0 +1,170 @@
+---
+source: crates/strategy-compiler/tests/emit_manifest.rs
+expression: manifest
+---
+{
+  "schema_version": 2,
+  "strategy_id": "Strategy_f8c0f3dd75b9",
+  "name": "Pinnacle Bid",
+  "description": "On the NBA moneyline, Pinnacle's de-vigged line is treated as fair. Whenever the exchange pushes a side more than 2 cents below the Pinnacle number, rest a bid one cent under that number and pick up the cheap shares; on every line or book move while the side stays cheap, replace the bid so it tracks the line. When the discount closes back inside 2 cents, pull the bid and go back to watching.",
+  "dsl_version": "0.3",
+  "source_hash": "f8c0f3dd75b9ec81c77224d5db5d377aa57669df1f5c404e3463e3bbdd4e97fb",
+  "signals": [
+    {
+      "signal_id": "pinnacle.nba.sim.h2h.current.fair.v1",
+      "staleness_policy": "proceed"
+    },
+    {
+      "signal_id": "platform.nba.sim.h2h.current.sharp_spread.v1",
+      "staleness_policy": "proceed"
+    }
+  ],
+  "watch_fields": [
+    {
+      "signal_id": "pinnacle.nba.sim.h2h.current.fair.v1",
+      "field": "away"
+    },
+    {
+      "signal_id": "pinnacle.nba.sim.h2h.current.fair.v1",
+      "field": "home"
+    },
+    {
+      "signal_id": "platform.nba.sim.h2h.current.sharp_spread.v1",
+      "field": "away"
+    },
+    {
+      "signal_id": "platform.nba.sim.h2h.current.sharp_spread.v1",
+      "field": "home"
+    }
+  ],
+  "triggers": [
+    {
+      "id": "home_cheap",
+      "condition": {
+        "signal_id": "platform.nba.sim.h2h.current.sharp_spread.v1",
+        "field": "home",
+        "comparator": ">",
+        "value": "0.02"
+      },
+      "fire": "if_true",
+      "rearm": {
+        "mode": "immediate"
+      }
+    },
+    {
+      "id": "home_fair",
+      "condition": {
+        "signal_id": "platform.nba.sim.h2h.current.sharp_spread.v1",
+        "field": "home",
+        "comparator": "<=",
+        "value": "0.02"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    },
+    {
+      "id": "away_cheap",
+      "condition": {
+        "signal_id": "platform.nba.sim.h2h.current.sharp_spread.v1",
+        "field": "away",
+        "comparator": ">",
+        "value": "0.02"
+      },
+      "fire": "if_true",
+      "rearm": {
+        "mode": "immediate"
+      }
+    },
+    {
+      "id": "away_fair",
+      "condition": {
+        "signal_id": "platform.nba.sim.h2h.current.sharp_spread.v1",
+        "field": "away",
+        "comparator": "<=",
+        "value": "0.02"
+      },
+      "fire": "on_crossing",
+      "rearm": {
+        "mode": "fresh_crossing"
+      }
+    }
+  ],
+  "lifecycle_stages": [
+    {
+      "name": "watching",
+      "resident": true,
+      "arm": [
+        "home_cheap",
+        "away_cheap"
+      ]
+    },
+    {
+      "name": "quoting_home",
+      "resident": true,
+      "arm": [
+        "home_cheap",
+        "home_fair"
+      ]
+    },
+    {
+      "name": "quoting_away",
+      "resident": true,
+      "arm": [
+        "away_cheap",
+        "away_fair"
+      ]
+    }
+  ],
+  "intent_index": {
+    "quoting_away.requote.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "quoting_home.requote.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "watching.bid_away.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    },
+    "watching.bid_home.0": {
+      "on": {
+        "fill": "stay",
+        "partial": "stay",
+        "reject": "stay",
+        "cancel_ack": "stay",
+        "expiry": "stay"
+      },
+      "max_size": "100"
+    }
+  },
+  "envelope": {
+    "allocation": "1000",
+    "loss_budget": "500",
+    "round_budget": "400",
+    "max_order_size": "100",
+    "max_position_per_market": "200",
+    "max_open_orders": "8"
+  }
+}
