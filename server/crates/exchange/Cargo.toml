@@ -28,6 +28,7 @@ axum = { version = "0.8", features = ["ws"] }
 tokio = { version = "1", features = ["full"] }
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 # JSON Schema of the IR document, served at /api/strategy/schema.
 schemars.workspace = true
 tower-http = { version = "0.6", features = ["cors"] }

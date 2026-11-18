@@ -6,6 +6,7 @@ pub mod engine;
 pub mod gemini;
 pub mod house;
 pub mod pricing;
+pub mod record;
 pub mod registry;
 pub mod scheduler;
 pub mod series;

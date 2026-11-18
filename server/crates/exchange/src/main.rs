@@ -30,6 +30,7 @@ use exchange::gemini::mirror_task::spawn_mirror;
 use exchange::gemini::strikes::{GeminiClock, IndexTape, StrikeBook, spawn_reference_listener};
 use exchange::gemini::{BTC_INDEX_ID, BTC_INDEX_STREAM, CONTRACT_STATUS_STREAM, GeminiEnv, GeminiState, PublicSocket, gemini_series_for};
 use exchange::house;
+use exchange::record::{self, RecordBook};
 use exchange::pricing::feed::{PriceFeed, spawn_tick_flusher};
 use exchange::pricing::mark::{BtcMark, SharedMark};
 use exchange::registry::{self, PriceSource};
@@ -187,7 +188,11 @@ async fn main() {
     // reports order fates into it. Installed before anything can place a
     // client-tagged order so no strategy fill is ever unreported.
     let (runtime, runtime_rx) = runtime_channel();
-    EngineVenue::install(&engine, runtime.clone());
+    // Every order event goes to the on-chain record's journal first and
+    // then to the runtime. The sealer looks for resolved rounds.
+    let records = RecordBook::new();
+    record::install_sink(&engine, runtime.clone(), records.clone());
+    record::spawn_sealer(engine.clone(), records.clone());
     let price = PriceFeed::new();
     // Charts get one tick per interval; this emits a burst's trailing price.
     spawn_tick_flusher(price.clone());
@@ -469,6 +474,7 @@ async fn main() {
             post(api::deploy_template),
         )
         .merge(api::writer_meter::routes())
+        .merge(record::routes(records))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
