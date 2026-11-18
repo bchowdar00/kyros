@@ -163,8 +163,8 @@ async fn fair_discount_on_the_real_engine() {
     assert_ne!(status.live_orders[0].venue_order_id.unwrap(), first_venue_id);
     assert!(status.log.iter().any(|l| l.contains("replaced -> stay")), "{:#?}", status.log);
 
-    // The window_clock timer (2m round, 10s before close) pulls the bid: CancelAck -> done.
-    tokio::time::advance(Duration::from_millis(111_000)).await;
+    // The window_clock timer (10s before the round's close) pulls the bid: CancelAck -> done.
+    tokio::time::advance(Duration::from_secs(SeriesId(0).duration_secs() - 9)).await;
     settle().await;
     assert_eq!(w.leg(&id).await, "done");
     assert_eq!(w.best_bid(SeriesId(0)), None, "bid pulled from the real book");

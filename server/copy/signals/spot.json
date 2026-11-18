@@ -1,6 +1,6 @@
 {
   "title": "BTC price",
-  "description": "The live BTC price the exchange reads for every strike and settlement. It comes from the Pyth aggregate when a key is set and from Coinbase otherwise.",
+  "description": "The live BTC price every strike and result is measured in. It is the index Gemini settles its Bitcoin contracts on, read from Gemini once a second.",
   "fields": {
     "last": {
       "label": "BTC price",

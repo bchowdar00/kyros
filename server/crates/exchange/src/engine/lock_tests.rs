@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use super::events::{ExecKind, ExecReject, Recorder};
 use super::market::RoundClock;
-use super::{Engine, OrderError, PlaceOpts, ReplaceError, TradeSource};
+use super::{Engine, MarketStatus, OrderError, Outcome, PlaceOpts, ReplaceError, RoundClose, TradeSource};
 use crate::ticks::PriceTick;
 use crate::types::{Address, DEFAULT_SERIES, Qty, Side, Tenths};
 
@@ -27,6 +27,8 @@ fn rig(lock: bool) -> (Engine, Arc<AtomicU64>, Recorder) {
     let mut e = Engine::new(START);
     for a in [A, B] {
         e.get_or_create_account(a);
+        // Users, not bots: a bot's balance is reset at settlement.
+        e.register_user(a);
     }
     e.open_first_market(100_000.0, OPENS, 300);
     let now = Arc::new(AtomicU64::new(OPENS + 10));
@@ -150,4 +152,54 @@ fn a_new_engine_has_the_lock_off() {
     e.open_first_market(100_000.0, 0, 120);
     assert!(!e.e().is_locked());
     e.ctx().place_limit(A, Side::Ask, tick(600), Qty(1), TradeSource::Ui).unwrap();
+}
+
+// ── A round that ends before the next one can open ──
+
+#[test]
+fn a_round_can_be_settled_without_opening_the_next() {
+    let (mut e, _now, _rec) = rig(false);
+    // B buys 2 of A's 5 at 60c; 3 stay resting.
+    e.ctx().place_market(B, Side::Bid, Qty(2), TradeSource::Ui).unwrap();
+    let report = e.exchange_mut().resolve_only(DEFAULT_SERIES, Outcome::Yes, RoundClose::Btc { close_price_btc_usd: 100_001.0 });
+    assert_eq!(report.outcome, Outcome::Yes);
+    assert_eq!(report.cancelled_orders, 1);
+    assert!(e.e().current_market().is_none(), "no round is open");
+    let settled = e.e().resolved_markets(1).next().copied().unwrap();
+    assert_eq!(settled.id, report.resolved_id);
+    assert!(matches!(settled.status, MarketStatus::Resolved { outcome: Outcome::Yes, .. }));
+    // Yes won: B paid 2 x 60c and is paid 2 x $1; A keeps 2 x 60c and loses 2 x $1.
+    let (a, b) = (e.account(&A).unwrap(), e.account(&B).unwrap());
+    assert_eq!(b.usdc_balance, Tenths(START.0 + 2 * 400));
+    assert_eq!(a.usdc_balance, Tenths(START.0 - 2 * 400));
+    assert_eq!((a.locked, b.locked), (Tenths::ZERO, Tenths::ZERO));
+    assert_eq!(e.e().book().iter_ask_orders().count(), 0);
+}
+
+#[test]
+fn after_a_settle_without_a_next_round_a_new_first_round_opens() {
+    let (mut e, _now, _rec) = rig(false);
+    e.exchange_mut().resolve_only(DEFAULT_SERIES, Outcome::No, RoundClose::Btc { close_price_btc_usd: 1.0 });
+    e.open_first_market(100_500.0, CLOSES + 600, 300);
+    let m = e.e().current_market().copied().unwrap();
+    assert_eq!((m.opened_at, m.closes_at), (CLOSES + 600, CLOSES + 900));
+    e.ctx().place_limit(A, Side::Ask, tick(600), Qty(1), TradeSource::Ui).unwrap();
+}
+
+#[test]
+fn a_locked_series_with_no_open_round_refuses_orders() {
+    let (mut e, now, _rec) = rig(true);
+    now.store(OPENS + 10, Ordering::SeqCst);
+    e.exchange_mut().resolve_only(DEFAULT_SERIES, Outcome::No, RoundClose::Btc { close_price_btc_usd: 1.0 });
+    assert!(e.e().is_locked());
+    let got = e.ctx().place_limit(B, Side::Bid, tick(400), Qty(1), TradeSource::Ui);
+    assert_eq!(got.unwrap_err(), OrderError::MarketClosed);
+}
+
+#[test]
+fn an_unlocked_series_with_no_open_round_behaves_as_it_always_did() {
+    let (mut e, _now, _rec) = rig(false);
+    e.exchange_mut().resolve_only(DEFAULT_SERIES, Outcome::No, RoundClose::Btc { close_price_btc_usd: 1.0 });
+    assert!(!e.e().is_locked());
+    e.ctx().place_limit(B, Side::Bid, tick(400), Qty(1), TradeSource::Ui).unwrap();
 }

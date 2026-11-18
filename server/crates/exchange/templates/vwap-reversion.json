@@ -2,12 +2,12 @@
   "id": "vwap-reversion",
   "title": "Rubber Band",
   "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-06.jpg" },
-  "series": ["btc-2m", "btc-15m"],
+  "series": ["btc-5m", "btc-15m"],
   "logic": "Compares BTC with the average price of the last minute of trading. When BTC has stretched a few basis points away from it, it bets on the snap back: bids for Up when BTC is below the average, Down when above, as long as that side is under sixty cents. Keeps the bid at the top of the book, pulls it before the close, and holds any fill to the end.",
   "inverse_logic": "Compares BTC with the average price of the last minute of trading. When BTC has stretched a few basis points away from it, it bets the stretch continues: Up when BTC is above the average, Down when below. If BTC crosses back through the average, it closes and switches sides. Otherwise holds to the close.",
   "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "2", "max_position_per_market": "400" },
   "substitutions": {
-    "btc-2m": { "stretch_bps": "2", "ceiling": "0.6", "requote": "1s", "pull": "10s", "cutoff": "20s" },
+    "btc-5m": { "stretch_bps": "2", "ceiling": "0.6", "requote": "1s", "pull": "10s", "cutoff": "20s" },
     "btc-15m": { "stretch_bps": "4", "ceiling": "0.6", "requote": "2s", "pull": "45s", "cutoff": "90s" }
   },
   "primary": {

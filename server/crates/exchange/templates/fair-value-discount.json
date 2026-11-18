@@ -2,12 +2,12 @@
   "id": "fair-value-discount",
   "title": "Fair Price Finder",
   "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-01.jpg" },
-  "series": ["btc-2m", "btc-15m"],
+  "series": ["btc-5m", "btc-15m"],
   "logic": "Works out what each side is really worth from where BTC sits against the strike and how much time is left. When either side is selling at least three cents under that, it buys it. Sells once the price catches up, then hunts for the next bargain. Stops buying near the close.",
   "inverse_logic": "Watches which way the fair odds are moving, not where they sit. When the odds of Up rise two cents and the book has not followed, it buys Up; when they fall, it buys Down. If the odds turn against it, it closes and switches sides.",
   "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "2", "max_position_per_market": "400" },
   "substitutions": {
-    "btc-2m": { "sigma": "0.00009", "edge": "0.03", "step": "0.02", "cutoff": "10000", "requote": "1s", "entry_cooldown": "3s" },
+    "btc-5m": { "sigma": "0.00009", "edge": "0.03", "step": "0.02", "cutoff": "10000", "requote": "1s", "entry_cooldown": "3s" },
     "btc-15m": { "sigma": "0.00009", "edge": "0.03", "step": "0.02", "cutoff": "45000", "requote": "2s", "entry_cooldown": "1s" }
   },
   "primary": {

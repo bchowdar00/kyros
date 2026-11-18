@@ -505,6 +505,7 @@ mod tests {
             templates: Arc::new(crate::templates::TemplateCatalogue::default()),
             deploys: crate::api::DeployKeys::default(),
             crowd: false,
+            gemini: None,
         };
         let Json(snapshot) = get_positions(
             State(state.clone()),
@@ -545,10 +546,10 @@ mod tests {
         ] {
             assert!(obj.contains_key(key), "legacy key `{key}` missing");
         }
-        assert_eq!(obj["series"], "btc-2m");
+        assert_eq!(obj["series"], "btc-5m");
         let rows = obj["series_positions"].as_array().unwrap();
         assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0]["series"], "btc-2m");
+        assert_eq!(rows[0]["series"], "btc-5m");
         assert_eq!(rows[0]["signed_position"], 0);
     }
 

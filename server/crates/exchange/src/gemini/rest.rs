@@ -16,7 +16,7 @@ use tokio::sync::Mutex;
 use tokio::time::Instant;
 
 use super::env::GeminiEnv;
-use super::types::{UpWindow, events_pagination, up_windows_from_events};
+use super::types::{EventDetail, UpWindow, event_detail_from_json, events_pagination, up_windows_from_events};
 
 /// The least time between two public requests.
 pub const MIN_SPACING: Duration = Duration::from_millis(1300);
@@ -105,6 +105,13 @@ pub async fn get_text(env: &GeminiEnv, path_and_query: &str) -> anyhow::Result<S
         anyhow::bail!("gemini answered {status} for {path_and_query}");
     }
     Ok(response.text().await?)
+}
+
+/// One event by its ticker: its window and, once settled, Gemini's own
+/// result. An event Gemini does not have is an error.
+pub async fn get_event(env: &GeminiEnv, event_ticker: &str) -> anyhow::Result<EventDetail> {
+    let body = get_text(env, &format!("/v1/prediction-markets/events/{event_ticker}")).await?;
+    event_detail_from_json(&body)
 }
 
 /// The listed Up windows of one series (`"BTC05M"`, `"BTC15M"`),

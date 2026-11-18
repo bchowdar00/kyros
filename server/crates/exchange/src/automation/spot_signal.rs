@@ -2,8 +2,9 @@
 //!
 //! The registry declares one external signal for the price source the
 //! exchange is running on (`crate::registry::price_feed_signal`):
-//! `pyth.btc_usd.spot.v1` with `last` and `conf`, or
-//! `coinbase.btc_usd.spot.v1` with `last`. This task subscribes to the
+//! `pyth.btc_usd.spot.v1` with `last` and `conf`,
+//! `coinbase.btc_usd.spot.v1` with `last`, or `gemini.btc_usd.spot.v1`
+//! with `last` (the index Gemini settles on). This task subscribes to the
 //! feed's tick broadcast, which is already rate-gated to one tick per
 //! [`TICK_BROADCAST_INTERVAL_MS`], and republishes each tick as a frame.
 //! Pyth's confidence interval rides along from the feed's latest value.
@@ -86,8 +87,8 @@ mod tests {
     }
 
     #[test]
-    fn frames_ingest_against_both_price_sources() {
-        for (source, conf) in [(PriceSource::Coinbase, None), (PriceSource::PythPro, Some(12.5))] {
+    fn frames_ingest_against_every_price_source() {
+        for (source, conf) in [(PriceSource::Coinbase, None), (PriceSource::PythPro, Some(12.5)), (PriceSource::GeminiIndex, None)] {
             let (reg, mut store) = store_for(source);
             let frame = spot_frame(source, 7, 79_845.735, conf).unwrap();
             assert!(store.enable(&frame.signal_id));

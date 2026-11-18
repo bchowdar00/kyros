@@ -22,11 +22,15 @@ use exchange::automation::spot_signal::spawn_spot_publisher;
 use exchange::automation::stats_signal::spawn_stats_publisher;
 use exchange::automation::venue::{EngineClock, EngineVenue, SeriesMap};
 use exchange::bots::{market_maker, traders};
-use exchange::engine::Exchange;
+use exchange::engine::{Exchange, RoundClock};
+use exchange::gemini::audit::{RoundAudit, spawn_audit};
+use exchange::gemini::driver::{DriverParts, GeminiUpDriver, RestSource, SeriesLink};
+use exchange::gemini::index_feed::spawn_gemini_index_feed;
+use exchange::gemini::strikes::{GeminiClock, IndexTape, StrikeBook, spawn_reference_listener};
+use exchange::gemini::{BTC_INDEX_ID, BTC_INDEX_STREAM, CONTRACT_STATUS_STREAM, GeminiEnv, GeminiState, PublicSocket, gemini_series_for};
 use exchange::house;
-use exchange::pricing::feed::{PriceFeed, spawn_coinbase_feed, spawn_tick_flusher};
+use exchange::pricing::feed::{PriceFeed, spawn_tick_flusher};
 use exchange::pricing::mark::{BtcMark, SharedMark};
-use exchange::pricing::pyth::{API_KEY_ENV as PYTH_API_KEY_ENV, spawn_pyth_feed};
 use exchange::registry::{self, PriceSource};
 use exchange::scheduler;
 use exchange::series::SERIES;
@@ -136,13 +140,13 @@ async fn main() {
         None => (Vec::new(), None),
     };
 
-    // The live BTC price source; decided once, used for the feed below and
-    // recorded in the registry.
-    let pyth_key = std::env::var(PYTH_API_KEY_ENV)
-        .ok()
-        .map(|k| k.trim().to_string())
-        .filter(|k| !k.is_empty());
-    let price_source = if pyth_key.is_some() { PriceSource::PythPro } else { PriceSource::Coinbase };
+    // The live BTC price is the index Gemini settles on, from Gemini's
+    // public socket: the one price the strikes and results are measured
+    // in. Recorded in the registry.
+    let price_source = PriceSource::GeminiIndex;
+    // `production` unless GEMINI_ENV says `sandbox`; anything else stops
+    // the boot here.
+    let gemini_env = GeminiEnv::from_env();
 
     // The venue registry: every series and signal, derived from the series
     // table and the signal definition files, written to REGISTRY_PATH and
@@ -230,23 +234,24 @@ async fn main() {
         population
     };
 
-    // Live BTC price feed → one scheduler per series. Each scheduler waits
-    // for the first tick before opening its initial market, then
-    // broadcasts that series' book snapshot at every transition. Pyth Pro
-    // is the primary source; Coinbase is the keyless fallback for local
-    // development.
-    match pyth_key {
-        Some(key) => {
-            tracing::info!("price feed: Pyth Pro (BTC/USD, real_time)");
-            spawn_pyth_feed(price.clone(), key);
-        }
-        None => {
-            tracing::warn!(
-                "price feed: {PYTH_API_KEY_ENV} not set; falling back to Coinbase public ticker"
-            );
-            spawn_coinbase_feed(price.clone());
-        }
-    }
+    // Gemini's public socket, keyless: every contract's strike and status,
+    // and the index price once a second. The listener keeps the strike
+    // book, the index tape (the price at each second, for a result Gemini
+    // is late with) and the offset between this host's clock and Gemini's.
+    // The index also feeds the chart, the strike distance and fair value.
+    let (gemini_socket, gemini_events) = PublicSocket::spawn(gemini_env);
+    gemini_socket.subscribe(vec![CONTRACT_STATUS_STREAM.to_string(), BTC_INDEX_STREAM.to_string()]);
+    let strikes = StrikeBook::new();
+    let index_tape = IndexTape::new();
+    let gemini_clock = GeminiClock::system();
+    spawn_reference_listener(gemini_events, strikes.clone(), index_tape.clone(), gemini_clock.clone(), BTC_INDEX_ID);
+    spawn_gemini_index_feed(gemini_socket.events(), price.clone(), BTC_INDEX_ID);
+    // Every round's result is checked against Gemini's own, later.
+    let round_audit = RoundAudit::new();
+    spawn_audit(round_audit.clone(), RestSource(gemini_env));
+    let mut gemini = GeminiState::new(gemini_env, gemini_clock.clone(), round_audit.clone());
+    gemini.socket = Some(gemini_socket);
+    tracing::info!(env = gemini_env.name, index = BTC_INDEX_STREAM, "gemini: public socket started");
     // Signals platform: the runtime's matching engine, catalogued from the
     // generated registry (every signal starts disabled; a signal is enabled
     // when something in this process publishes it). Instruments are the
@@ -314,14 +319,37 @@ async fn main() {
         {
             let channels = ch.clone();
             let broadcast = move |engine: &exchange::engine::MarketEngine| broadcast_book(engine, &channels);
-            match (&nba_world, series.is_btc()) {
-                (Some(world), false) => {
-                    let driver = NbaDriver::new(world.clone(), bus.clone(), series.duration_secs()).with_feed(price.clone());
-                    scheduler::spawn_with_driver(engine.clone(), series, driver, runtime.clone(), broadcast);
+            if let Some(gemini_series) = gemini_series_for(series.slug()) {
+                // A BTC series follows Gemini's windows: the round opens
+                // on Gemini's strike, closes at Gemini's expiry (orders
+                // are refused from that second, on Gemini's clock) and
+                // resolves on Gemini's own result.
+                let link = SeriesLink::new();
+                gemini.follow(series, gemini_series, link.clone());
+                {
+                    let mut exchange = engine.lock().expect("engine mutex poisoned");
+                    let market = exchange.engine_mut(series);
+                    market.set_lock_at_close(true);
+                    let clock = gemini_clock.clone();
+                    market.set_clock(RoundClock::new(move || clock.now_ms() / 1000));
                 }
-                _ => {
-                    scheduler::spawn(engine.clone(), series, price.clone(), runtime.clone(), broadcast);
-                }
+                let driver = GeminiUpDriver::new(DriverParts {
+                    series: gemini_series,
+                    window_secs: series.duration_secs(),
+                    source: RestSource(gemini_env),
+                    strikes: strikes.clone(),
+                    tape: index_tape.clone(),
+                    clock: gemini_clock.clone(),
+                    link,
+                    audit: round_audit.clone(),
+                    feed: Some(price.clone()),
+                });
+                scheduler::spawn_with_driver(engine.clone(), series, driver, runtime.clone(), broadcast);
+            } else if let Some(world) = &nba_world {
+                let driver = NbaDriver::new(world.clone(), bus.clone(), series.duration_secs()).with_feed(price.clone());
+                scheduler::spawn_with_driver(engine.clone(), series, driver, runtime.clone(), broadcast);
+            } else {
+                tracing::error!(series = %series, "no round driver for this series; it will never open a round");
             }
         }
         {
@@ -360,6 +388,7 @@ async fn main() {
         templates,
         deploys: api::DeployKeys::default(),
         crowd: api::templates::Crowd::enabled_by_env(),
+        gemini: Some(gemini),
     };
 
     // Seed the cards: the house runs both sides of every template on every
@@ -398,6 +427,7 @@ async fn main() {
         .route("/api/leaderboard", get(api::get_leaderboard))
         .route("/api/market/stats", get(api::get_market_stats))
         .route("/api/series", get(api::list_series))
+        .route("/api/rounds/audit", get(api::get_rounds_audit))
         .route("/api/registry", get(api::get_registry))
         .route("/api/signals", get(api::list_signals))
         .route("/api/signals/history", get(api::get_signals_history))

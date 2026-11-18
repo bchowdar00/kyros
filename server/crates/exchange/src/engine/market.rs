@@ -26,6 +26,7 @@ use super::{
     CancelError, FlipOutcome, Market, MarketResult, MarketStatus, OrderError, OrderStatus,
     Outcome, PAYOUT_PER_CONTRACT, PlaceOutcome, RECENT_FILLS_CAP, RESOLVED_MARKETS_CAP,
     ReplaceError, ResolutionReport, RoundClose, RoundReference, SETTLED_ORDERS_MARKETS_CAP,
+    SettleReport,
     TradeSource, UserOrderRow, UserOrderStatus,
 };
 use crate::ticks::PriceTick;
@@ -193,11 +194,11 @@ impl MarketEngine {
         self.clock = clock;
     }
 
-    /// Whether the open round has reached its close and is refusing
-    /// orders. Always false with the lock off.
+    /// Whether the series is refusing orders: its round has reached its
+    /// close, or no round is open. Always false with the lock off.
     pub fn is_locked(&self) -> bool {
         self.lock_at_close
-            && self.current_market.as_ref().is_some_and(|m| self.clock.now() >= m.closes_at)
+            && self.current_market.as_ref().is_none_or(|m| self.clock.now() >= m.closes_at)
     }
 
     /// `address`'s exposure in this series. Flat/default for addresses
@@ -432,10 +433,29 @@ impl MarketEngine {
         new_opens_at: u64,
         duration_secs: u64,
     ) -> ResolutionReport {
+        let SettleReport { resolved_id, outcome, cancelled_orders } = self.resolve_only(ledger, outcome, close);
+
+        let next = self.build_market(next, new_opens_at, duration_secs);
+        let new_market_id = next.id;
+        self.current_market = Some(next);
+
+        ResolutionReport {
+            resolved_id,
+            outcome,
+            cancelled_orders,
+            new_market_id,
+        }
+    }
+
+    /// [`resolve_with`](Self::resolve_with) without the next round: the
+    /// series is left with no open round.
+    ///
+    /// Panics if no market is currently open.
+    pub fn resolve_only(&mut self, ledger: &mut Ledger, outcome: Outcome, close: RoundClose) -> SettleReport {
         let mut current = self
             .current_market
             .take()
-            .expect("resolve_with called with no market open");
+            .expect("resolve called with no market open");
 
         let cancelled_orders = self.cancel_all_resting(ledger);
 
@@ -449,16 +469,7 @@ impl MarketEngine {
         }
         self.resolved_markets.push_back(current);
 
-        let next = self.build_market(next, new_opens_at, duration_secs);
-        let new_market_id = next.id;
-        self.current_market = Some(next);
-
-        ResolutionReport {
-            resolved_id,
-            outcome,
-            cancelled_orders,
-            new_market_id,
-        }
+        SettleReport { resolved_id, outcome, cancelled_orders }
     }
 
     fn settle_all(&mut self, ledger: &mut Ledger, outcome: Outcome, resolved_id: MarketId) {

@@ -203,9 +203,9 @@ mod tests {
         let state = state_with_templates();
         let cases = [
             ("nope", json!({ "allocation_tenths": 50_000 })),
-            // trend-rider is 15-minute only; the default series is btc-2m.
+            // trend-rider is 15-minute only; the default series is btc-5m.
             ("trend-rider", json!({ "allocation_tenths": 50_000 })),
-            ("trend-rider", json!({ "allocation_tenths": 50_000, "series": "btc-2m" })),
+            ("trend-rider", json!({ "allocation_tenths": 50_000, "series": "btc-5m" })),
         ];
         for (id, body) in cases {
             let err = deploy(&state, id, body, None).await.unwrap_err();
@@ -225,7 +225,7 @@ mod tests {
     #[tokio::test]
     async fn an_idempotency_key_replays_the_first_deploy_until_it_is_gone() {
         let state = state_with_templates();
-        let body = json!({ "allocation_tenths": 50_000, "series": "btc-2m" });
+        let body = json!({ "allocation_tenths": 50_000, "series": "btc-5m" });
         let first = deploy(&state, "late-closer", body.clone(), Some("k1")).await.unwrap();
         let again = deploy(&state, "late-closer", body.clone(), Some("k1")).await.unwrap();
         assert_eq!(again.summary.id, first.summary.id, "same key, same deployment");
@@ -258,7 +258,7 @@ mod tests {
             e.place_limit(series, maker, BookSide::Bid, PriceTick::from_tenths(300).unwrap(), Qty(500), TradeSource::Bot).unwrap();
             e.place_limit(series, maker, BookSide::Ask, PriceTick::from_tenths(400).unwrap(), Qty(500), TradeSource::Bot).unwrap();
         }
-        let d = deploy(&state, "late-closer", json!({ "allocation_tenths": 100_000, "series": "btc-2m" }), None).await.unwrap();
+        let d = deploy(&state, "late-closer", json!({ "allocation_tenths": 100_000, "series": "btc-5m" }), None).await.unwrap();
         let child = d.summary.id;
         let publish = |id: &str, values: &[(&str, serde_json::Value)]| {
             state.bus.publish(SignalFrame {

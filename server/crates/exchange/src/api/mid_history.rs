@@ -203,6 +203,7 @@ mod tests {
             templates: std::sync::Arc::new(crate::templates::TemplateCatalogue::default()),
             deploys: crate::api::DeployKeys::default(),
             crowd: false,
+            gemini: None,
         };
         let mut rx = state.channels_for(S).book_tx.subscribe();
         {

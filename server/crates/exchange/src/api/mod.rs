@@ -42,6 +42,7 @@ pub mod holders;
 pub mod leaderboard;
 pub mod mid_history;
 pub mod positions;
+pub mod rounds;
 pub mod series;
 pub mod signals;
 pub mod signals_ws;
@@ -61,6 +62,7 @@ pub use leaderboard::get_leaderboard;
 pub use mid_history::get_mid_history;
 pub use stats::get_market_stats;
 pub use positions::{close_position, flip_position, get_positions, positions_ws};
+pub use rounds::get_rounds_audit;
 pub use series::list_series;
 pub use signals::{get_signals_history, list_signals};
 pub use signals_ws::signals_ws;
@@ -134,6 +136,9 @@ pub struct AppState {
     /// Whether the cards route adds the display crowd to its runner
     /// counts (`templates::Crowd`); off in tests.
     pub crowd: bool,
+    /// The Gemini link, when the rounds follow Gemini's windows; `None`
+    /// in tests that run rounds on their own clock.
+    pub gemini: Option<crate::gemini::GeminiState>,
 }
 
 /// The `Idempotency-Key` headers the template deploy route has seen,

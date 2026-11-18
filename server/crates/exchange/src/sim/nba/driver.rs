@@ -109,7 +109,7 @@ impl RoundDriver for NbaDriver {
         // The world flipped to the next matchup on its final; the sharp
         // line announces it within a poll.
         let next = RoundPlan::from_now(self.reference_for_current().await, self.duration_secs);
-        RoundResolution { outcome, close: RoundClose::Nba { home_score, away_score }, next }
+        RoundResolution { outcome, close: RoundClose::Nba { home_score, away_score }, next: Some(next) }
     }
 
     fn on_opened(&mut self, market: &Market) {

@@ -1,6 +1,6 @@
 //! The words a person reads about a signal: one JSON file per indicator
 //! under `copy/signals/`, keyed by the third segment of the signal id
-//! (`btc.coinbase.rsi.v1` → `rsi.json`, `btc-2m.current.stats.v1` →
+//! (`btc.coinbase.rsi.v1` → `rsi.json`, `btc-5m.current.stats.v1` →
 //! `stats.json`, `pyth.btc_usd.spot.v1` → `spot.json`), so one file covers
 //! every venue that publishes the same indicator.
 //!
@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(book.for_signal("btc.coinbase.rsi.v1").unwrap().title, "RSI");
         assert_eq!(book.for_signal("btc.kraken.rsi.v1").unwrap().fields["rsi_14"].label, "RSI");
         assert!(book.for_signal("btc.coinbase.macd.v1").is_none());
-        assert_eq!(indicator_of("btc-2m.current.stats.v1"), "stats");
+        assert_eq!(indicator_of("btc-5m.current.stats.v1"), "stats");
         assert_eq!(indicator_of("pyth.btc_usd.spot.v1"), "spot");
 
         std::fs::write(dir.join("bad.json"), r#"{"title":"x","description":"y","fields":{"a":{"label":"A"}}}"#).unwrap();

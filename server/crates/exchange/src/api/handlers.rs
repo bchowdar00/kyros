@@ -342,6 +342,7 @@ mod series_routing_tests {
             templates: Arc::new(crate::templates::TemplateCatalogue::default()),
             deploys: crate::api::DeployKeys::default(),
             crowd: false,
+            gemini: None,
         }
     }
 
@@ -401,7 +402,7 @@ mod series_routing_tests {
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["error"], "wrong_series");
         assert_eq!(json["detail"]["home"], "btc-15m");
-        assert_eq!(json["detail"]["requested"], "btc-2m");
+        assert_eq!(json["detail"]["requested"], "btc-5m");
     }
 
     #[tokio::test]
@@ -467,7 +468,7 @@ mod account_view_tests {
         );
         assert_eq!(obj["position"], 0);
         assert_eq!(obj["last_market"]["pnl_tenths"], 1500);
-        assert_eq!(obj["last_market"]["series"], "btc-2m");
+        assert_eq!(obj["last_market"]["series"], "btc-5m");
     }
 }
 

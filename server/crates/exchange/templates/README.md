@@ -26,7 +26,7 @@ at boot, and refuses to start on a diagnostic or a warning. `GET
 Documents are text-substituted before parsing, so a placeholder may sit inside
 an expression string or a param default.
 
-- `{{series}}` — the series slug (`btc-2m`, `btc-15m`). Every instrument and
+- `{{series}}` — the series slug (`btc-5m`, `btc-15m`). Every instrument and
   exchange-internal signal id is written as `{{series}}.current…`.
 - `{{spot}}` — the live BTC price signal, `pyth.btc_usd.spot.v1` with a Pyth
   key and `coinbase.btc_usd.spot.v1` without (the registry's one `external`
@@ -105,8 +105,8 @@ an expression string or a param default.
 | oracle-gap | both | taker | spot vs external spot_reference, strike |
 | order-flow-lead | both | taker | external order_flow_imbalance, actionable_depth_imbalance |
 | vwap-reversion | both | maker | external vwap_deviation, book |
-| sweep-follower | btc-2m | taker (inverse fades) | coinbase/kraken sweep_detection |
-| absorption-fade | btc-2m | taker | external absorption_state |
+| sweep-follower | btc-5m | taker (inverse fades) | coinbase/kraken sweep_detection |
+| absorption-fade | btc-5m | taker | external absorption_state |
 | polymarket-discount | btc-15m | maker | polymarket prediction_quote, market_contract, strike |
 | polymarket-momentum | btc-15m | taker (inverse fades) | polymarket probability_momentum, market_contract |
 | trend-rider | btc-15m | taker with stop | external horizon_momentum, micro_momentum, book |

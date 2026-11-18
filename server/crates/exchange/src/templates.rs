@@ -415,14 +415,25 @@ mod tests {
         let catalogue = TemplateCatalogue::load(&registry, PriceSource::PythPro).unwrap_or_else(|e| panic!("{e}"));
         let fair = catalogue.get("fair-value-discount").unwrap();
         let c = fair.compiled(SERIES[0].id, Side::Primary).unwrap();
-        assert!(c.program.subscriptions.iter().any(|s| s == "btc-2m.current.delta.v1"), "{:?}", c.program.subscriptions);
+        assert!(c.program.subscriptions.iter().any(|s| s == "btc-5m.current.delta.v1"), "{:?}", c.program.subscriptions);
         assert_eq!(fair.creator.avatar.as_deref(), Some("strategy-01.jpg"));
         // The spot built-in stamps the source's feed id even though no
         // shipped template reads it today.
         let values = BTreeMap::new();
         let pyth = price_feed_signal_id(PriceSource::PythPro);
-        let builtins = [("series", "btc-2m"), ("spot", pyth.as_str()), ("stake", "0.3")];
+        let builtins = [("series", "btc-5m"), ("spot", pyth.as_str()), ("stake", "0.3")];
         assert_eq!(stamp("{{spot}}", &builtins, &values).unwrap(), "pyth.btc_usd.spot.v1");
+    }
+
+    #[test]
+    fn every_template_compiles_clean_on_the_gemini_index() {
+        let registry = registry::build(&Inputs { price_source: PriceSource::GeminiIndex, live_lanes: &[], definitions_dir: None, copy_dir: None }).unwrap();
+        let catalogue = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
+        assert!(catalogue.for_series(SERIES[0].id).count() > 0);
+        let values = BTreeMap::new();
+        let id = price_feed_signal_id(PriceSource::GeminiIndex);
+        let builtins = [("series", "btc-5m"), ("spot", id.as_str()), ("stake", "0.3")];
+        assert_eq!(stamp("{{spot}}", &builtins, &values).unwrap(), "gemini.btc_usd.spot.v1");
     }
 
     #[test]
@@ -439,8 +450,8 @@ mod tests {
     #[test]
     fn stamp_fills_builtins_and_substitutions_and_reports_a_missing_name() {
         let values: BTreeMap<String, String> = [("pull".to_string(), "10s".to_string())].into_iter().collect();
-        let builtins = [("series", "btc-2m"), ("spot", "x.v1"), ("stake", "0.3")];
-        assert_eq!(stamp("{{series}}.current {{ spot }} {{pull}} * {{stake}}", &builtins, &values).unwrap(), "btc-2m.current x.v1 10s * 0.3");
+        let builtins = [("series", "btc-5m"), ("spot", "x.v1"), ("stake", "0.3")];
+        assert_eq!(stamp("{{series}}.current {{ spot }} {{pull}} * {{stake}}", &builtins, &values).unwrap(), "btc-5m.current x.v1 10s * 0.3");
         assert_eq!(stamp("{{series}} {{nope}}", &builtins, &values).unwrap_err(), "nope");
     }
 
@@ -461,10 +472,10 @@ mod tests {
         }
 
         let mut doc: serde_json::Value = serde_json::from_str(TEMPLATE_FILES[0].1).unwrap();
-        doc["substitutions"]["btc-2m"] = serde_json::json!({});
+        doc["substitutions"]["btc-5m"] = serde_json::json!({});
         let text = doc.to_string();
         let err = TemplateCatalogue::load_files(&[("fair-value-discount", &text)], &registry, PriceSource::Coinbase).unwrap_err();
-        assert!(matches!(&err, LoadError::UnresolvedPlaceholder { at, placeholder } if at.series == "btc-2m" && !placeholder.is_empty()), "{err}");
+        assert!(matches!(&err, LoadError::UnresolvedPlaceholder { at, placeholder } if at.series == "btc-5m" && !placeholder.is_empty()), "{err}");
 
         let err = TemplateCatalogue::load_files(&[("other-id", TEMPLATE_FILES[0].1)], &registry, PriceSource::Coinbase).unwrap_err();
         assert!(matches!(err, LoadError::IdMismatch { .. }), "{err}");

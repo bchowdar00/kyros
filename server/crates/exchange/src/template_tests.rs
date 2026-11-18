@@ -558,7 +558,7 @@ async fn oracle_gap_follows_the_oracle_either_way() {
     let (child, id) = up.deploy("oracle-gap", Side::Primary).await;
     up.publish_book("0.3", "0.4");
     up.publish_venues("49990");
-    up.publish("btc-2m.current.delta.v1", &[("delta_bps", json!("2")), ("spot", json!("50010")), ("strike", json!("50000"))]);
+    up.publish("btc-5m.current.delta.v1", &[("delta_bps", json!("2")), ("spot", json!("50010")), ("strike", json!("50000"))]);
     assert_eq!(up.wait_for_position(child, |p| p > 0).await, 50);
     assert_eq!(up.wait_for_leg(&id, "holding").await, "holding");
 
@@ -566,7 +566,7 @@ async fn oracle_gap_follows_the_oracle_either_way() {
     let (child, id) = down.deploy("oracle-gap", Side::Primary).await;
     down.publish_book("0.3", "0.4");
     down.publish_venues("50010");
-    down.publish("btc-2m.current.delta.v1", &[("delta_bps", json!("-2")), ("spot", json!("49990")), ("strike", json!("50000"))]);
+    down.publish("btc-5m.current.delta.v1", &[("delta_bps", json!("-2")), ("spot", json!("49990")), ("strike", json!("50000"))]);
     assert_eq!(down.wait_for_position(child, |p| p < 0).await, -28);
     assert_eq!(down.wait_for_leg(&id, "holding").await, "holding");
 }
@@ -577,7 +577,7 @@ async fn oracle_snapback_waits_for_the_gap_to_close() {
     let (child, id) = rig.deploy("oracle-gap", Side::Inverse).await;
     rig.publish_book("0.3", "0.4");
     rig.publish_venues("49990");
-    rig.publish("btc-2m.current.delta.v1", &[("delta_bps", json!("2")), ("spot", json!("50010")), ("strike", json!("50000"))]);
+    rig.publish("btc-5m.current.delta.v1", &[("delta_bps", json!("2")), ("spot", json!("50010")), ("strike", json!("50000"))]);
     assert_eq!(rig.wait_for_leg(&id, "led_up").await, "led_up");
     assert_eq!(rig.position(child), 0);
 

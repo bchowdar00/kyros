@@ -5,7 +5,7 @@
 //! message and may send another at any time to replace the set:
 //!
 //! ```json
-//! {"kind": "subscribe", "ids": ["btc-2m.current.stats.v1", "pyth.btc_usd.spot.v1"]}
+//! {"kind": "subscribe", "ids": ["btc-5m.current.stats.v1", "pyth.btc_usd.spot.v1"]}
 //! {"kind": "subscribe", "set": "series"}
 //! {"kind": "subscribe", "ids": ["btc.coinbase.rsi.v1"], "history_ms": 240000, "max_points": 500}
 //! ```

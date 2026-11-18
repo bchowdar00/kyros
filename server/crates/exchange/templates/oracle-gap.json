@@ -2,12 +2,12 @@
   "id": "oracle-gap",
   "title": "Oracle's Edge",
   "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-04.jpg" },
-  "series": ["btc-2m", "btc-15m"],
+  "series": ["btc-5m", "btc-15m"],
   "logic": "Rounds settle on Pyth's price, but the book trades off Coinbase and Kraken. When Pyth pulls ahead of them while BTC is still near the strike, it bets the book will catch up: Up when Pyth is higher, Down when it is lower. One trade per round, held to the close.",
   "inverse_logic": "Rounds settle on Pyth's price, but the book trades off Coinbase and Kraken. When Pyth has been leading and then snaps back in line, the book was leaning the wrong way, so it buys the side the exchanges were pointing at. Sells out after a four-cent gain, otherwise holds to the close.",
   "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
   "substitutions": {
-    "btc-2m": { "cutoff": "20s", "gap": "0.0002", "closed": "0.00005", "near_band": "0.0005", "gain": "0.04", "check": "1s", "patience": "30s" },
+    "btc-5m": { "cutoff": "20s", "gap": "0.0002", "closed": "0.00005", "near_band": "0.0005", "gain": "0.04", "check": "1s", "patience": "30s" },
     "btc-15m": { "cutoff": "90s", "gap": "0.0002", "closed": "0.00005", "near_band": "0.0005", "gain": "0.04", "check": "2s", "patience": "60s" }
   },
   "primary": {

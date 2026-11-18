@@ -112,6 +112,13 @@ impl RoundReference {
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum RoundClose {
+    /// A round that followed an outside venue's window: the value the
+    /// venue settled on, under the same field name as a simulated BTC
+    /// close so clients read it the same way. `provisional` marks a
+    /// round resolved on the index price before the venue published.
+    /// Listed first: an untagged enum serialises by variant, and this
+    /// one carries the extra field.
+    Gemini { close_price_btc_usd: f64, provisional: bool },
     Btc { close_price_btc_usd: f64 },
     Nba { home_score: u32, away_score: u32 },
 }
@@ -166,6 +173,14 @@ pub struct ResolutionReport {
     pub outcome: Outcome,
     pub cancelled_orders: u32,
     pub new_market_id: MarketId,
+}
+
+/// What settling a round without opening the next one did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct SettleReport {
+    pub resolved_id: MarketId,
+    pub outcome: Outcome,
+    pub cancelled_orders: u32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -556,6 +571,14 @@ impl Exchange {
     ) -> ResolutionReport {
         let (e, l) = self.engine_and_ledger(series);
         e.resolve_with(l, outcome, close, next, new_opens_at, duration_secs)
+    }
+
+    /// Resolve the current round of `series` and leave the series with
+    /// no open round, for a driver whose next round is not ready yet.
+    /// Open the next one with [`open_first_market_with`](Self::open_first_market_with).
+    pub fn resolve_only(&mut self, series: SeriesId, outcome: Outcome, close: RoundClose) -> SettleReport {
+        let (e, l) = self.engine_and_ledger(series);
+        e.resolve_only(l, outcome, close)
     }
 
     // ── ledger delegates ──

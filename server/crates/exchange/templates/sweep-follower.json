@@ -2,12 +2,12 @@
   "id": "sweep-follower",
   "title": "Whale Watch",
   "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-07.jpg" },
-  "series": ["btc-2m"],
+  "series": ["btc-5m"],
   "logic": "Watches the Coinbase and Kraken books for a sweep: one order clearing several price levels at once. Someone wanted size right now and paid up for it, so it goes with them: Up after a buy sweep, Down after a sell sweep. One trade per round, held to the close.",
   "inverse_logic": "Watches the Coinbase and Kraken books for a sweep: one order clearing several price levels at once. The big order has already moved the price, so it bets on the bounce: Down after a buy sweep, Up after a sell sweep. One trade per round, held to the close.",
   "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
   "substitutions": {
-    "btc-2m": { "cutoff": "20s" }
+    "btc-5m": { "cutoff": "20s" }
   },
   "primary": {
     "meta": {

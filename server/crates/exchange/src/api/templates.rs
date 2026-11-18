@@ -376,14 +376,14 @@ mod tests {
         let templates = full_catalogue();
         let two = catalogue(&templates, SERIES[0].id, &empty(), &all_ready(), Crowd::Off);
         let fifteen = catalogue(&templates, SERIES[1].id, &empty(), &all_ready(), Crowd::Off);
-        assert_eq!(two.series, "btc-2m");
+        assert_eq!(two.series, "btc-5m");
         assert_eq!((two.templates.len(), fifteen.templates.len()), (8, 9));
         let ids: Vec<&str> = two.templates.iter().map(|t| t.id.as_str()).collect();
         assert!(ids.contains(&"sweep-follower") && !ids.contains(&"trend-rider"));
 
         let fair = two.templates.iter().find(|t| t.id == "fair-value-discount").unwrap();
         assert_eq!(fair.title, "Fair Price Finder");
-        assert_eq!(fair.series, vec!["btc-2m", "btc-15m"]);
+        assert_eq!(fair.series, vec!["btc-5m", "btc-15m"]);
         assert_eq!(fair.creator.handle, "@tiny");
         assert_eq!(fair.creator.username, "Tiny");
         assert_eq!(fair.creator.avatar.as_deref(), Some("strategy-01.jpg"));
@@ -436,7 +436,7 @@ mod tests {
         assert!(matches!(err, ApiError::TemplateNotFound));
 
         let Json(list) = list_templates(State(state), Query(SeriesQuery::default())).await;
-        assert_eq!(list.series, "btc-2m");
+        assert_eq!(list.series, "btc-5m");
         assert_eq!(list.templates.len(), 8);
     }
 
@@ -503,7 +503,7 @@ mod tests {
         // the other series still waits: readiness is per stamped document.
         let two = template_view(late, SERIES[0].id, &empty(), &readiness, Crowd::Off);
         assert!(!two.ready);
-        assert_eq!(waiting_ids(&two.inverse), ["btc-2m.current.price.v1", "btc-2m.current.window.v1"]);
+        assert_eq!(waiting_ids(&two.inverse), ["btc-5m.current.price.v1", "btc-5m.current.window.v1"]);
 
         // The list carries the same readiness as the single route.
         let list = catalogue(&templates, fifteen, &empty(), &readiness, Crowd::Off);
@@ -571,7 +571,7 @@ mod tests {
         let Json(list) = list_templates(State(state.clone()), Query(SeriesQuery { series: Some(series) })).await;
         assert!(list.templates.iter().all(|t| !t.ready), "nothing published yet");
 
-        for id in ["btc-2m.current.price.v1", "btc-2m.current.delta.v1", "btc-2m.current.window.v1"] {
+        for id in ["btc-5m.current.price.v1", "btc-5m.current.delta.v1", "btc-5m.current.window.v1"] {
             state.bus.publish(typed_frame(&state.bus, id, 1));
         }
         let Json(late) = get_template(State(state.clone()), Path("late-closer".into()), Query(SeriesQuery { series: Some(series) })).await.unwrap();

@@ -6,6 +6,7 @@ use axum::{Json, extract::State};
 use serde::Serialize;
 
 use crate::engine::{Exchange, RoundReference};
+use crate::gemini::{GeminiSeriesView, GeminiState};
 use crate::types::SeriesId;
 
 use super::AppState;
@@ -26,9 +27,12 @@ pub struct SeriesInfo {
     /// `{"home_team", "away_team", "pregame_home_prob", "game_seq"}` for NBA.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reference: Option<RoundReference>,
+    /// The Gemini series and window this series follows, when it does.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gemini: Option<GeminiSeriesView>,
 }
 
-pub fn build_series_list(exchange: &Exchange) -> Vec<SeriesInfo> {
+pub fn build_series_list(exchange: &Exchange, gemini: Option<&GeminiState>) -> Vec<SeriesInfo> {
     exchange
         .engines()
         .map(|e| {
@@ -42,6 +46,7 @@ pub fn build_series_list(exchange: &Exchange) -> Vec<SeriesInfo> {
                 opens_at_ms: market.map(|m| m.opened_at * 1000),
                 closes_at_ms: market.map(|m| m.closes_at * 1000),
                 reference: market.map(|m| m.reference),
+                gemini: gemini.and_then(|g| g.view(e.series())),
             }
         })
         .collect()
@@ -49,7 +54,7 @@ pub fn build_series_list(exchange: &Exchange) -> Vec<SeriesInfo> {
 
 pub async fn list_series(State(state): State<AppState>) -> Json<Vec<SeriesInfo>> {
     let exchange = state.exchange.lock().expect("exchange mutex poisoned");
-    Json(build_series_list(&exchange))
+    Json(build_series_list(&exchange, state.gemini.as_ref()))
 }
 
 #[cfg(test)]
@@ -62,7 +67,7 @@ mod tests {
     fn lists_every_series_with_its_round() {
         let mut x = Exchange::new(Tenths(1_000_000), SERIES);
         x.open_first_market(SeriesId(1), 100_000.0, 10, 900);
-        let list = build_series_list(&x);
+        let list = build_series_list(&x, None);
         assert_eq!(list.len(), SERIES.len());
         assert_eq!(list[0].series, SeriesId(0));
         assert_eq!(list[0].current_market_id, None);
@@ -77,5 +82,21 @@ mod tests {
         assert_eq!(json[1]["outcomes"], serde_json::json!(["up", "down"]));
         assert_eq!(json[1]["reference"]["strike_btc_usd"], 100_000.0);
         assert!(json[0].get("reference").is_none(), "no round, no reference");
+        assert!(json[0].get("gemini").is_none(), "not running on Gemini");
+    }
+
+    #[test]
+    fn a_series_that_follows_gemini_says_which_window() {
+        use crate::gemini::audit::RoundAudit;
+        use crate::gemini::driver::SeriesLink;
+        use crate::gemini::env::SANDBOX;
+        use crate::gemini::strikes::GeminiClock;
+
+        let x = Exchange::new(Tenths(1_000_000), SERIES);
+        let mut gemini = GeminiState::new(SANDBOX, GeminiClock::starting_at(0), RoundAudit::new());
+        gemini.follow(SeriesId(1), "BTC15M", SeriesLink::new());
+        let json = serde_json::to_value(build_series_list(&x, Some(&gemini))).unwrap();
+        assert_eq!(json[1]["gemini"], serde_json::json!({ "env": "sandbox", "series": "BTC15M", "phase": "waiting_for_window" }));
+        assert!(json[0].get("gemini").is_none(), "series 0 was not registered");
     }
 }

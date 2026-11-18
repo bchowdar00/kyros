@@ -4,13 +4,26 @@
 //! refuses any path that is not public market data, and [`ws`] refuses
 //! any stream that is.
 
+pub mod audit;
+pub mod driver;
 pub mod env;
+pub mod index_feed;
 pub mod rest;
+pub mod state;
+pub mod strikes;
 pub mod types;
 pub mod ws;
 
+/// The socket stream of the index Gemini settles BTC contracts on.
+pub const BTC_INDEX_STREAM: &str = "lukka:LS-LRRR-XBTUSD@indexPrice";
+/// That index's id in the stream's messages.
+pub const BTC_INDEX_ID: &str = "LRRR_XBT";
+/// The socket stream that carries every contract's strike and status.
+pub const CONTRACT_STATUS_STREAM: &str = "contractStatus";
+
 pub use env::GeminiEnv;
 pub use rest::list_up_windows;
+pub use state::{GeminiSeriesView, GeminiState, gemini_series_for};
 pub use types::{LocalBook, UpWindow, WsEvent};
 pub use ws::PublicSocket;
 

@@ -17,7 +17,7 @@ pub use crate::types::{DEFAULT_SERIES, SeriesId};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SeriesSpec {
     pub id: SeriesId,
-    /// Wire identifier (`"btc-2m"`). Stable: clients key on it.
+    /// Wire identifier (`"btc-5m"`). Stable: clients key on it.
     pub slug: &'static str,
     /// Round length in seconds.
     pub duration_secs: u64,
@@ -41,7 +41,7 @@ pub const NBA_OUTCOMES: [&str; 2] = ["home", "away"];
 /// The frontend derives every chart window from the server's snapshot, so
 /// round lengths here are the only place they are defined.
 pub const SERIES: &[SeriesSpec] = &[
-    SeriesSpec { id: SeriesId(0), slug: "btc-2m", duration_secs: 120, underlying: "btc", outcomes: BTC_OUTCOMES },
+    SeriesSpec { id: SeriesId(0), slug: "btc-5m", duration_secs: 300, underlying: "btc", outcomes: BTC_OUTCOMES },
     SeriesSpec { id: SeriesId(1), slug: "btc-15m", duration_secs: 900, underlying: "btc", outcomes: BTC_OUTCOMES },
     SeriesSpec { id: SeriesId(2), slug: "nba-h2h", duration_secs: 300, underlying: "nba", outcomes: NBA_OUTCOMES },
 ];
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn durations() {
-        assert_eq!(DEFAULT_SERIES.duration_secs(), 120);
+        assert_eq!(DEFAULT_SERIES.duration_secs(), 300);
         assert_eq!(SeriesId(1).duration_secs(), 900);
         assert_eq!(SeriesId(2).duration_secs(), 300);
     }

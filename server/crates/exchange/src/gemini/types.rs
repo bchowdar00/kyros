@@ -326,6 +326,9 @@ struct ContractRow {
     instrument_symbol: Option<String>,
     market_state: Option<String>,
     strike: Option<StrikeRow>,
+    resolution_side: Option<String>,
+    settlement_value: Option<String>,
+    resolved_at: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -337,6 +340,60 @@ struct StrikeRow {
 pub fn events_pagination(body: &str) -> Option<(u64, u64, u64)> {
     let page: EventsPage = serde_json::from_str(body).ok()?;
     page.pagination.map(|p| (p.offset, p.limit, p.total))
+}
+
+/// Gemini's own result for a settled Up contract.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Settled {
+    /// `resolutionSide` was `yes`.
+    pub up_won: bool,
+    /// The index value Gemini settled on; not rounded.
+    pub settlement_value: Decimal,
+    pub resolved_at_ms: u64,
+}
+
+/// One event read by its ticker: the window, and its result once
+/// Gemini has published one.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EventDetail {
+    pub window: UpWindow,
+    pub settled: Option<Settled>,
+}
+
+/// Parse `GET /v1/prediction-markets/events/{ticker}`.
+pub fn event_detail_from_json(body: &str) -> anyhow::Result<EventDetail> {
+    let event: EventRow = serde_json::from_str(body)
+        .map_err(|e| anyhow::anyhow!("gemini event is not the expected JSON: {e}"))?;
+    let missing = |what: &str| anyhow::anyhow!("gemini event has no {what}");
+    let contract = event
+        .contracts
+        .into_iter()
+        .find(|c| c.ticker.as_deref() == Some("UP"))
+        .ok_or_else(|| missing("Up contract"))?;
+    let settled = match (contract.resolution_side.as_deref(), contract.settlement_value.as_deref()) {
+        (Some(side @ ("yes" | "no")), Some(value)) => Decimal::from_str(value).ok().map(|settlement_value| Settled {
+            up_won: side == "yes",
+            settlement_value,
+            resolved_at_ms: contract.resolved_at.as_deref().and_then(rfc3339_ms).unwrap_or(0),
+        }),
+        _ => None,
+    };
+    let window = UpWindow {
+        event_ticker: event.ticker.ok_or_else(|| missing("ticker"))?,
+        symbol: contract.instrument_symbol.ok_or_else(|| missing("instrument symbol"))?,
+        starts_at_ms: event.start_time.as_deref().and_then(rfc3339_ms).ok_or_else(|| missing("start time"))?,
+        expires_at_ms: event.expiry_date.as_deref().and_then(rfc3339_ms).ok_or_else(|| missing("expiry"))?,
+        strike: contract.strike.and_then(|s| s.value).and_then(|v| Decimal::from_str(&v).ok()),
+        market_state: contract.market_state.unwrap_or_default(),
+    };
+    Ok(EventDetail { window, settled })
+}
+
+/// The ticker Gemini gives the window of `series` that expires at
+/// `expires_at_ms`: the series, then the expiry as `yyMMddHHmm` in UTC.
+pub fn event_ticker(series: &str, expires_at_ms: u64) -> String {
+    let at = chrono::DateTime::from_timestamp_millis(expires_at_ms as i64).unwrap_or_default();
+    format!("{series}{}", at.format("%y%m%d%H%M"))
 }
 
 #[cfg(test)]
@@ -607,5 +664,60 @@ mod tests {
     fn pagination_is_read_when_present() {
         assert_eq!(events_pagination(&fixture("events_btc.json")), Some((0, 100, 96)));
         assert_eq!(events_pagination(r#"{"data":[]}"#), None);
+    }
+
+    #[test]
+    fn a_settled_event_carries_geminis_own_result() {
+        let got = event_detail_from_json(&fixture("event_settled.json")).unwrap();
+        assert_eq!(
+            got.window,
+            UpWindow {
+                event_ticker: "BTC05M2611181730".into(),
+                symbol: "GEMI-BTC05M2611181730-UP".into(),
+                starts_at_ms: 1_795_022_700_000,
+                expires_at_ms: 1_795_023_000_000,
+                strike: Some(d("63147.36")),
+                market_state: "closed".into(),
+            }
+        );
+        assert_eq!(
+            got.settled,
+            Some(Settled {
+                up_won: true,
+                settlement_value: d("63276.216"),
+                resolved_at_ms: 1_795_023_005_980,
+            })
+        );
+    }
+
+    #[test]
+    fn an_event_that_has_not_settled_has_no_result() {
+        let list: Value = serde_json::from_str(&fixture("events_btc.json")).unwrap();
+        let live = serde_json::to_string(&list["data"][0]).unwrap();
+        let got = event_detail_from_json(&live).unwrap();
+        assert_eq!(got.window.event_ticker, "BTC05M2611181720");
+        assert_eq!(got.window.strike, Some(d("62597.88")));
+        assert_eq!(got.settled, None);
+    }
+
+    #[test]
+    fn a_no_result_and_an_unknown_result_are_told_apart() {
+        let body = fixture("event_settled.json");
+        let no = body.replace(r#""resolutionSide":"yes""#, r#""resolutionSide":"no""#);
+        assert_ne!(no, body, "the fixture carries a resolutionSide");
+        assert!(!event_detail_from_json(&no).unwrap().settled.unwrap().up_won);
+        // A side this code does not know is not a result: wait, do not guess.
+        let odd = body.replace(r#""resolutionSide":"yes""#, r#""resolutionSide":"void""#);
+        assert_eq!(event_detail_from_json(&odd).unwrap().settled, None);
+        assert!(event_detail_from_json("{}").is_err());
+        assert!(event_detail_from_json("nope").is_err());
+    }
+
+    #[test]
+    fn a_windows_ticker_follows_from_its_series_and_expiry() {
+        assert_eq!(event_ticker("BTC05M", 1_795_022_400_000), "BTC05M2611181720");
+        assert_eq!(event_ticker("BTC15M", 1_795_023_000_000), "BTC15M2611181730");
+        // Midnight UTC rolls the day.
+        assert_eq!(event_ticker("BTC05M", 1_795_046_400_000), "BTC05M2611190000");
     }
 }

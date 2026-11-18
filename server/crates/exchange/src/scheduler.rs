@@ -65,17 +65,20 @@ impl RoundPlan {
 }
 
 /// How a driver closes a round: the outcome, how it closed, and the
-/// next round.
+/// next round if it is ready. With `next: None` the series is left with
+/// no open round and the scheduler asks [`RoundDriver::first_plan`]
+/// again, which returns when there is a round to open.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RoundResolution {
     pub outcome: Outcome,
     pub close: RoundClose,
-    pub next: RoundPlan,
+    pub next: Option<RoundPlan>,
 }
 
 /// What a series' rounds are about. One implementation per underlying.
 pub trait RoundDriver: Send + 'static {
-    /// Wait until the series can open its first round, and return it.
+    /// Wait until the series can open a round, and return it. Called at
+    /// start, and again after any resolution that carried no next round.
     fn first_plan(&mut self) -> impl Future<Output = RoundPlan> + Send;
 
     /// Wait until `current` is final and report how it resolved. Called
@@ -126,7 +129,7 @@ impl RoundDriver for BtcDriver {
         RoundResolution {
             outcome,
             close: RoundClose::Btc { close_price_btc_usd: close },
-            next: RoundPlan::from_now(RoundReference::Btc { strike_btc_usd: close }, self.duration_secs),
+            next: Some(RoundPlan::from_now(RoundReference::Btc { strike_btc_usd: close }, self.duration_secs)),
         }
     }
 
@@ -197,62 +200,84 @@ where
     F: Fn(&MarketEngine) + Send + 'static,
 {
     tokio::spawn(async move {
-        let initial = driver.first_plan().await;
-        let market = {
-            let mut x = exchange.lock().expect("exchange mutex poisoned");
-            x.open_first_market_with(series, initial.reference, initial.opens_at, initial.duration_secs());
-            let e = x.engine(series);
-            book_broadcast(e);
-            *e.current_market().expect("just opened")
-        };
-        driver.on_opened(&market);
-        runtime.window_opened(series, market.id.0, window_instruments(series, market.id.0));
-        tracing::info!(
-            %series,
-            market_id = market.id.0,
-            reference = ?market.reference,
-            opens_at = market.opened_at,
-            closes_at = market.closes_at,
-            "first market opened",
-        );
-
-        let mut current = market;
         loop {
-            let resolution = driver.await_resolution(&current).await;
-            let (report, next) = {
+            // No round is open: at start, or after a resolution whose
+            // next round was not ready.
+            let plan = driver.first_plan().await;
+            let market = {
                 let mut x = exchange.lock().expect("exchange mutex poisoned");
-                let report = x.resolve_with(
-                    series,
-                    resolution.outcome,
-                    resolution.close,
-                    resolution.next.reference,
-                    resolution.next.opens_at,
-                    resolution.next.duration_secs(),
-                );
+                x.open_first_market_with(series, plan.reference, plan.opens_at, plan.duration_secs());
                 let e = x.engine(series);
                 book_broadcast(e);
-                (report, *e.current_market().expect("just opened"))
+                *e.current_market().expect("just opened")
             };
-            driver.on_opened(&next);
-            // Settled first, then opened: the deployment rewinds its
-            // session on the former and re-arms on the latter.
-            runtime.window_settled(series, report.resolved_id.0);
-            runtime.window_opened(
-                series,
-                report.new_market_id.0,
-                window_instruments(series, report.new_market_id.0),
-            );
+            driver.on_opened(&market);
+            runtime.window_opened(series, market.id.0, window_instruments(series, market.id.0));
             tracing::info!(
                 %series,
-                resolved = report.resolved_id.0,
-                outcome = ?report.outcome,
-                close = ?resolution.close,
-                cancelled = report.cancelled_orders,
-                new = report.new_market_id.0,
-                reference = ?next.reference,
-                "round resolved",
+                market_id = market.id.0,
+                reference = ?market.reference,
+                opens_at = market.opened_at,
+                closes_at = market.closes_at,
+                "market opened with no round before it",
             );
-            current = next;
+
+            let mut current = market;
+            loop {
+                let resolution = driver.await_resolution(&current).await;
+                let Some(next_plan) = resolution.next else {
+                    let report = {
+                        let mut x = exchange.lock().expect("exchange mutex poisoned");
+                        let report = x.resolve_only(series, resolution.outcome, resolution.close);
+                        book_broadcast(x.engine(series));
+                        report
+                    };
+                    runtime.window_settled(series, report.resolved_id.0);
+                    tracing::info!(
+                        %series,
+                        resolved = report.resolved_id.0,
+                        outcome = ?report.outcome,
+                        close = ?resolution.close,
+                        cancelled = report.cancelled_orders,
+                        "round resolved; waiting for the next round",
+                    );
+                    break;
+                };
+                let (report, next) = {
+                    let mut x = exchange.lock().expect("exchange mutex poisoned");
+                    let report = x.resolve_with(
+                        series,
+                        resolution.outcome,
+                        resolution.close,
+                        next_plan.reference,
+                        next_plan.opens_at,
+                        next_plan.duration_secs(),
+                    );
+                    let e = x.engine(series);
+                    book_broadcast(e);
+                    (report, *e.current_market().expect("just opened"))
+                };
+                driver.on_opened(&next);
+                // Settled first, then opened: the deployment rewinds its
+                // session on the former and re-arms on the latter.
+                runtime.window_settled(series, report.resolved_id.0);
+                runtime.window_opened(
+                    series,
+                    report.new_market_id.0,
+                    window_instruments(series, report.new_market_id.0),
+                );
+                tracing::info!(
+                    %series,
+                    resolved = report.resolved_id.0,
+                    outcome = ?report.outcome,
+                    close = ?resolution.close,
+                    cancelled = report.cancelled_orders,
+                    new = report.new_market_id.0,
+                    reference = ?next.reference,
+                    "round resolved",
+                );
+                current = next;
+            }
         }
     })
 }
@@ -354,13 +379,18 @@ mod tests {
     }
 
     /// Hands out the plans it was given, resolving each round at once.
+    /// A `None` in the list is a resolution with no next round ready;
+    /// the plan after it is handed out by the next `first_plan`.
     struct PlannedDriver {
-        plans: std::collections::VecDeque<RoundPlan>,
+        plans: std::collections::VecDeque<Option<RoundPlan>>,
     }
 
     impl RoundDriver for PlannedDriver {
         async fn first_plan(&mut self) -> RoundPlan {
-            self.plans.pop_front().expect("a first plan")
+            match self.plans.pop_front() {
+                Some(Some(plan)) => plan,
+                _ => std::future::pending().await,
+            }
         }
 
         async fn await_resolution(&mut self, _current: &Market) -> RoundResolution {
@@ -381,17 +411,32 @@ mod tests {
 
     /// The rounds a series ends up with, oldest first, as (opens, closes, length).
     async fn rounds_from(plans: Vec<RoundPlan>) -> Vec<(u64, u64, u64)> {
+        rounds_from_script(plans.into_iter().map(Some).collect()).await.0
+    }
+
+    /// As `rounds_from`, plus whether a round is open at the end and the
+    /// window notifications the runtime saw, in order.
+    async fn rounds_from_script(script: Vec<Option<RoundPlan>>) -> (Vec<(u64, u64, u64)>, bool, Vec<&'static str>) {
         let exchange = Arc::new(Mutex::new(Exchange::new(Tenths(1_000_000), SERIES)));
-        let (runtime, _rx) = runtime_channel();
-        let driver = PlannedDriver { plans: plans.into() };
+        let (runtime, mut rx) = runtime_channel();
+        let driver = PlannedDriver { plans: script.into() };
         spawn_with_driver(exchange.clone(), SeriesId(0), driver, runtime, |_| {});
         tokio::time::sleep(Duration::from_millis(150)).await;
         let x = exchange.lock().unwrap();
         let e = x.engine(SeriesId(0));
         let mut rounds: Vec<Market> = e.resolved_markets(10).copied().collect();
         rounds.sort_by_key(|m| m.id.0);
-        rounds.push(*e.current_market().expect("a round is open"));
-        rounds.iter().map(|m| (m.opened_at, m.closes_at, m.duration_secs)).collect()
+        let open = e.current_market().copied();
+        rounds.extend(open);
+        let mut seen = Vec::new();
+        while let Ok(cmd) = rx.try_recv() {
+            match cmd {
+                RuntimeCommand::WindowOpened { .. } => seen.push("opened"),
+                RuntimeCommand::WindowSettled { .. } => seen.push("settled"),
+                _ => {}
+            }
+        }
+        (rounds.iter().map(|m| (m.opened_at, m.closes_at, m.duration_secs)).collect(), open.is_some(), seen)
     }
 
     #[tokio::test]
@@ -414,5 +459,24 @@ mod tests {
         let t = 2_000_000_000;
         let got = rounds_from(vec![plan(t, t + 300), plan(t + 600, t + 900)]).await;
         assert_eq!(got, vec![(t, t + 300, 300), (t + 600, t + 900, 300)]);
+    }
+
+    #[tokio::test]
+    async fn a_round_can_settle_and_leave_the_series_with_no_open_round() {
+        let t = 2_000_000_000;
+        let (rounds, open, seen) = rounds_from_script(vec![Some(plan(t, t + 300)), None]).await;
+        assert_eq!(rounds, vec![(t, t + 300, 300)]);
+        assert!(!open, "the driver had no next round, so none is open");
+        assert_eq!(seen, vec!["opened", "settled"]);
+    }
+
+    #[tokio::test]
+    async fn the_next_round_opens_when_the_driver_has_one_again() {
+        let t = 2_000_000_000;
+        let (rounds, open, seen) =
+            rounds_from_script(vec![Some(plan(t, t + 300)), None, Some(plan(t + 900, t + 1200))]).await;
+        assert_eq!(rounds, vec![(t, t + 300, 300), (t + 900, t + 1200, 300)]);
+        assert!(open);
+        assert_eq!(seen, vec!["opened", "settled", "opened"]);
     }
 }

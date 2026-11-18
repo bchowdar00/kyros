@@ -78,6 +78,9 @@ const QUOTE_RANGE: [&str; 2] = ["0.001", "0.999"];
 pub enum PriceSource {
     PythPro,
     Coinbase,
+    /// The index Gemini settles its BTC contracts on (Lukka
+    /// LS-LRRR-XBTUSD), as Gemini's public socket reports it.
+    GeminiIndex,
 }
 
 /// What the registry is built from beyond the static tables.
@@ -520,6 +523,7 @@ pub fn price_feed_signal_id(source: PriceSource) -> String {
     match source {
         PriceSource::PythPro => "pyth.btc_usd.spot.v1".to_string(),
         PriceSource::Coinbase => "coinbase.btc_usd.spot.v1".to_string(),
+        PriceSource::GeminiIndex => "gemini.btc_usd.spot.v1".to_string(),
     }
 }
 
@@ -539,6 +543,13 @@ fn price_feed_signal(source: PriceSource) -> Value {
             "description": "Coinbase BTC-USD public ticker (keyless fallback when no Pyth key is set). The price every round's strike and settlement are read from.",
             "fields": [ {"name": "last", "label": "BTC/USD Spot", "type": "decimal"} ],
             "metadata": { "venue": "coinbase", "pair": "btc_usd", "scope": scope }
+        }),
+        PriceSource::GeminiIndex => json!({
+            "signal_id": price_feed_signal_id(source), "version": "1", "location": "external",
+            "name": "BTC/USD Index",
+            "description": "The BTC/USD index Gemini settles its Up contracts on (Lukka LS-LRRR-XBTUSD), as Gemini's public socket reports it once a second. The price every round's strike and result are measured in.",
+            "fields": [ {"name": "last", "label": "BTC/USD Index", "type": "decimal"} ],
+            "metadata": { "venue": "gemini", "pair": "btc_usd", "index": "lukka:LS-LRRR-XBTUSD", "scope": scope }
         }),
     }
 }
@@ -887,7 +898,7 @@ mod tests {
         assert!(!price.description.contains("Up"), "{}", price.description);
         let window = r.signals.iter().find(|s| s.signal_id == "nba-h2h.current.window.v1").unwrap();
         assert!(!window.description.contains("BTC"), "{}", window.description);
-        let btc_price = r.signals.iter().find(|s| s.signal_id == "btc-2m.current.price.v1");
+        let btc_price = r.signals.iter().find(|s| s.signal_id == "btc-5m.current.price.v1");
         assert!(btc_price.is_none(), "this registry is NBA-only");
         let pbp = r.signals.iter().find(|s| s.signal_id == NBA_PBP_SIGNAL).unwrap();
         assert_eq!(pbp.fields.last().unwrap().name.as_str(), "clock_remaining", "published last");
@@ -944,10 +955,10 @@ mod tests {
             assert!(Scope::of(def).is_some(), "{} has no scope", def.signal_id);
         }
         let ids = |slug: &str| -> Vec<String> { signals_for(&r, slug).map(|d| d.signal_id.clone()).collect() };
-        let a = ids("btc-2m");
+        let a = ids("btc-5m");
         let b = ids("btc-15m");
         // Own internals only.
-        assert!(a.iter().any(|s| s == "btc-2m.current.price.v1"));
+        assert!(a.iter().any(|s| s == "btc-5m.current.price.v1"));
         assert!(!a.iter().any(|s| s == "btc-15m.current.price.v1"));
         assert!(b.iter().any(|s| s == "btc-15m.current.price.v1"));
         // The same BTC feed set for both series: everything but the internals.
@@ -967,7 +978,7 @@ mod tests {
         let r = build(&inputs(&[])).unwrap();
         // The copy file wins over the hand-written and spec names; the spec
         // name survives in metadata for the compiler.
-        let stats = r.signals.iter().find(|s| s.signal_id == "btc-2m.current.stats.v1").unwrap();
+        let stats = r.signals.iter().find(|s| s.signal_id == "btc-5m.current.stats.v1").unwrap();
         assert_eq!(stats.name.as_deref(), Some("Round activity"));
         assert_eq!(stats.fields[0].label.as_deref(), Some("Volume"));
         assert_eq!(stats.fields[0].headline, Some(true));
@@ -1014,6 +1025,21 @@ mod tests {
         let ext: Vec<_> = r.signals.iter().filter(|s| s.location == SignalLocation::External).collect();
         assert_eq!(ext.len(), 1);
         assert_eq!(ext[0].signal_id, "coinbase.btc_usd.spot.v1");
+    }
+
+    #[test]
+    fn on_gemini_the_external_signal_is_the_index_gemini_settles_on() {
+        let r = build(&Inputs { price_source: PriceSource::GeminiIndex, live_lanes: &[], definitions_dir: Some(PathBuf::from(DEFINITIONS_IN_CHECKOUT)), copy_dir: None }).unwrap();
+        let ext: Vec<_> = r.signals.iter().filter(|s| s.location == SignalLocation::External).collect();
+        assert_eq!(ext.len(), 1);
+        // The front end finds the spot signal by the `.btc_usd.spot.v1`
+        // suffix and the copy book by the `spot` segment.
+        assert_eq!(ext[0].signal_id, "gemini.btc_usd.spot.v1");
+        assert_eq!(price_feed_signal_id(PriceSource::GeminiIndex), "gemini.btc_usd.spot.v1");
+        let fields: Vec<_> = ext[0].fields.iter().map(|f| (f.name.as_str(), f.field_type.clone())).collect();
+        assert_eq!(fields, vec![("last", FieldType::Decimal)]);
+        let book = CopyBook::load(&copy_dir(None).expect("copy directory in the checkout")).unwrap();
+        assert!(book.for_signal(&ext[0].signal_id).is_some(), "the spot copy covers it");
     }
 
     #[test]

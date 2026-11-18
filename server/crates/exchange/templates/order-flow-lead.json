@@ -2,12 +2,12 @@
   "id": "order-flow-lead",
   "title": "Order Stack",
   "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-05.jpg" },
-  "series": ["btc-2m", "btc-15m"],
+  "series": ["btc-5m", "btc-15m"],
   "logic": "Watches the Coinbase and Kraken order books. When one side is filling up faster and has more size waiting near the price, traders are lining up before they trade. It bets with them: Up when bids are stacking, Down when asks are. One trade per round, held to the close.",
   "inverse_logic": "Watches the Coinbase and Kraken order books. When one side is stacking up but our price has already moved past sixty cents that way, the move is priced in and only the queue is left. It buys the other side. Sells out after a four-cent gain, otherwise holds to the close.",
   "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
   "substitutions": {
-    "btc-2m": { "cutoff": "20s", "min_flow_base": "2", "min_depth_imbalance": "0.2", "rich": "0.6", "gain": "0.04", "check": "1s" },
+    "btc-5m": { "cutoff": "20s", "min_flow_base": "2", "min_depth_imbalance": "0.2", "rich": "0.6", "gain": "0.04", "check": "1s" },
     "btc-15m": { "cutoff": "90s", "min_flow_base": "2", "min_depth_imbalance": "0.2", "rich": "0.6", "gain": "0.04", "check": "2s" }
   },
   "primary": {

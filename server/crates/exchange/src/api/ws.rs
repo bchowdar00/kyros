@@ -186,6 +186,7 @@ mod tests {
             templates: Arc::new(crate::templates::TemplateCatalogue::default()),
             deploys: crate::api::DeployKeys::default(),
             crowd: false,
+            gemini: None,
         }
     }
 
