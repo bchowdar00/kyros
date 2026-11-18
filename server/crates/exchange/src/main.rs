@@ -26,6 +26,7 @@ use exchange::engine::{Exchange, RoundClock};
 use exchange::gemini::audit::{RoundAudit, spawn_audit};
 use exchange::gemini::driver::{DriverParts, GeminiUpDriver, RestSource, SeriesLink};
 use exchange::gemini::index_feed::spawn_gemini_index_feed;
+use exchange::gemini::mirror_task::spawn_mirror;
 use exchange::gemini::strikes::{GeminiClock, IndexTape, StrikeBook, spawn_reference_listener};
 use exchange::gemini::{BTC_INDEX_ID, BTC_INDEX_STREAM, CONTRACT_STATUS_STREAM, GeminiEnv, GeminiState, PublicSocket, gemini_series_for};
 use exchange::house;
@@ -250,7 +251,7 @@ async fn main() {
     let round_audit = RoundAudit::new();
     spawn_audit(round_audit.clone(), RestSource(gemini_env));
     let mut gemini = GeminiState::new(gemini_env, gemini_clock.clone(), round_audit.clone());
-    gemini.socket = Some(gemini_socket);
+    gemini.socket = Some(gemini_socket.clone());
     tracing::info!(env = gemini_env.name, index = BTC_INDEX_STREAM, "gemini: public socket started");
     // Signals platform: the runtime's matching engine, catalogued from the
     // generated registry (every signal starts disabled; a signal is enabled
@@ -340,11 +341,17 @@ async fn main() {
                     strikes: strikes.clone(),
                     tape: index_tape.clone(),
                     clock: gemini_clock.clone(),
-                    link,
+                    link: link.clone(),
                     audit: round_audit.clone(),
                     feed: Some(price.clone()),
                 });
                 scheduler::spawn_with_driver(engine.clone(), series, driver, runtime.clone(), broadcast);
+                // The series' book is Gemini's own live book for the
+                // open window, held by one account that is not a trader.
+                let channels = ch.clone();
+                spawn_mirror(engine.clone(), series, gemini_socket.clone(), link, move |engine| {
+                    broadcast_book(engine, &channels)
+                });
             } else if let Some(world) = &nba_world {
                 let driver = NbaDriver::new(world.clone(), bus.clone(), series.duration_secs()).with_feed(price.clone());
                 scheduler::spawn_with_driver(engine.clone(), series, driver, runtime.clone(), broadcast);
@@ -352,7 +359,8 @@ async fn main() {
                 tracing::error!(series = %series, "no round driver for this series; it will never open a round");
             }
         }
-        {
+        // A series whose book is Gemini's has no market maker of ours.
+        if gemini_series_for(series.slug()).is_none() {
             let channels = ch.clone();
             market_maker::spawn(engine.clone(), series, mark_for(series), move |engine| {
                 broadcast_book(engine, &channels);
@@ -367,6 +375,10 @@ async fn main() {
     // from the population seed + index so behavior is reproducible, and
     // broadcasts on its own series' book channel.
     for (idx, bot) in bot_population.into_iter().enumerate() {
+        // Nor simulated traders: the only orders there are Gemini's and users'.
+        if gemini_series_for(bot.series.slug()).is_some() {
+            continue;
+        }
         let bot_channels = channels[bot.series.0 as usize].clone();
         let task_seed = TRADER_BOT_POPULATION_SEED ^ (idx as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15);
         traders::spawn_bot(

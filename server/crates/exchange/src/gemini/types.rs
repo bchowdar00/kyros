@@ -50,7 +50,9 @@ pub enum WsEvent {
         snapshot: bool,
         ts_ms: u64,
     },
-    Trade { symbol: String, price: Decimal, qty: Decimal, ts_ms: u64 },
+    /// A trade on Gemini. `buyer_is_maker` is Gemini's `m`: when true the
+    /// seller took (hit a bid); when false the buyer took (lifted an ask).
+    Trade { symbol: String, price: Decimal, qty: Decimal, buyer_is_maker: Option<bool>, ts_ms: u64 },
     /// A reference price. `index` is Gemini's index id, e.g. `LRRR_XBT`.
     Index { index: String, price: f64, ts_ms: u64 },
     ContractStatus {
@@ -151,6 +153,7 @@ pub fn parse_ws_message(text: &str) -> Option<Parsed> {
                 symbol: upper(v.get("s")?)?,
                 price: decimal(v.get("p")?)?,
                 qty: decimal(v.get("q")?)?,
+                buyer_is_maker: v.get("m").and_then(Value::as_bool),
                 ts_ms,
             }))
         }
@@ -429,9 +432,24 @@ mod tests {
                 symbol: "GEMI-BTC05M2611181705-UP".into(),
                 price: d("0.99"),
                 qty: d("4"),
+                buyer_is_maker: Some(false),
                 ts_ms: 1_795_021_382_566,
             }))
         );
+    }
+
+    #[test]
+    fn a_trade_says_which_side_took() {
+        // The second recorded trade has `"m":true`: the seller took.
+        let Some(Parsed::Event(WsEvent::Trade { buyer_is_maker, price, .. })) = parse_ws_message(&lines("trade.jsonl")[1]) else {
+            panic!("not a trade");
+        };
+        assert_eq!((buyer_is_maker, price), (Some(true), d("0.83")));
+        let no_flag = r#"{"E":1795021382566771200,"s":"gemi-btc05m2611181705-up","t":1,"p":"0.50","q":"1"}"#;
+        let Some(Parsed::Event(WsEvent::Trade { buyer_is_maker, .. })) = parse_ws_message(no_flag) else {
+            panic!("not a trade");
+        };
+        assert_eq!(buyer_is_maker, None);
     }
 
     #[test]

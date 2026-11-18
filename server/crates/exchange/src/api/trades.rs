@@ -138,7 +138,31 @@ pub fn build_trades_snapshot(exchange: &Exchange, series: SeriesId, limit: usize
     build_trades_snapshot_for(exchange.engine(series), exchange.ledger(), limit)
 }
 
+/// One row per fill, as it happened. A mirrored series' tape is the
+/// venue's own prints: every one carries the mirror's address (the
+/// venue's traders are unknown), so collapsing rows per trader would
+/// leave a single row, and a tape is read in order.
+fn print_row(ledger: &Ledger, series: SeriesId, f: &Fill) -> TradeRow {
+    TradeRow {
+        series,
+        price: f.price.tenths(),
+        qty: f.qty.0,
+        ts: f.ts,
+        side: match f.taker_side {
+            Side::Bid => TradeSide::Yes,
+            Side::Ask => TradeSide::No,
+        },
+        taker: identity_of(ledger, f.taker),
+        maker: identity_of(ledger, f.maker),
+    }
+}
+
 fn build_trades_snapshot_for(engine: &MarketEngine, ledger: &Ledger, limit: usize) -> TradesMessage {
+    if engine.mirror().is_some() {
+        let series = engine.series();
+        let trades = engine.recent_trades(limit).map(|f| print_row(ledger, series, f)).collect();
+        return TradesMessage { kind: "snapshot", trades };
+    }
     let series = engine.series();
     // Walk the entire recent-fills buffer chronologically, aggregate
     // into taker trades, collapse to one row per taker (newest), then
@@ -164,6 +188,37 @@ fn build_trades_snapshot_for(engine: &MarketEngine, ledger: &Ledger, limit: usiz
     }
 }
 
+/// The rows for the fills newer than `last_seen_ts`, which it advances;
+/// `None` when there are none.
+fn next_batch(engine: &MarketEngine, ledger: &Ledger, last_seen_ts: &mut u64) -> Option<TradesMessage> {
+    let series = engine.series();
+    let mut new_fills: Vec<Fill> =
+        engine.recent_trades(RECENT_FILLS_CAP).filter(|f| f.ts > *last_seen_ts).copied().collect();
+    if new_fills.is_empty() {
+        return None;
+    }
+    if engine.mirror().is_some() {
+        // Newest first, like the snapshot.
+        *last_seen_ts = new_fills.first().expect("non-empty by check").ts;
+        let trades = new_fills.iter().map(|f| print_row(ledger, series, f)).collect();
+        return Some(TradesMessage { kind: "batch", trades });
+    }
+    new_fills.reverse(); // chronological
+    *last_seen_ts = new_fills.last().expect("non-empty by check").ts;
+    let aggregated = aggregate_taker_trades(&new_fills);
+    // Collapse to one row per taker (most recent activity),
+    // then keep the newest TRADES_PER_BATCH unique-taker
+    // rows under heavy churn.
+    let mut deduped = dedupe_by_taker(ledger, aggregated);
+    deduped.sort_by(|a, b| b.last_ts.cmp(&a.last_ts));
+    deduped.truncate(TRADES_PER_BATCH);
+    let mut trades: Vec<TradeRow> = deduped.iter().map(|t| enrich_taker_trade(ledger, series, t)).collect();
+    // Shuffle so the batch doesn't land as a strict
+    // recency-ordered run.
+    trades.shuffle(&mut rand::rng());
+    Some(TradesMessage { kind: "batch", trades })
+}
+
 /// Background task that polls the engine's recent-fills buffer and
 /// broadcasts per-taker-order rows.
 pub fn spawn_trades_batcher(
@@ -182,43 +237,70 @@ pub fn spawn_trades_batcher(
             ticker.tick().await;
             let msg = {
                 let exchange = exchange.lock().expect("exchange mutex poisoned");
-                let engine = exchange.engine(series);
-                let ledger = exchange.ledger();
-                let mut new_fills: Vec<Fill> = engine
-                    .recent_trades(RECENT_FILLS_CAP)
-                    .filter(|f| f.ts > last_seen_ts)
-                    .copied()
-                    .collect();
-                if new_fills.is_empty() {
-                    None
-                } else {
-                    new_fills.reverse(); // chronological
-                    last_seen_ts = new_fills.last().expect("non-empty by check").ts;
-                    let aggregated = aggregate_taker_trades(&new_fills);
-                    // Collapse to one row per taker (most recent activity),
-                    // then keep the newest TRADES_PER_BATCH unique-taker
-                    // rows under heavy churn.
-                    let mut deduped = dedupe_by_taker(ledger, aggregated);
-                    deduped.sort_by(|a, b| b.last_ts.cmp(&a.last_ts));
-                    deduped.truncate(TRADES_PER_BATCH);
-                    let mut trades: Vec<TradeRow> = deduped
-                        .iter()
-                        .map(|t| enrich_taker_trade(ledger, series, t))
-                        .collect();
-                    // Shuffle so the batch doesn't land as a strict
-                    // recency-ordered run.
-                    trades.shuffle(&mut rand::rng());
-                    Some(TradesMessage {
-                        kind: "batch",
-                        trades,
-                    })
-                }
+                next_batch(exchange.engine(series), exchange.ledger(), &mut last_seen_ts)
             };
             if let Some(msg) = msg {
                 let _ = tx.send(msg);
             }
         }
     })
+}
+
+#[cfg(test)]
+mod mirrored_series_tests {
+    use super::*;
+    use crate::engine::Engine;
+    use crate::ticks::PriceTick;
+    use crate::types::{DEFAULT_SERIES, Qty, Tenths};
+
+    const MIRROR: Address = Address([0x6e; 20]);
+
+    fn tick(t: u16) -> PriceTick {
+        PriceTick::from_tenths(t).unwrap()
+    }
+
+    /// A mirrored series with three of the venue's prints on its tape.
+    fn rig() -> Engine {
+        let mut e = Engine::new(Tenths(1_000_000));
+        e.seed_bot_account_in(MIRROR, Tenths(1_000_000_000), "gemini-book".into(), None, None, DEFAULT_SERIES);
+        e.open_first_market(100_000.0, 1_900_000_000, 300);
+        let m = e.exchange_mut().engine_mut(DEFAULT_SERIES);
+        m.set_mirror(MIRROR);
+        m.record_print(Side::Bid, tick(560), Qty(2));
+        m.record_print(Side::Ask, tick(540), Qty(9));
+        m.record_print(Side::Bid, tick(550), Qty(4));
+        e
+    }
+
+    fn shape(rows: &[TradeRow]) -> Vec<(u16, u32, bool)> {
+        rows.iter().map(|r| (r.price, r.qty, matches!(r.side, TradeSide::Yes))).collect()
+    }
+
+    #[test]
+    fn every_print_is_its_own_row_newest_first() {
+        let e = rig();
+        let snap = build_trades_snapshot(e.exchange(), DEFAULT_SERIES, 30);
+        // Not collapsed to one row per trader, and not shuffled: the
+        // venue's traders are unknown, and this is a tape.
+        assert_eq!(shape(&snap.trades), vec![(550, 4, true), (540, 9, false), (560, 2, true)]);
+        assert!(snap.trades.iter().all(|r| r.taker.username.as_deref() == Some("gemini-book")));
+        assert!(snap.trades[0].ts > snap.trades[1].ts);
+        let two = build_trades_snapshot(e.exchange(), DEFAULT_SERIES, 2);
+        assert_eq!(shape(&two.trades), vec![(550, 4, true), (540, 9, false)]);
+    }
+
+    #[test]
+    fn a_batch_carries_only_the_prints_since_the_last_one() {
+        let mut e = rig();
+        let mut seen = 0;
+        let first = next_batch(e.exchange().engine(DEFAULT_SERIES), e.exchange().ledger(), &mut seen).expect("three prints");
+        assert_eq!(first.kind, "batch");
+        assert_eq!(shape(&first.trades), vec![(550, 4, true), (540, 9, false), (560, 2, true)]);
+        assert!(next_batch(e.exchange().engine(DEFAULT_SERIES), e.exchange().ledger(), &mut seen).is_none());
+        e.exchange_mut().engine_mut(DEFAULT_SERIES).record_print(Side::Ask, tick(530), Qty(1));
+        let second = next_batch(e.exchange().engine(DEFAULT_SERIES), e.exchange().ledger(), &mut seen).expect("one more");
+        assert_eq!(shape(&second.trades), vec![(530, 1, false)]);
+    }
 }
 
 #[cfg(test)]

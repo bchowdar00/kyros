@@ -8,6 +8,7 @@ use serde::Serialize;
 use super::audit::{AuditSummary, RoundAudit};
 use super::driver::{Phase, SeriesLink};
 use super::env::GeminiEnv;
+use super::mirror_task::BookState;
 use super::strikes::GeminiClock;
 use super::ws::PublicSocket;
 use crate::types::SeriesId;
@@ -32,6 +33,8 @@ pub struct GeminiSeriesView {
     /// Gemini's series name, e.g. `BTC05M`.
     pub series: &'static str,
     pub phase: Phase,
+    /// Whether the series' book is Gemini's live book right now.
+    pub book: BookState,
     /// The window the open (or just closed) round follows.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub event_ticker: Option<String>,
@@ -78,6 +81,7 @@ impl GeminiState {
             env: self.env.name,
             series: gemini_series,
             phase: link.phase(),
+            book: link.book(),
             strike: window.as_ref().and_then(|w| w.strike),
             starts_at_ms: window.as_ref().map(|w| w.starts_at_ms),
             expires_at_ms: window.as_ref().map(|w| w.expires_at_ms),
@@ -118,13 +122,27 @@ mod tests {
     }
 
     #[test]
+    fn a_series_says_whether_its_book_is_geminis_live_book() {
+        let (state, link) = state();
+        let book = |state: &GeminiState| serde_json::to_value(state.view(SeriesId(0)).unwrap()).unwrap()["book"].clone();
+        assert_eq!(book(&state), "waiting");
+        link.set_book(crate::gemini::mirror_task::BookState::Live);
+        assert_eq!(book(&state), "live");
+        link.set_book(crate::gemini::mirror_task::BookState::Stale);
+        assert_eq!(book(&state), "stale");
+    }
+
+    #[test]
     fn a_series_shows_its_phase_and_the_window_it_follows() {
         let (state, link) = state();
         let waiting = state.view(SeriesId(0)).expect("series 0 follows Gemini");
         assert_eq!((waiting.env, waiting.series, waiting.phase), ("production", "BTC05M", Phase::WaitingForWindow));
         assert_eq!(waiting.event_ticker, None);
         let json = serde_json::to_value(&waiting).unwrap();
-        assert_eq!(json, serde_json::json!({ "env": "production", "series": "BTC05M", "phase": "waiting_for_window" }));
+        assert_eq!(
+            json,
+            serde_json::json!({ "env": "production", "series": "BTC05M", "phase": "waiting_for_window", "book": "waiting" })
+        );
 
         link.set(
             Phase::Open,

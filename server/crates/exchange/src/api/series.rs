@@ -96,7 +96,7 @@ mod tests {
         let mut gemini = GeminiState::new(SANDBOX, GeminiClock::starting_at(0), RoundAudit::new());
         gemini.follow(SeriesId(1), "BTC15M", SeriesLink::new());
         let json = serde_json::to_value(build_series_list(&x, Some(&gemini))).unwrap();
-        assert_eq!(json[1]["gemini"], serde_json::json!({ "env": "sandbox", "series": "BTC15M", "phase": "waiting_for_window" }));
+        assert_eq!(json[1]["gemini"], serde_json::json!({ "env": "sandbox", "series": "BTC15M", "phase": "waiting_for_window", "book": "waiting" }));
         assert!(json[0].get("gemini").is_none(), "series 0 was not registered");
     }
 }

@@ -141,6 +141,9 @@ pub struct MarketEngine {
     /// Largest single fill in the current market, by `qty`. On ties the more
     /// recent fill wins. Resets in [`Engine::settle_all`].
     market_largest_trade: Option<Fill>,
+    /// The account that mirrors an outside venue's book into this one,
+    /// if this series has one. See [`Self::set_mirror`].
+    mirror: Option<Address>,
     /// Per-user trade log scoped to the current market. One entry per
     /// order placement by a registered user; mutated in place as fills
     /// land against it. Cleared in [`Engine::settle_all`]. Bot accounts
@@ -178,6 +181,7 @@ impl MarketEngine {
             market_trade_count: 0,
             market_unique_traders: HashSet::new(),
             market_largest_trade: None,
+            mirror: None,
             user_orders: HashMap::new(),
             settled_orders: HashMap::new(),
             positions: HashMap::new(),
@@ -192,6 +196,33 @@ impl MarketEngine {
     /// Replace the clock the lock reads.
     pub fn set_clock(&mut self, clock: RoundClock) {
         self.clock = clock;
+    }
+
+    /// Make `address` this series' book mirror: the account that copies an
+    /// outside venue's book into this one. From then on the public tape,
+    /// the round's volume, trade count and largest trade are the venue's
+    /// prints ([`Self::record_print`]), not fills made here, and the
+    /// mirror is never counted as a trader.
+    pub fn set_mirror(&mut self, address: Address) {
+        self.mirror = Some(address);
+    }
+
+    pub fn mirror(&self) -> Option<Address> {
+        self.mirror
+    }
+
+    /// A trade printed on the mirrored venue: `taker_side` is the side
+    /// that took. Goes on the tape and into the round's numbers; moves
+    /// no money. Ignored on a series with no mirror.
+    pub fn record_print(&mut self, taker_side: Side, price: PriceTick, qty: Qty) {
+        let Some(mirror) = self.mirror else {
+            return;
+        };
+        let ts = self.next_seq();
+        // The venue's traders are unknown here: the print carries the
+        // mirror's address on both sides and counts no trader.
+        let print = Fill { taker: mirror, maker: mirror, taker_side, price, qty, ts, kind: FillKind::Open };
+        self.push_to_tape(print);
     }
 
     /// Whether the series is refusing orders: its round has reached its
@@ -757,27 +788,39 @@ impl MarketEngine {
 
     fn record_fills(&mut self, ledger: &Ledger, fills: &[Fill]) {
         for f in fills {
-            if self.recent_fills.len() == RECENT_FILLS_CAP {
-                self.recent_fills.pop_front();
+            // On a mirrored series the tape and the round's numbers are
+            // the venue's prints (`record_print`); a fill made here only
+            // counts its traders, and the mirror is not one.
+            if self.mirror.is_none() {
+                self.push_to_tape(*f);
             }
-            self.recent_fills.push_back(*f);
-
-            // Per-market stat counters. `recent_fills` is a rolling 1000-cap
-            // buffer shared across markets, so totals must be tracked here
-            // rather than re-derived on read.
-            self.market_volume_tenths += f.qty.0 as i64 * PAYOUT_PER_CONTRACT;
-            self.market_trade_count += 1;
             // Count by root identity so a user's strategy sub-accounts
             // don't inflate the unique-trader figure.
-            let taker_root = ledger.root_of(&f.taker);
-            let maker_root = ledger.root_of(&f.maker);
-            self.market_unique_traders.insert(taker_root);
-            self.market_unique_traders.insert(maker_root);
-            match self.market_largest_trade {
-                // Tie → most recent wins (≥, not >). Tests rely on this.
-                Some(prev) if prev.qty.0 > f.qty.0 => {}
-                _ => self.market_largest_trade = Some(*f),
+            for party in [f.taker, f.maker] {
+                if Some(party) != self.mirror {
+                    self.market_unique_traders.insert(ledger.root_of(&party));
+                }
             }
+        }
+    }
+
+    /// One trade onto the public tape and into the round's volume, trade
+    /// count and largest trade.
+    fn push_to_tape(&mut self, f: Fill) {
+        if self.recent_fills.len() == RECENT_FILLS_CAP {
+            self.recent_fills.pop_front();
+        }
+        self.recent_fills.push_back(f);
+
+        // Per-market stat counters. `recent_fills` is a rolling 1000-cap
+        // buffer shared across markets, so totals must be tracked here
+        // rather than re-derived on read.
+        self.market_volume_tenths += f.qty.0 as i64 * PAYOUT_PER_CONTRACT;
+        self.market_trade_count += 1;
+        match self.market_largest_trade {
+            // Tie → most recent wins (≥, not >). Tests rely on this.
+            Some(prev) if prev.qty.0 > f.qty.0 => {}
+            _ => self.market_largest_trade = Some(f),
         }
     }
 

@@ -24,6 +24,8 @@ pub mod events;
 mod events_tests;
 #[cfg(test)]
 mod lock_tests;
+#[cfg(test)]
+mod mirror_tests;
 pub mod ids;
 pub mod ledger;
 pub mod market;

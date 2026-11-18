@@ -31,6 +31,7 @@ use serde::Serialize;
 
 use super::audit::{AuditRow, RoundAudit};
 use super::env::GeminiEnv;
+use super::mirror_task::BookState;
 use super::strikes::{GeminiClock, IndexTape, StrikeBook};
 use super::types::{EventDetail, UpWindow, event_ticker};
 use crate::engine::{Market, Outcome, RoundClose, RoundReference};
@@ -87,11 +88,13 @@ pub enum Phase {
 #[derive(Debug, Clone)]
 pub struct SeriesLink {
     inner: Arc<Mutex<(Phase, Option<UpWindow>)>>,
+    /// Whether the series' book is Gemini's right now; the mirror's word.
+    book: Arc<Mutex<BookState>>,
 }
 
 impl Default for SeriesLink {
     fn default() -> Self {
-        Self { inner: Arc::new(Mutex::new((Phase::WaitingForWindow, None))) }
+        Self { inner: Arc::new(Mutex::new((Phase::WaitingForWindow, None))), book: Arc::default() }
     }
 }
 
@@ -107,6 +110,14 @@ impl SeriesLink {
     /// The Gemini window the open (or just closed) round follows.
     pub fn window(&self) -> Option<UpWindow> {
         self.inner.lock().expect("series link poisoned").1.clone()
+    }
+
+    pub fn book(&self) -> BookState {
+        *self.book.lock().expect("series link poisoned")
+    }
+
+    pub(super) fn set_book(&self, state: BookState) {
+        *self.book.lock().expect("series link poisoned") = state;
     }
 
     pub(super) fn set(&self, phase: Phase, window: Option<UpWindow>) {
