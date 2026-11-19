@@ -12,7 +12,7 @@
 //! so a single share at price `p` costs exactly `p` tenths — clean integer
 //! math with no rounding.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 
 use super::book::Book;
@@ -144,6 +144,12 @@ pub struct MarketEngine {
     /// The account that mirrors an outside venue's book into this one,
     /// if this series has one. See [`Self::set_mirror`].
     mirror: Option<Address>,
+    /// The account that takes the other side of every fill made on an
+    /// outside venue, if this series has one. See [`Self::set_outside`].
+    outside: Option<Address>,
+    /// Orders that live on an outside venue, by the id this engine gave
+    /// them. See [`Self::external_open`].
+    external: BTreeMap<OrderId, ExternalOrder>,
     /// Per-user trade log scoped to the current market. One entry per
     /// order placement by a registered user; mutated in place as fills
     /// land against it. Cleared in [`Engine::settle_all`]. Bot accounts
@@ -182,6 +188,8 @@ impl MarketEngine {
             market_unique_traders: HashSet::new(),
             market_largest_trade: None,
             mirror: None,
+            outside: None,
+            external: BTreeMap::new(),
             user_orders: HashMap::new(),
             settled_orders: HashMap::new(),
             positions: HashMap::new(),
@@ -684,6 +692,13 @@ impl MarketEngine {
                 self.emit(cid, order.account, Some(id), ExecKind::CancelAck, Qty::ZERO, Qty::ZERO, None);
             }
             self.book.cancel(id).expect("book had it");
+        }
+        // Orders on an outside venue end with the round too. Ids rise with
+        // time, so this is the order they were opened in.
+        let external = std::mem::take(&mut self.external);
+        let count = count + external.len() as u32;
+        for (id, order) in external {
+            self.emit(order.client_order_id, order.account, Some(id), ExecKind::CancelAck, Qty::ZERO, Qty::ZERO, None);
         }
         count
     }
@@ -1492,8 +1507,6 @@ impl MarketEngine {
         fills: &mut Vec<Fill>,
     ) {
         let price = maker_head.price;
-        let p = price.tenths() as i64;
-        let q = qty.0 as i64;
 
         let maker_lock = *self
             .order_locks
@@ -1505,58 +1518,12 @@ impl MarketEngine {
             Side::Ask => (maker_head.account, taker, maker_lock, taker_per_unit_lock),
         };
 
-        let buyer_pos_pre = self.position(&buyer_addr).position.0;
-        let seller_pos_pre = self.position(&seller_addr).position.0;
-
-        // Per-side close/open split (in units of the fill).
-        let a = q.min((-buyer_pos_pre).max(0)); // buyer's exit-short qty
-        let b = q - a; // buyer's enter-long qty
-        let c = q.min(seller_pos_pre.max(0)); // seller's exit-long qty
-        let d = q - c; // seller's enter-short qty
-
-        // Cross-tabulation into the four classified sub-fills.
-        let close = a.min(c);
-        let transfer_no = a - close;
-        let transfer_yes = c - close;
-        let open = q - a.max(c);
-
-        // Buyer side: refund full reserved lock for these q units, then apply
-        // cash flow (a units exit short, b units enter long), then position.
-        // Seller side mirrors it: c units exit long, d units enter short.
-        let buyer_refund = Tenths(buyer_lock.0 * q);
-        let seller_refund = Tenths(seller_lock.0 * q);
-        let buyer_cash = Tenths(a * (PAYOUT_PER_CONTRACT - p) - b * p);
-        let seller_cash = Tenths(c * p - d * (PAYOUT_PER_CONTRACT - p));
-        ledger.apply_fill_cash(
-            buyer_addr,
-            buyer_refund,
-            buyer_cash,
-            seller_addr,
-            seller_refund,
-            seller_cash,
-        );
-        self.locked_total -= buyer_refund + seller_refund;
-
-        let buyer_realized = {
-            let ps = self.position_mut(buyer_addr);
-            let r = apply_pnl_for_fill(ps, buyer_pos_pre, q, p);
-            ps.position += Position(q);
-            r
-        };
-        let seller_realized = {
-            let ps = self.position_mut(seller_addr);
-            let r = apply_pnl_for_fill(ps, seller_pos_pre, -q, p);
-            ps.position += Position(-q);
-            r
-        };
+        let cleared = self.clear_trade(ledger, buyer_addr, seller_addr, buyer_lock, seller_lock, price, qty);
         let maker_realized = match taker_side {
-            Side::Bid => seller_realized,
-            Side::Ask => buyer_realized,
+            Side::Bid => cleared.seller_realized,
+            Side::Ask => cleared.buyer_realized,
         };
-
-        // OI moves by Open count minus Close count = q − a − c.
-        let oi_delta = q - a - c;
-        self.open_interest = (self.open_interest as i64 + oi_delta) as u64;
+        let Cleared { open, transfer_yes, transfer_no, close, .. } = cleared;
 
         // Emit one Fill per non-zero classification, in OI-impact order.
         let maker_addr = maker_head.account;
@@ -1605,6 +1572,75 @@ impl MarketEngine {
             self.order_locks.remove(&maker_head.id);
             self.client_ids.remove(&maker_head.id);
         }
+    }
+
+    /// One trade of `qty` at `price` between a buyer and a seller: refund
+    /// what each had reserved for these units, move the cash, move both
+    /// positions and the open interest. The four-case split falls out of
+    /// the two positions before the trade. No book, no tape, no events.
+    #[allow(clippy::too_many_arguments)]
+    fn clear_trade(
+        &mut self,
+        ledger: &mut Ledger,
+        buyer_addr: Address,
+        seller_addr: Address,
+        buyer_lock: Tenths,
+        seller_lock: Tenths,
+        price: PriceTick,
+        qty: Qty,
+    ) -> Cleared {
+        let p = price.tenths() as i64;
+        let q = qty.0 as i64;
+
+        let buyer_pos_pre = self.position(&buyer_addr).position.0;
+        let seller_pos_pre = self.position(&seller_addr).position.0;
+
+        // Per-side close/open split (in units of the fill).
+        let a = q.min((-buyer_pos_pre).max(0)); // buyer's exit-short qty
+        let b = q - a; // buyer's enter-long qty
+        let c = q.min(seller_pos_pre.max(0)); // seller's exit-long qty
+        let d = q - c; // seller's enter-short qty
+
+        // Cross-tabulation into the four classified sub-fills.
+        let close = a.min(c);
+        let transfer_no = a - close;
+        let transfer_yes = c - close;
+        let open = q - a.max(c);
+
+        // Buyer side: refund full reserved lock for these q units, then apply
+        // cash flow (a units exit short, b units enter long), then position.
+        // Seller side mirrors it: c units exit long, d units enter short.
+        let buyer_refund = Tenths(buyer_lock.0 * q);
+        let seller_refund = Tenths(seller_lock.0 * q);
+        let buyer_cash = Tenths(a * (PAYOUT_PER_CONTRACT - p) - b * p);
+        let seller_cash = Tenths(c * p - d * (PAYOUT_PER_CONTRACT - p));
+        ledger.apply_fill_cash(
+            buyer_addr,
+            buyer_refund,
+            buyer_cash,
+            seller_addr,
+            seller_refund,
+            seller_cash,
+        );
+        self.locked_total -= buyer_refund + seller_refund;
+
+        let buyer_realized = {
+            let ps = self.position_mut(buyer_addr);
+            let r = apply_pnl_for_fill(ps, buyer_pos_pre, q, p);
+            ps.position += Position(q);
+            r
+        };
+        let seller_realized = {
+            let ps = self.position_mut(seller_addr);
+            let r = apply_pnl_for_fill(ps, seller_pos_pre, -q, p);
+            ps.position += Position(-q);
+            r
+        };
+        // OI moves by Open count minus Close count = q − a − c.
+        let oi_delta = q - a - c;
+        self.open_interest = (self.open_interest as i64 + oi_delta) as u64;
+
+        Cleared { buyer_realized, seller_realized, open, transfer_yes, transfer_no, close }
     }
 
     /// Cancels a resting order owned by `account`. Refunds the order's
@@ -1784,9 +1820,14 @@ impl MarketEngine {
             .filter(|o| o.account == account)
             .map(|o| o.id)
             .collect();
-        let count = ids.len() as u32;
+        let mut count = ids.len() as u32;
         for id in ids {
             self.cancel(ledger, account, id).expect("order listed on book");
+        }
+        let external: Vec<OrderId> = self.external.iter().filter(|(_, o)| o.account == account).map(|(id, _)| *id).collect();
+        for id in external {
+            self.external_close(id, ExecKind::CancelAck);
+            count += 1;
         }
         count
     }
@@ -1810,6 +1851,7 @@ impl MarketEngine {
             .iter_bid_orders()
             .chain(self.book.iter_ask_orders())
             .any(|o| o.account == *account)
+            || self.external.values().any(|o| o.account == *account)
     }
 
     /// Σ per-unit lock × open qty over the resting book — what
@@ -1821,5 +1863,158 @@ impl MarketEngine {
             sum += per_unit.0 * o.qty_open.0 as i64;
         }
         Tenths(sum)
+    }
+}
+
+/// What [`MarketEngine::clear_trade`] did: each side's realized PnL and
+/// the trade split into the four clearing cases (units of each).
+struct Cleared {
+    buyer_realized: i64,
+    seller_realized: i64,
+    open: i64,
+    transfer_yes: i64,
+    transfer_no: i64,
+    close: i64,
+}
+
+/// An order this engine names but does not hold: it rests on an outside
+/// venue, which reports its fills and its end.
+#[derive(Debug, Clone)]
+struct ExternalOrder {
+    account: Address,
+    client_order_id: Arc<str>,
+    remaining: Qty,
+}
+
+/// Why a report about an outside order could not be applied.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExternalError {
+    /// The engine holds no outside order under that id (never opened, or
+    /// already filled, closed or swept at settlement).
+    UnknownOrder,
+    /// The fill itself could not be booked.
+    Ledger(OrderError),
+}
+
+impl MarketEngine {
+    /// Make `address` this series' outside counterparty: the account that
+    /// takes the other side of every fill made on an outside venue
+    /// ([`Self::apply_external_fill`]). Like the mirror it stands for the
+    /// venue, not for a person, and is never counted as a trader.
+    pub fn set_outside(&mut self, address: Address) {
+        self.outside = Some(address);
+    }
+
+    pub fn outside(&self) -> Option<Address> {
+        self.outside
+    }
+
+    /// Book a fill that happened on an outside venue: `account` bought
+    /// (`Side::Bid`) or sold (`Side::Ask`) `qty` of the quoted outcome at
+    /// `price`, and the outside counterparty took the other side. Cash,
+    /// positions and open interest move exactly as for a fill matched
+    /// here; the book is not touched and nothing was reserved, so nothing
+    /// is refunded. The trade is on no tape: on a mirrored series the tape
+    /// is the venue's own prints, and this fill is among them.
+    ///
+    /// The venue's report is a fact, so this books it whether or not the
+    /// round still takes orders, and does not ask whether `account` can
+    /// afford it: the risk gate bounded the order before it was sent, and
+    /// a position the ledger refused to see could never be closed.
+    pub fn apply_external_fill(&mut self, ledger: &mut Ledger, account: Address, side: Side, price: PriceTick, qty: Qty) -> Result<(), OrderError> {
+        if qty.is_zero() {
+            return Err(OrderError::ZeroQuantity);
+        }
+        let outside = self.outside.ok_or(OrderError::UnknownAccount)?;
+        if account == outside {
+            return Err(OrderError::UnknownAccount);
+        }
+        ledger.account(&account).ok_or(OrderError::UnknownAccount)?;
+        ledger.assert_may_trade(&account, self.series)?;
+        if self.current_market.is_none() {
+            return Err(OrderError::MarketClosed);
+        }
+
+        let realized_before = self.position(&account).realized_pnl_this_market.0;
+        let (buyer, seller) = match side {
+            Side::Bid => (account, outside),
+            Side::Ask => (outside, account),
+        };
+        self.clear_trade(ledger, buyer, seller, Tenths::ZERO, Tenths::ZERO, price, qty);
+        let realized = self.realized_since(account, realized_before);
+
+        self.market_unique_traders.insert(ledger.root_of(&account));
+        let row_id = self.next_id();
+        self.record_user_order_placement(
+            ledger,
+            account,
+            row_id,
+            side,
+            qty,
+            Some(price.tenths()),
+            TradeSource::Strategy,
+            OrderType::Limit,
+            qty,
+            qty.0 as u64 * price.tenths() as u64,
+            UserOrderStatus::Filled,
+            realized,
+        );
+        Ok(())
+    }
+
+    /// Name an order that `account` has sent to an outside venue. The
+    /// engine holds no book entry and reserves nothing for it; it keeps
+    /// the name so the order's fills ([`Self::external_fill`]) and its end
+    /// ([`Self::external_close`]) go out on the execution sink like any
+    /// other order's, and so settlement acks whatever is still open.
+    /// Silent, like any order that rests untouched: the caller has the id.
+    pub fn external_open(&mut self, ledger: &Ledger, account: Address, client_order_id: Arc<str>, qty: Qty) -> Result<OrderId, OrderError> {
+        if self.is_locked() || self.current_market.is_none() {
+            return Err(OrderError::MarketClosed);
+        }
+        if qty.is_zero() {
+            return Err(OrderError::ZeroQuantity);
+        }
+        if self.outside.is_none() {
+            return Err(OrderError::UnknownAccount);
+        }
+        ledger.account(&account).ok_or(OrderError::UnknownAccount)?;
+        ledger.assert_may_trade(&account, self.series)?;
+        let id = self.next_id();
+        self.external.insert(id, ExternalOrder { account, client_order_id, remaining: qty });
+        Ok(id)
+    }
+
+    /// The venue filled `qty` of outside order `id` at `price`: book it
+    /// and report `Partial`, or `Fill` when nothing is left. A report
+    /// larger than what was left is booked whole, since it happened.
+    pub fn external_fill(&mut self, ledger: &mut Ledger, id: OrderId, side: Side, price: PriceTick, qty: Qty) -> Result<(), ExternalError> {
+        let order = self.external.get(&id).cloned().ok_or(ExternalError::UnknownOrder)?;
+        self.apply_external_fill(ledger, order.account, side, price, qty).map_err(ExternalError::Ledger)?;
+        let remaining = Qty(order.remaining.0.saturating_sub(qty.0));
+        let kind = if remaining.is_zero() {
+            self.external.remove(&id);
+            ExecKind::Fill
+        } else {
+            self.external.get_mut(&id).expect("just read").remaining = remaining;
+            ExecKind::Partial
+        };
+        self.emit(order.client_order_id, order.account, Some(id), kind, qty, remaining, Some(price));
+        Ok(())
+    }
+
+    /// Outside order `id` is over without (further) fills: the venue
+    /// cancelled it, refused it, let it lapse, or it was replaced. Reports
+    /// `kind` once; `false` when the engine no longer holds the order.
+    pub fn external_close(&mut self, id: OrderId, kind: ExecKind) -> bool {
+        let Some(order) = self.external.remove(&id) else {
+            return false;
+        };
+        self.emit(order.client_order_id, order.account, Some(id), kind, Qty::ZERO, Qty::ZERO, None);
+        true
+    }
+
+    pub fn external_is_live(&self, id: OrderId) -> bool {
+        self.external.contains_key(&id)
     }
 }

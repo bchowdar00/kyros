@@ -19,13 +19,17 @@ use exchange::automation::sme::task::spawn_platform;
 use exchange::automation::delta_signal::spawn_delta_publisher;
 use exchange::automation::spot_signal::spawn_spot_publisher;
 use exchange::automation::stats_signal::spawn_stats_publisher;
-use exchange::automation::venue::{EngineClock, EngineVenue, SeriesMap};
+use exchange::automation::venue::{EngineClock, EngineVenue, SeriesMap, Venue};
 use exchange::engine::{Exchange, RoundClock};
 use exchange::gemini::audit::{RoundAudit, spawn_audit};
-use exchange::gemini::driver::{DriverParts, GeminiUpDriver, RestSource, SeriesLink};
+use exchange::gemini::driver::{DriverParts, GeminiUpDriver, Phase, RestSource, SeriesLink};
 use exchange::gemini::index_feed::spawn_gemini_index_feed;
 use exchange::gemini::mirror_task::spawn_mirror;
 use exchange::gemini::strikes::{GeminiClock, IndexTape, StrikeBook, spawn_reference_listener};
+use exchange::gemini::venue::{
+    GeminiVenue, OrderLookup, SessionConfig, SymbolFn, install_outside_accounts, parse_max_order, parse_operator, real_orders_key,
+    run as run_order_socket,
+};
 use exchange::gemini::{BTC_INDEX_ID, BTC_INDEX_STREAM, CONTRACT_STATUS_STREAM, GeminiEnv, GeminiState, PublicSocket, gemini_series_for};
 use exchange::record::{self, RecordBook};
 use exchange::pricing::feed::{PriceFeed, spawn_tick_flusher};
@@ -34,7 +38,9 @@ use exchange::scheduler;
 use exchange::series::SERIES;
 use exchange::{signals, signals_retention};
 use exchange::templates::TemplateCatalogue;
-use exchange::types::Tenths;
+use exchange::types::{SeriesId, Tenths};
+use gemini_private::auth::ApiKey;
+use gemini_private::rest::PrivateRest;
 
 const STARTING_BALANCE: Tenths = Tenths(1_000_000); // $1000
 
@@ -64,6 +70,32 @@ async fn handle_socket(mut socket: WebSocket) {
             _ => {}
         }
     }
+}
+
+/// What a host that sends real orders must have set, read once at boot.
+struct RealOrders {
+    socket_key: ApiKey,
+    rest_key: ApiKey,
+    operator: exchange::types::Address,
+    max_order_qty: u32,
+}
+
+/// `Ok(None)` is paper. See [`real_orders_key`] for the three settings that
+/// turn real orders on; the operator account and the order cap are read
+/// only then.
+fn real_orders_from_env() -> Result<Option<RealOrders>, String> {
+    let var = |name: &str| std::env::var(name).ok();
+    let key = || ApiKey::from_env().map_err(|e| e.to_string());
+    let Some(socket_key) = real_orders_key(var("KYROS_REAL_ORDERS").as_deref(), var("GEMINI_ENV").as_deref(), key())? else {
+        return Ok(None);
+    };
+    let rest_key = key()?.ok_or("the Gemini key disappeared from the environment during boot")?;
+    Ok(Some(RealOrders {
+        socket_key,
+        rest_key,
+        operator: parse_operator(var("KYROS_REAL_OPERATOR").as_deref())?,
+        max_order_qty: parse_max_order(var("KYROS_REAL_MAX_ORDER").as_deref())?,
+    }))
 }
 
 #[tokio::main]
@@ -166,6 +198,19 @@ async fn main() {
     // generated registry (every signal starts disabled; a signal is enabled
     // when something in this process publishes it). Instruments are the
     // registry's series slugs with the `.current` suffix.
+    // One link per series that follows Gemini, made here so the order
+    // venue (below) and the round drivers (further down) share them.
+    let series_links: std::collections::HashMap<SeriesId, SeriesLink> =
+        SERIES.iter().filter(|s| gemini_series_for(s.slug).is_some()).map(|s| (s.id, SeriesLink::new())).collect();
+    // Paper unless the host says otherwise in three separate settings; a
+    // half-set host stops here rather than choosing.
+    let real_orders = match real_orders_from_env() {
+        Ok(real) => real,
+        Err(e) => {
+            tracing::error!(error = %e, "real orders: the host's settings do not add up; not starting");
+            std::process::exit(78);
+        }
+    };
     let platform = {
         let series_map = SeriesMap::new(SERIES.iter().map(|s| (s.slug, s.id)));
         let clock = EngineClock::new(engine.clone(), series_map.clone());
@@ -176,7 +221,40 @@ async fn main() {
         tracing::info!(signals = registry.signals.len(), "signals platform started");
         // The strategy runtime: deployments wake on platform activations
         // and trade through `EngineVenue` over the shared exchange.
-        let venue = EngineVenue::new(engine.clone(), series_map);
+        let venue: Arc<dyn Venue> = match real_orders {
+            None => EngineVenue::new(engine.clone(), series_map),
+            Some(real) => {
+                // Real orders: a strategy's orders go to Gemini on a signed
+                // socket and Gemini's reported fills are booked into the
+                // same ledger, against one outside account per series.
+                install_outside_accounts(&mut engine.lock().expect("engine mutex poisoned"), series_links.keys().copied());
+                let links = series_links.clone();
+                let symbols: SymbolFn = Arc::new(move |series| {
+                    let link = links.get(&series)?;
+                    (link.phase() == Phase::Open).then(|| link.window().map(|w| w.symbol)).flatten()
+                });
+                let boot = format!("k{:x}", gemini_private::auth::unix_seconds());
+                let (venue, driver) = GeminiVenue::new(engine.clone(), series_map, symbols, boot);
+                venue.set_operator(Some(real.operator));
+                venue.set_max_order_qty(real.max_order_qty);
+                // One nonce source for the key: the REST reads and the
+                // socket's sign-in must never reuse or go back on one.
+                let nonce = gemini_private::auth::Nonce::new();
+                let lookup: Arc<dyn OrderLookup> = Arc::new(Arc::new(PrivateRest::with_nonce(gemini_env.rest_base, real.rest_key, nonce.clone())));
+                let session = SessionConfig {
+                    url: gemini_env.ws_url.to_owned(),
+                    backoff_base: std::time::Duration::from_secs(1),
+                    backoff_max: std::time::Duration::from_secs(30),
+                    ping_every: std::time::Duration::from_secs(15),
+                    idle_limit: std::time::Duration::from_secs(45),
+                    nonce,
+                };
+                tokio::spawn(run_order_socket(driver, session, real.socket_key, lookup));
+                tracing::warn!(env = gemini_env.name, operator = %real.operator, max_order = real.max_order_qty, "REAL ORDERS ARE ON: this operator's strategies send orders to Gemini");
+                gemini.orders = Some(venue.clone());
+                Arc::new(venue)
+            }
+        };
         spawn_manager(runtime_rx, handle.clone(), venue, clock);
         handle
     };
@@ -212,7 +290,7 @@ async fn main() {
                 // on Gemini's strike, closes at Gemini's expiry (orders
                 // are refused from that second, on Gemini's clock) and
                 // resolves on Gemini's own result.
-                let link = SeriesLink::new();
+                let link = series_links[&series].clone();
                 gemini.follow(series, gemini_series, link.clone());
                 {
                     let mut exchange = engine.lock().expect("engine mutex poisoned");

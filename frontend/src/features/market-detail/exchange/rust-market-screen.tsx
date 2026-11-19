@@ -131,6 +131,15 @@ function ConnectedMarketScreen({ address, market, config }: ScreenProps & { addr
       : { myStrategies: { ...market.myStrategies, rows: rankedRows(rows, rank) } }),
   }
 
+  const exchangeNotice =
+    geminiBook.gemini?.orders === 'real'
+      ? `Manual orders here are pretend money against the live order book. Strategies run by this server's operator ${
+          geminiBook.gemini.env === 'sandbox'
+            ? "send orders to Gemini's sandbox."
+            : 'send real orders to Gemini.'
+        }`
+      : 'Paper mode. Pretend money against the live order book. No order leaves this site.'
+
   const screen = {
     trading,
     deploy,
@@ -151,9 +160,7 @@ function ConnectedMarketScreen({ address, market, config }: ScreenProps & { addr
           className="flex flex-col gap-xs border-t-2 border-foreground pt-md text-label text-muted-foreground"
           aria-label="Exchange connection"
         >
-          <strong className="text-foreground">
-            Paper mode. Pretend money against the live order book. No order leaves this site.
-          </strong>
+          <strong className="text-foreground">{exchangeNotice}</strong>
           <output>
             Book: {feed.status} · Account: {account.status} · Round {feed.marketId ?? '—'}:{' '}
             {feed.state ?? 'waiting'}

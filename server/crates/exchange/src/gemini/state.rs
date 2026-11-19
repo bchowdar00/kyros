@@ -48,6 +48,9 @@ pub struct GeminiSeriesView {
     pub starts_at_ms: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expires_at_ms: Option<u64>,
+    /// `real` when this server sends its operator's strategy orders to
+    /// Gemini; `paper` when no order leaves it.
+    pub orders: &'static str,
 }
 
 /// Shared with the API. Cheap to clone.
@@ -63,12 +66,14 @@ pub struct GeminiState {
     /// The index price, second by second, as it arrives. The health
     /// check reads how old the newest one is.
     pub index: IndexTape,
+    /// The signed order link, when this server sends real orders.
+    pub orders: Option<std::sync::Arc<super::venue::GeminiVenue>>,
     links: Vec<(SeriesId, &'static str, SeriesLink)>,
 }
 
 impl GeminiState {
     pub fn new(env: GeminiEnv, clock: GeminiClock, audit: RoundAudit) -> Self {
-        Self { env, clock, audit, socket: None, index: IndexTape::new(), links: Vec::new() }
+        Self { env, clock, audit, socket: None, index: IndexTape::new(), orders: None, links: Vec::new() }
     }
 
     /// Register the link of a series that follows `gemini_series`.
@@ -90,7 +95,13 @@ impl GeminiState {
             expires_at_ms: window.as_ref().map(|w| w.expires_at_ms),
             symbol: window.as_ref().map(|w| w.symbol.clone()),
             event_ticker: window.map(|w| w.event_ticker),
+            orders: if self.orders.is_some() { "real" } else { "paper" },
         })
+    }
+
+    /// The order link's state; `None` on a paper server.
+    pub fn orders_status(&self) -> Option<super::venue::VenueStatus> {
+        self.orders.as_ref().map(|venue| venue.status())
     }
 
     /// The newest second an index price has arrived for.
@@ -130,6 +141,22 @@ mod tests {
     }
 
     #[test]
+    fn a_series_says_paper_until_an_order_link_is_attached() {
+        use crate::automation::venue::SeriesMap;
+        use crate::engine::Exchange;
+        use crate::gemini::venue::GeminiVenue;
+        use std::sync::{Arc, Mutex};
+        let (mut state, _) = state();
+        assert_eq!(state.view(SeriesId(0)).unwrap().orders, "paper");
+        assert!(state.orders_status().is_none());
+        let exchange = Arc::new(Mutex::new(Exchange::new(crate::types::Tenths(1), crate::series::SERIES)));
+        let (venue, _driver) = GeminiVenue::new(exchange, SeriesMap::new([("a", SeriesId(0))]), Arc::new(|_| None), "t");
+        state.orders = Some(venue);
+        assert_eq!(state.view(SeriesId(0)).unwrap().orders, "real");
+        assert!(!state.orders_status().unwrap().connected);
+    }
+
+    #[test]
     fn the_newest_index_second_comes_from_the_tape_the_state_holds() {
         let (state, _) = state();
         assert_eq!(state.last_index_second(), None);
@@ -158,7 +185,7 @@ mod tests {
         let json = serde_json::to_value(&waiting).unwrap();
         assert_eq!(
             json,
-            serde_json::json!({ "env": "production", "series": "BTC05M", "phase": "waiting_for_window", "book": "waiting" })
+            serde_json::json!({ "env": "production", "series": "BTC05M", "phase": "waiting_for_window", "book": "waiting", "orders": "paper" })
         );
 
         link.set(

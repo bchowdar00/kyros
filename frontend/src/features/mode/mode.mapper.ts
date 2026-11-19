@@ -2,7 +2,7 @@ import type { RustSeriesInfo } from '@kyros/domain'
 
 /** What the nav badge says about the money and the books behind this site. */
 export interface SiteMode {
-  label: 'Paper' | 'Sandbox' | 'Mode unknown'
+  label: 'Paper' | 'Sandbox' | 'Live orders' | 'Sandbox orders' | 'Mode unknown'
   description: string
   tone: 'neutral' | 'warning'
 }
@@ -17,6 +17,24 @@ export function toSiteMode(series: readonly RustSeriesInfo[] | undefined): SiteM
       label: 'Mode unknown',
       description:
         'The exchange did not answer, so this page cannot say which books it is reading.',
+      tone: 'warning',
+    }
+  }
+
+  const real = series.filter(info => info.gemini?.orders === 'real')
+  if (real.some(info => info.gemini?.env === 'production')) {
+    return {
+      label: 'Live orders',
+      description:
+        "Strategies run by this server's operator send real orders to Gemini. Manual orders and every balance shown here are pretend money.",
+      tone: 'warning',
+    }
+  }
+  if (real.length > 0) {
+    return {
+      label: 'Sandbox orders',
+      description:
+        "Strategies run by this server's operator send orders to Gemini's sandbox. Manual orders and every balance shown here are pretend money.",
       tone: 'warning',
     }
   }

@@ -131,26 +131,30 @@ impl Venue for EngineVenue {
     }
 
     fn account_view(&self, series: SeriesId, account: Address) -> AccountView {
-        let x = self.lock();
-        let Some(acct) = x.account(&account) else {
-            return AccountView::default();
-        };
-        let engine = x.engine(series);
-        let ps = engine.position(&account);
-        let pos = ps.position.0;
-        let avg_tenths = ps.avg_entry().map(i64::from).unwrap_or(0);
-        let unrealized_tenths = match engine.mark_price() {
-            Some(mark) if pos != 0 => pos * (i64::from(mark.tenths()) - avg_tenths),
-            _ => 0,
-        };
-        AccountView {
-            cash: tenths(acct.usdc_balance),
-            position_size: Decimal::from(pos),
-            position_avg_cost: Decimal::new(avg_tenths, 3),
-            realized_pnl: tenths(ps.realized_pnl_this_market),
-            realized_pnl_lifetime: tenths(Tenths(acct.lifetime_realized_pnl_tenths + ps.realized_pnl_this_market.0)),
-            unrealized_pnl: tenths(Tenths(unrealized_tenths)),
-        }
+        account_view(&self.lock(), series, account)
+    }
+}
+
+/// The sub-account as any venue over this ledger sees it.
+pub fn account_view(exchange: &Exchange, series: SeriesId, account: Address) -> AccountView {
+    let Some(acct) = exchange.account(&account) else {
+        return AccountView::default();
+    };
+    let engine = exchange.engine(series);
+    let ps = engine.position(&account);
+    let pos = ps.position.0;
+    let avg_tenths = ps.avg_entry().map(i64::from).unwrap_or(0);
+    let unrealized_tenths = match engine.mark_price() {
+        Some(mark) if pos != 0 => pos * (i64::from(mark.tenths()) - avg_tenths),
+        _ => 0,
+    };
+    AccountView {
+        cash: tenths(acct.usdc_balance),
+        position_size: Decimal::from(pos),
+        position_avg_cost: Decimal::new(avg_tenths, 3),
+        realized_pnl: tenths(ps.realized_pnl_this_market),
+        realized_pnl_lifetime: tenths(Tenths(acct.lifetime_realized_pnl_tenths + ps.realized_pnl_this_market.0)),
+        unrealized_pnl: tenths(Tenths(unrealized_tenths)),
     }
 }
 

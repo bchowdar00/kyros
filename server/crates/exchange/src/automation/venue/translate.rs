@@ -118,8 +118,9 @@ pub fn reject_reason_of(e: ExecReject) -> RejectReason {
         ExecReject::ZeroQuantity
         | ExecReject::SeriesMismatch
         | ExecReject::PostOnlyWouldCross
-        | ExecReject::ReduceOnlyNoPosition => RejectReason::InvalidOrder,
-        ExecReject::UnknownAccount => RejectReason::InternalError,
+        | ExecReject::ReduceOnlyNoPosition
+        | ExecReject::VenueRefused => RejectReason::InvalidOrder,
+        ExecReject::UnknownAccount | ExecReject::VenueUnreachable => RejectReason::InternalError,
         ExecReject::MarketClosed => RejectReason::MarketClosed,
     }
 }

@@ -547,6 +547,7 @@ dependencies = [
  "chrono",
  "dotenvy",
  "futures",
+ "gemini-private",
  "rand 0.9.4",
  "reqwest",
  "rust_decimal",
@@ -728,6 +729,21 @@ dependencies = [
  "memchr",
  "pin-project-lite",
  "slab",
+]
+
+[[package]]
+name = "gemini-private"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "hmac",
+ "reqwest",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]

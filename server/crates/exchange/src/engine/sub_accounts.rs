@@ -160,7 +160,10 @@ impl Exchange {
         let cancelled_orders = engine.cancel_resting_for(ledger, child);
 
         let signed = engine.position(&child).position.0;
-        if signed != 0 {
+        // With real orders the position is held on the outside venue too:
+        // flattening it against the pretend book would leave the two
+        // apart. It rides to the round's result instead.
+        if signed != 0 && engine.outside().is_none() {
             let side = if signed > 0 { Side::Ask } else { Side::Bid };
             let qty = Qty(signed.unsigned_abs() as u32);
             match engine.place_market(ledger, child, side, qty, TradeSource::Strategy) {
@@ -583,6 +586,32 @@ mod tests {
         assert_eq!(x.engine(SeriesId(0)).open_interest(), 5);
         assert_eq!(x.engine(SeriesId(1)).open_interest(), 0);
         assert_eq!(x.account(&p).unwrap().usdc_balance, Tenths(START.0 - 2500));
+        x.debug_assert_invariants();
+    }
+
+    #[test]
+    fn closing_a_sub_account_whose_fills_are_real_does_not_trade_the_paper_book() {
+        use crate::series::SERIES;
+        use crate::types::SeriesId;
+        let (p, mm, outside) = (addr(1), addr(2), addr(9));
+        let mut x = Exchange::new(START, SERIES);
+        x.register_user(p);
+        x.get_or_create_account(p);
+        x.get_or_create_account(mm);
+        x.seed_bot_account_in(outside, Tenths(1_000_000_000), "gemini-fills".into(), None, None, SeriesId(0));
+        x.set_outside(SeriesId(0), outside);
+        x.open_first_market(SeriesId(0), 50_000.0, 0, 60);
+        let c = x.create_sub_account_in(p, Tenths(100_000), SeriesId(0)).unwrap();
+        x.deploy_strategy_in(c, record(SeriesId(0))).unwrap();
+        x.apply_external_fill(SeriesId(0), c, Side::Bid, tick(500), Qty(4)).unwrap();
+        // A bid on the paper book that a paper close would hit.
+        x.place_limit(SeriesId(0), mm, Side::Bid, tick(500), Qty(10), TradeSource::Bot).unwrap();
+
+        let r = x.close_sub_account(p, c).unwrap();
+        assert!(!r.removed);
+        assert_eq!(r.residual_position, 4, "the position is Gemini's to settle");
+        assert_eq!(x.position(SeriesId(0), &c).position.0, 4);
+        assert_eq!(x.position(SeriesId(0), &mm).position.0, 0, "the paper book was not traded");
         x.debug_assert_invariants();
     }
 

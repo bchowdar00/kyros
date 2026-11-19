@@ -49,6 +49,11 @@ pub enum ExecReject {
     ReduceOnlyNoPosition,
     /// The round had reached its close.
     MarketClosed,
+    /// An outside venue refused the order (real orders only).
+    VenueRefused,
+    /// An outside venue never confirmed the order and it could not be found
+    /// there afterwards (real orders only).
+    VenueUnreachable,
 }
 
 impl From<OrderError> for ExecReject {

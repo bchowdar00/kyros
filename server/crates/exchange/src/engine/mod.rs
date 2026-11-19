@@ -23,6 +23,8 @@ pub mod events;
 #[cfg(test)]
 mod events_tests;
 #[cfg(test)]
+mod external_tests;
+#[cfg(test)]
 mod lock_tests;
 #[cfg(test)]
 mod mirror_tests;
@@ -38,7 +40,7 @@ use book::Book;
 pub use ids::IdAllocator;
 pub use ledger::Ledger;
 pub use events::{ExecKind, ExecReject, ExecutionEvent, ExecutionSink};
-pub use market::{MarketEngine, PlaceOpts, RoundClock};
+pub use market::{ExternalError, MarketEngine, PlaceOpts, RoundClock};
 use model::{Account, Fill, Order};
 
 pub use model::{
@@ -468,6 +470,39 @@ impl Exchange {
     ) -> Result<Order, CancelError> {
         let (e, l) = self.engine_and_ledger(series);
         e.cancel(l, account, id)
+    }
+
+    /// [`MarketEngine::set_outside`] routed to `series`.
+    pub fn set_outside(&mut self, series: SeriesId, address: Address) {
+        self.engine_mut(series).set_outside(address);
+    }
+
+    /// [`MarketEngine::apply_external_fill`] routed to `series`.
+    pub fn apply_external_fill(&mut self, series: SeriesId, account: Address, side: Side, price: PriceTick, qty: Qty) -> Result<(), OrderError> {
+        let (e, l) = self.engine_and_ledger(series);
+        e.apply_external_fill(l, account, side, price, qty)
+    }
+
+    /// [`MarketEngine::external_open`] routed to `series`.
+    pub fn external_open(&mut self, series: SeriesId, account: Address, client_order_id: Arc<str>, qty: Qty) -> Result<OrderId, OrderError> {
+        let (e, l) = self.engine_and_ledger(series);
+        e.external_open(l, account, client_order_id, qty)
+    }
+
+    /// [`MarketEngine::external_fill`] routed to `series`.
+    pub fn external_fill(&mut self, series: SeriesId, id: OrderId, side: Side, price: PriceTick, qty: Qty) -> Result<(), ExternalError> {
+        let (e, l) = self.engine_and_ledger(series);
+        e.external_fill(l, id, side, price, qty)
+    }
+
+    /// [`MarketEngine::external_close`] routed to `series`.
+    pub fn external_close(&mut self, series: SeriesId, id: OrderId, kind: ExecKind) -> bool {
+        self.engine_mut(series).external_close(id, kind)
+    }
+
+    /// [`MarketEngine::external_is_live`] routed to `series`.
+    pub fn external_is_live(&self, series: SeriesId, id: OrderId) -> bool {
+        self.engine(series).external_is_live(id)
     }
 
     /// [`MarketEngine::cancel_replace`] routed to `series`.

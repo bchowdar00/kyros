@@ -14,6 +14,7 @@ pub mod rest;
 pub mod state;
 pub mod strikes;
 pub mod types;
+pub mod venue;
 pub mod ws;
 
 /// The socket stream of the index Gemini settles BTC contracts on.

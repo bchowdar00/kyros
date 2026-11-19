@@ -22,6 +22,8 @@ export const RustRoundReferenceSchema = z.object({ strike_btc_usd: z.number() })
  */
 export const RustGeminiSeriesSchema = z.object({
   env: z.enum(['production', 'sandbox']),
+  /** `real` sends this operator's strategy orders to Gemini; absent (or `paper`) keeps them pretend. */
+  orders: z.optional(z.enum(['paper', 'real'])),
   /** Gemini's series code, e.g. `BTC05M`. */
   series: z.string(),
   phase: z.enum(['waiting_for_window', 'open', 'waiting_for_result']),

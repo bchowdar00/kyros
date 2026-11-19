@@ -25,6 +25,7 @@ use crate::templates::TemplateCatalogue;
 use crate::gemini::driver::Phase;
 use crate::gemini::mirror_task::BookState;
 use crate::gemini::strikes::CLOCK_WARN_MS;
+use crate::gemini::venue::VenueStatus;
 
 /// The index price arrives once a second; older than this, it is not arriving.
 pub const FEED_STALE_MS: u64 = 10_000;
@@ -50,6 +51,8 @@ pub struct HealthInputs {
     pub last_index_second: Option<u64>,
     pub clock_offset_ms: i64,
     pub series: Vec<SeriesInput>,
+    /// The signed order link; `None` on a paper server.
+    pub orders: Option<VenueStatus>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -70,6 +73,9 @@ pub struct HealthReport {
     /// This host's clock is more than two seconds from Gemini's.
     pub clock_off: bool,
     pub series: Vec<SeriesHealth>,
+    /// The signed order link; absent on a paper server.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub orders: Option<VenueStatus>,
 }
 
 pub fn assess(inputs: &HealthInputs) -> HealthReport {
@@ -99,6 +105,14 @@ pub fn assess(inputs: &HealthInputs) -> HealthReport {
             problems.push(format!("{}: no strategy templates", series.series));
         }
     }
+    if let Some(orders) = &inputs.orders {
+        if !orders.connected {
+            problems.push("real orders: not connected to Gemini's order socket".to_owned());
+        }
+        if let Some(problem) = &orders.problem {
+            problems.push(format!("real orders: {problem}"));
+        }
+    }
     HealthReport {
         ok: problems.is_empty(),
         problems,
@@ -110,6 +124,7 @@ pub fn assess(inputs: &HealthInputs) -> HealthReport {
             .iter()
             .map(|s| SeriesHealth { series: s.series, phase: s.phase, book: s.book, templates: s.templates })
             .collect(),
+        orders: inputs.orders.clone(),
     }
 }
 
@@ -134,6 +149,7 @@ pub fn gather(gemini: &GeminiState, templates: &TemplateCatalogue) -> HealthInpu
         last_index_second: gemini.last_index_second(),
         clock_offset_ms: gemini.clock.offset_ms(),
         series,
+        orders: gemini.orders_status(),
     }
 }
 
@@ -148,6 +164,7 @@ pub async fn get_health(State(state): State<AppState>) -> Response {
             clock_offset_ms: 0,
             clock_off: false,
             series: Vec::new(),
+            orders: None,
         },
     };
     let status = if report.ok { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };
@@ -169,7 +186,20 @@ mod tests {
     }
 
     fn good() -> HealthInputs {
-        HealthInputs { now_ms: NOW, last_index_second: Some(NOW / 1000 - 1), clock_offset_ms: 140, series: vec![open("btc-5m"), open("btc-15m")] }
+        HealthInputs { now_ms: NOW, last_index_second: Some(NOW / 1000 - 1), clock_offset_ms: 140, series: vec![open("btc-5m"), open("btc-15m")], orders: None }
+    }
+
+    #[test]
+    fn real_orders_without_a_working_order_link_are_not_ok() {
+        let mut inputs = good();
+        inputs.orders = Some(VenueStatus { connected: true, ..VenueStatus::default() });
+        let fit = assess(&inputs);
+        assert!(fit.ok);
+        assert_eq!(fit.orders, inputs.orders);
+        inputs.orders = Some(VenueStatus::default());
+        assert_eq!(assess(&inputs).problems, vec!["real orders: not connected to Gemini's order socket".to_owned()]);
+        inputs.orders = Some(VenueStatus { connected: true, problem: Some("a Gemini fill of 2 could not be booked".into()), ..VenueStatus::default() });
+        assert_eq!(assess(&inputs).problems, vec!["real orders: a Gemini fill of 2 could not be booked".to_owned()]);
     }
 
     #[test]

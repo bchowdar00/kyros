@@ -41,6 +41,8 @@ fn reason(reject: ExecReject) -> &'static str {
         ExecReject::PostOnlyWouldCross => "post_only_would_cross",
         ExecReject::ReduceOnlyNoPosition => "reduce_only_no_position",
         ExecReject::MarketClosed => "market_closed",
+        ExecReject::VenueRefused => "venue_refused",
+        ExecReject::VenueUnreachable => "venue_unreachable",
     }
 }
 
@@ -172,6 +174,7 @@ pub(crate) mod tests {
         use ExecReject::*;
         let names: Vec<String> = [
             ZeroQuantity, UnknownAccount, InsufficientBalance, NoLiquidity, SeriesMismatch, PostOnlyWouldCross, ReduceOnlyNoPosition, MarketClosed,
+            VenueRefused, VenueUnreachable,
         ]
         .into_iter()
         .map(|r| {
@@ -182,7 +185,7 @@ pub(crate) mod tests {
         .collect();
         assert_eq!(
             names,
-            ["zero_quantity", "unknown_account", "insufficient_balance", "no_liquidity", "series_mismatch", "post_only_would_cross", "reduce_only_no_position", "market_closed"]
+            ["zero_quantity", "unknown_account", "insufficient_balance", "no_liquidity", "series_mismatch", "post_only_would_cross", "reduce_only_no_position", "market_closed", "venue_refused", "venue_unreachable"]
         );
     }
 

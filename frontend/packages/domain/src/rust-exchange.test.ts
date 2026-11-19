@@ -117,6 +117,23 @@ describe('rust exchange wire', () => {
     }
   })
 
+  it('keeps the Gemini orders field when present and leaves it undefined when absent', () => {
+    const base = {
+      series: 'btc-5m',
+      duration_secs: 300,
+      current_market_id: null,
+      opens_at_ms: null,
+      closes_at_ms: null,
+    }
+    const gemini = { env: 'production', series: 'BTC05M', phase: 'open', book: 'live' }
+    const withReal = RustSeriesListSchema.safeParse([
+      { ...base, gemini: { ...gemini, orders: 'real' } },
+    ])
+    expect(withReal.success && withReal.data[0]?.gemini?.orders).toBe('real')
+    const withoutOrders = RustSeriesListSchema.safeParse([{ ...base, gemini }])
+    expect(withoutOrders.success && withoutOrders.data[0]?.gemini?.orders).toBe(undefined)
+  })
+
   it('parses a deployment record before and after its rounds are sealed on chain', () => {
     const record = {
       deployment_id: `0x${'a1'.repeat(32)}`,

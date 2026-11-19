@@ -17,6 +17,9 @@ strategy-compiler = { path = "../strategy-compiler" }
 # CLI (clap) and keeps only the adapters and live runner.
 signals-core = { path = "../signals-core" }
 btc-feeds = { path = "../btc-feeds", default-features = false }
+# Signing, socket message shapes and the read-only private REST client for
+# Gemini prediction markets (real orders; see src/gemini/venue.rs).
+gemini-private = { path = "../gemini-private" }
 btc-signals = { path = "../btc-signals" }
 
 # Exact arithmetic for the automation runtime (signal snapshots, trigger
