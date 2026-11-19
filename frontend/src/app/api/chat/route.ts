@@ -7,6 +7,7 @@ import { chargeWriter, reportWriterUsage } from '@/mastra/writer-meter-client'
 import { handleChatStream } from '@mastra/ai-sdk'
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 import { env } from '@/env'
+import { isOwnOrigin } from '@/lib/security/own-origin'
 import { parseChatRequest, chatThreadId } from '@/features/market-detail/chat-request'
 
 export const runtime = 'nodejs'
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
   if (!chatEnabled()) {
     return Response.json({ error: 'Chat is not enabled on this deployment.' }, { status: 503 })
   }
-  if (request.headers.get('origin') !== new URL(request.url).origin) {
+  if (!isOwnOrigin(request, env.NEXT_PUBLIC_SITE_URL)) {
     return Response.json({ error: 'Invalid origin.' }, { status: 403 })
   }
   if (!env.ANTHROPIC_API_KEY) {

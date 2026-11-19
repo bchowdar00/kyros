@@ -1,11 +1,10 @@
-import { env } from '@/env'
-import { chatResource } from '@/mastra/chat-session'
+import { chatEnabled, chatResource } from '@/mastra/chat-session'
 
 export const runtime = 'nodejs'
 
 /** The current state of one build the caller's session started. */
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
-  if (env.NODE_ENV !== 'development') return new Response(null, { status: 503 })
+  if (!chatEnabled()) return new Response(null, { status: 503 })
   const resource = await chatResource()
   if (!resource) return new Response(null, { status: 404 })
   const { id } = await context.params

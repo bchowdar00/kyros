@@ -1,6 +1,7 @@
 import * as z from 'zod/mini'
 import { env } from '@/env'
-import { chatResource } from '@/mastra/chat-session'
+import { isOwnOrigin } from '@/lib/security/own-origin'
+import { chatEnabled, chatResource } from '@/mastra/chat-session'
 import { StrategyBriefSchema } from '@/mastra/capabilities/strategy/brief'
 import { chargeWriter } from '@/mastra/writer-meter-client'
 
@@ -11,13 +12,11 @@ const buildRequest = z.object({ brief: StrategyBriefSchema })
 
 /** Starts a strategy build for the caller's session and answers with its id. */
 export async function POST(request: Request) {
-  if (env.NODE_ENV !== 'development') {
-    return Response.json(
-      { error: 'Builds are available in local development only.' },
-      { status: 503 }
-    )
+  // Builds open with the chat: the same anonymous session starts both.
+  if (!chatEnabled()) {
+    return Response.json({ error: 'Builds are not enabled on this deployment.' }, { status: 503 })
   }
-  if (request.headers.get('origin') !== new URL(request.url).origin) {
+  if (!isOwnOrigin(request, env.NEXT_PUBLIC_SITE_URL)) {
     return Response.json({ error: 'Invalid origin.' }, { status: 403 })
   }
   // No exchange origin means static-fixture mode: refuse rather than call a model

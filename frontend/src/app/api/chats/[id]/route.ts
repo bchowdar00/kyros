@@ -1,6 +1,8 @@
 import { chatEnabled, chatResource } from '@/mastra/chat-session'
 import { deleteSavedChat, readSavedChat } from '@/mastra/chat-history'
 import { TEENY_AGENT_ID } from '@/mastra/agents/teeny'
+import { env } from '@/env'
+import { isOwnOrigin } from '@/lib/security/own-origin'
 
 export const runtime = 'nodejs'
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
@@ -24,8 +26,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!chatEnabled()) return new Response(null, { status: 503 })
-  if (request.headers.get('origin') !== new URL(request.url).origin)
-    return new Response(null, { status: 403 })
+  if (!isOwnOrigin(request, env.NEXT_PUBLIC_SITE_URL)) return new Response(null, { status: 403 })
   const resource = await chatResource()
   if (!resource) return new Response(null, { status: 404 })
   const { id } = await context.params

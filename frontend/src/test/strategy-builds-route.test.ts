@@ -2,14 +2,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.hoisted(() => {
-  // The build routes exist in local development only, like the chat routes.
-  vi.stubEnv('NODE_ENV', 'development')
+  // A deployed site: the build routes open with the chat routes, not with the build mode.
+  vi.stubEnv('NODE_ENV', 'production')
   vi.stubEnv('EXCHANGE_API_URL', 'https://exchange.test')
   vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
 })
 
-const session = vi.hoisted(() => ({ resource: 'alice' as string | null }))
-vi.mock('@/mastra/chat-session', () => ({ chatResource: async () => session.resource }))
+const session = vi.hoisted(() => ({ resource: 'alice' as string | null, enabled: true }))
+vi.mock('@/mastra/chat-session', () => ({
+  chatEnabled: () => session.enabled,
+  chatResource: async () => session.resource,
+}))
 const builds = vi.hoisted(() => ({ start: vi.fn(async () => 'run-1'), read: vi.fn() }))
 vi.mock('@/mastra', () => ({ mastra: {} }))
 vi.mock('@/mastra/strategy-builds', () => ({ startBuild: builds.start, readBuild: builds.read }))
@@ -51,6 +54,7 @@ function post(body: unknown, origin = 'http://localhost') {
 
 beforeEach(() => {
   session.resource = 'alice'
+  session.enabled = true
   builds.start.mockClear()
   builds.read.mockReset()
   meter.charge.mockClear()
@@ -69,6 +73,12 @@ describe('POST /api/strategy/builds', () => {
   })
   it('refuses a cross-origin call', async () => {
     expect((await post({ brief }, 'http://evil.test')).status).toBe(403)
+    expect(builds.start).not.toHaveBeenCalled()
+  })
+  it('is off, charging nothing, on a deployment that has not enabled chat', async () => {
+    session.enabled = false
+    expect((await post({ brief })).status).toBe(503)
+    expect(meter.charge).not.toHaveBeenCalled()
     expect(builds.start).not.toHaveBeenCalled()
   })
   it('refuses a malformed brief', async () => {
