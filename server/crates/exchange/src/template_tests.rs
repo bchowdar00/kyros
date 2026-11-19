@@ -19,6 +19,7 @@ use serde_json::{Value as Json_, json};
 use crate::api::AppState;
 use crate::api::strategy::store::tests::{MAKER, PARENT, app_state_with};
 use crate::api::strategy::store::{CreateStrategyRequest, create_strategy};
+use crate::api::strategy::template::deploy_template_side;
 use crate::automation::lane_bridge::tests::registry_with_spot_lane;
 use crate::automation::runtime::DeploymentStatus;
 use crate::automation::signal_bus::{Quality, SignalFrame};
@@ -27,7 +28,7 @@ use crate::registry::PriceSource;
 use crate::series::SERIES;
 use crate::templates::{Side, TemplateCatalogue, envelope_for};
 use crate::ticks::PriceTick;
-use crate::types::{Address, Qty, SeriesId, Side as BookSide};
+use crate::types::{Address, Qty, SeriesId, Side as BookSide, Tenths};
 
 /// A thousand dollars funded into each sub-account (a dollar is 1,000
 /// tenths of a cent); the envelope below trades a $100 allocation of it.
@@ -35,7 +36,7 @@ const ALLOCATION_TENTHS: i64 = 1_000_000;
 
 struct Rig {
     state: AppState,
-    catalogue: TemplateCatalogue,
+    catalogue: std::sync::Arc<TemplateCatalogue>,
     series: SeriesId,
 }
 
@@ -45,8 +46,9 @@ impl Rig {
     /// `ask` (up-side tenths) for `qty` lots so takers can fill.
     fn new(series: SeriesId, bid: u16, ask: u16, qty: u32) -> Rig {
         let registry = registry_with_spot_lane();
-        let catalogue = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
-        let (state, _platform) = app_state_with(registry);
+        let catalogue = std::sync::Arc::new(TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}")));
+        let (mut state, _platform) = app_state_with(registry);
+        state.templates = catalogue.clone();
         {
             let mut e = state.exchange.lock().unwrap();
             let maker = Address::from_str(MAKER).unwrap();
@@ -418,6 +420,25 @@ async fn fair_value_discount_buys_the_cheap_side_and_sells_out_at_fair() {
     assert_eq!(rig.wait_for_leg(&id, "holding_down").await, "holding_down");
     let s = rig.status(&id).await;
     assert!(s.log.iter().any(|l| l.contains("[order]")), "{:#?}", s.log);
+}
+
+/// A template deployed through the public route sizes its orders from
+/// the deployer's own allocation, not from the envelope the catalogue was
+/// compiled against at boot. Forty dollars at a fifth per order is $8,
+/// which is twenty lots at the 0.40 ask.
+#[tokio::test]
+async fn a_template_deploy_sizes_orders_from_its_own_allocation() {
+    let rig = Rig::new(SERIES[0].id, 300, 400, 500);
+    let parent = Address::from_str(PARENT).unwrap();
+    let d = deploy_template_side(&rig.state, parent, "fair-value-discount", rig.series, Side::Primary, Tenths(40_000)).await.unwrap();
+    assert_eq!(d.strategy.envelope.allocation.as_str(), "40");
+
+    rig.publish_window(10_000);
+    rig.publish_book("0.3", "0.4");
+    rig.publish_delta("20");
+    let pos = rig.wait_for_position(d.summary.id, |p| p > 0).await;
+    let log = rig.status(&d.strategy.deployment_id).await.log;
+    assert_eq!(pos, 20, "$8 at the 0.40 ask is twenty lots of Up: {log:#?}");
 }
 
 /// An immediate-or-cancel that finds no size is an expiry, not a cancel
@@ -861,3 +882,211 @@ async fn polymarket_momentum_follows_the_odds_and_the_inverse_fades_them() {
     assert_eq!(fade.wait_for_leg(&id, "holding").await, "holding");
 }
 
+
+// ───────────────────────────────── inside-quote ─────────────────────────────────
+
+fn sorted(mut live: Vec<(String, String, String)>) -> Vec<(String, String, String)> {
+    live.sort();
+    live
+}
+
+/// The book is 0.40 / 0.50. With BTC five basis points above the strike
+/// the primary rests an Up bid one cent inside the best bid; five below,
+/// a Down bid one cent inside the best Down bid (1 - 0.50, so 0.51).
+#[tokio::test]
+async fn inside_quote_rests_one_cent_inside_on_the_side_the_strike_favours() {
+    let up = Rig::new(SERIES[0].id, 400, 500, 500);
+    let (child, id) = up.deploy("inside-quote", Side::Primary).await;
+    up.publish_book("0.4", "0.5");
+    up.publish_delta("5");
+    let live = up.wait_for_live_order(&id, "up", "0.41").await;
+    assert_eq!(live, vec![("up".into(), "0.41".into(), "48".into())], "$20 rests at 0.41");
+    assert_eq!(up.position(child), 0, "a resting bid is not a fill");
+    assert_eq!(up.wait_for_leg(&id, "quoting").await, "quoting");
+
+    let down = Rig::new(SERIES[0].id, 400, 500, 500);
+    let (child, id) = down.deploy("inside-quote", Side::Primary).await;
+    down.publish_book("0.4", "0.5");
+    down.publish_delta("-5");
+    let live = down.wait_for_live_order(&id, "down", "0.51").await;
+    assert_eq!(live, vec![("down".into(), "0.51".into(), "39".into())], "$20 rests at 0.51 Down");
+    assert_eq!(down.position(child), 0);
+}
+
+#[tokio::test]
+async fn inside_quote_stays_out_without_a_lean_or_without_room() {
+    // BTC is on the strike: no side is favoured.
+    let flat = Rig::new(SERIES[0].id, 400, 500, 500);
+    let (_, id) = flat.deploy("inside-quote", Side::Primary).await;
+    flat.publish_book("0.4", "0.5");
+    flat.publish_delta("1");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(flat.live_orders(&id).await.is_empty());
+    assert_eq!(flat.status(&id).await.current_leg, "hunting");
+
+    // A two-cent spread has no room for a quote a cent inside each side.
+    let tight = Rig::new(SERIES[0].id, 400, 420, 500);
+    let (_, id) = tight.deploy("inside-quote", Side::Primary).await;
+    tight.publish_book("0.4", "0.42");
+    tight.publish_delta("5");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(tight.live_orders(&id).await.is_empty());
+
+    // One side of the book is empty (the frame says bid 0): nothing to be inside of.
+    let empty = Rig::new(SERIES[0].id, 400, 500, 500);
+    let (_, id) = empty.deploy("inside-quote", Side::Primary).await;
+    empty.publish_book("0", "0.5");
+    empty.publish_delta("5");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(empty.live_orders(&id).await.is_empty());
+}
+
+/// The quote is pulled after the refresh interval and put back one cent
+/// inside the best bid as it stands once the book has been published
+/// without it, so it never climbs over its own order.
+#[tokio::test]
+async fn inside_quote_pulls_and_requotes_inside_the_new_best() {
+    let rig = Rig::new(SERIES[0].id, 400, 500, 500);
+    let (_, id) = rig.deploy("inside-quote", Side::Primary).await;
+    rig.publish_book("0.4", "0.5");
+    rig.publish_delta("5");
+    rig.wait_for_live_order(&id, "up", "0.41").await;
+
+    // Our own bid is now the best in the frame; the refresh pulls it.
+    tokio::time::sleep(Duration::from_millis(5_100)).await;
+    rig.publish_book("0.41", "0.5");
+    assert_eq!(rig.wait_for_leg(&id, "settling").await, "settling");
+    assert!(rig.live_orders(&id).await.is_empty(), "pulled");
+    // A lean arriving before the book has been republished places nothing.
+    rig.publish_delta("5");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(rig.live_orders(&id).await.is_empty(), "no quote off the stale book");
+
+    // The best bid moved to 0.43 meanwhile; the book is published without ours.
+    rig.rest(BookSide::Bid, 430, 500);
+    tokio::time::sleep(Duration::from_millis(1_100)).await;
+    rig.publish_book("0.43", "0.5");
+    assert_eq!(rig.wait_for_leg(&id, "hunting").await, "hunting");
+    // The lean row was last seen true on that book frame, while masked; its
+    // one-second cooldown runs from there.
+    tokio::time::sleep(Duration::from_millis(1_100)).await;
+    rig.publish_delta("5");
+    let live = rig.wait_for_live_order(&id, "up", "0.44").await;
+    assert_eq!(live.len(), 1, "one live bid: {live:?}");
+    assert_eq!(live[0].1, "0.44");
+}
+
+#[tokio::test]
+async fn inside_quote_holds_a_fill_and_stops_quoting() {
+    let rig = Rig::new(SERIES[0].id, 400, 500, 500);
+    let (child, id) = rig.deploy("inside-quote", Side::Primary).await;
+    rig.publish_book("0.4", "0.5");
+    rig.publish_delta("5");
+    rig.wait_for_live_order(&id, "up", "0.41").await;
+    // Someone sells down to our bid.
+    rig.rest(BookSide::Ask, 410, 48);
+    assert_eq!(rig.wait_for_position(child, |p| p > 0).await, 48);
+    assert_eq!(rig.wait_for_leg(&id, "holding").await, "holding");
+    rig.publish_book("0.4", "0.5");
+    rig.publish_delta("5");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(rig.live_orders(&id).await.is_empty(), "one fill a round");
+}
+
+/// The inverse quotes both sides a cent inside while BTC sits on the
+/// strike, sized so the pair costs the stake; when both fill the pair is
+/// closed for the spread and it starts again.
+#[tokio::test]
+async fn two_sided_quote_rests_both_sides_when_the_strike_says_nothing() {
+    let rig = Rig::new(SERIES[0].id, 400, 500, 500);
+    let (child, id) = rig.deploy("inside-quote", Side::Inverse).await;
+    rig.publish_book("0.4", "0.5");
+    rig.publish_delta("1");
+    rig.wait_for_live_order(&id, "down", "0.51").await;
+    let live = sorted(rig.wait_for_live_order(&id, "up", "0.41").await);
+    assert_eq!(
+        live,
+        vec![("down".into(), "0.51".into(), "21".into()), ("up".into(), "0.41".into(), "21".into())],
+        "$20 buys 21 pairs at 0.41 + 0.51"
+    );
+
+    // The Up bid fills; the Down bid stays out to finish the pair.
+    rig.rest(BookSide::Ask, 410, 21);
+    assert_eq!(rig.wait_for_position(child, |p| p > 0).await, 21);
+    assert_eq!(rig.wait_for_leg(&id, "one_side").await, "one_side");
+    assert_eq!(rig.live_orders(&id).await, vec![("down".into(), "0.51".into(), "21".into())]);
+
+    // Someone bids Up at 0.49, which is our Down bid at 0.51: the pair is whole.
+    rig.rest(BookSide::Bid, 490, 21);
+    assert_eq!(rig.wait_for_position(child, |p| p == 0).await, 0);
+    tokio::time::sleep(Duration::from_millis(1_100)).await;
+    rig.publish_book("0.4", "0.5");
+    assert_eq!(rig.wait_for_leg(&id, "hunting").await, "hunting");
+    tokio::time::sleep(Duration::from_millis(1_100)).await;
+    rig.publish_delta("1");
+    rig.wait_for_live_order(&id, "down", "0.51").await;
+    let live = rig.wait_for_live_order(&id, "up", "0.41").await;
+    assert_eq!(live.len(), 2, "a new pair: {live:?}");
+}
+
+#[tokio::test]
+async fn two_sided_quote_stays_out_when_the_strike_leans() {
+    let rig = Rig::new(SERIES[0].id, 400, 500, 500);
+    let (_, id) = rig.deploy("inside-quote", Side::Inverse).await;
+    rig.publish_book("0.4", "0.5");
+    rig.publish_delta("5");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(rig.live_orders(&id).await.is_empty());
+}
+
+// ─────────────────────────────────── late-fade ───────────────────────────────────
+
+/// Fifty seconds left, Up bid 0.92 and nobody offering Up at all: the
+/// primary buys Down, small. The same with offers still there does nothing.
+#[tokio::test]
+async fn late_fade_takes_the_other_side_small_when_the_offers_are_gone() {
+    let rig = Rig::new(SERIES[0].id, 920, 990, 500);
+    let (child, id) = rig.deploy("late-fade", Side::Primary).await;
+    rig.publish_book("0.92", "1");
+    rig.publish_window(50_000);
+    assert_eq!(rig.wait_for_position(child, |p| p < 0).await, -62, "$5 of Down at 0.08");
+    assert_eq!(rig.wait_for_leg(&id, "holding").await, "holding");
+
+    // The mirror image: Up offered at 0.08 and nobody bidding for it.
+    let down = Rig::new(SERIES[0].id, 10, 80, 500);
+    let (child, _) = down.deploy("late-fade", Side::Primary).await;
+    down.publish_book("0", "0.08");
+    down.publish_window(50_000);
+    assert_eq!(down.wait_for_position(child, |p| p > 0).await, 62, "$5 of Up at 0.08");
+
+    let two_sided = Rig::new(SERIES[0].id, 920, 950, 500);
+    let (child, id) = two_sided.deploy("late-fade", Side::Primary).await;
+    two_sided.publish_book("0.92", "0.95");
+    two_sided.publish_window(50_000);
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert_eq!(two_sided.position(child), 0, "offers still there");
+    assert_eq!(two_sided.status(&id).await.current_leg, "waiting");
+
+    let early = Rig::new(SERIES[0].id, 920, 990, 500);
+    let (child, _) = early.deploy("late-fade", Side::Primary).await;
+    early.publish_book("0.92", "1");
+    early.publish_window(120_000);
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert_eq!(early.position(child), 0, "not inside the last minute");
+}
+
+/// The inverse goes with the runaway: it bids a cent above the best bid
+/// for the favourite, small, and holds what fills.
+#[tokio::test]
+async fn late_join_bids_a_cent_above_the_best_for_the_favourite() {
+    let rig = Rig::new(SERIES[0].id, 920, 990, 500);
+    let (child, id) = rig.deploy("late-fade", Side::Inverse).await;
+    rig.publish_book("0.92", "1");
+    rig.publish_window(50_000);
+    let live = rig.wait_for_live_order(&id, "up", "0.93").await;
+    assert_eq!(live, vec![("up".into(), "0.93".into(), "5".into())], "$5 rests at 0.93");
+    assert_eq!(rig.position(child), 0);
+    rig.rest(BookSide::Ask, 930, 5);
+    assert_eq!(rig.wait_for_position(child, |p| p > 0).await, 5);
+    assert_eq!(rig.wait_for_leg(&id, "holding").await, "holding");
+}

@@ -1,7 +1,8 @@
 {
   "id": "polymarket-discount",
   "title": "Polymarket Gap",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": null },
+  "listed": false,
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": null },
   "series": ["btc-15m"],
   "logic": "Polymarket runs its own fifteen-minute BTC up or down market on nearly the same strike. When Polymarket prices a side at least three cents above what it costs here, it bids for that side a cent under Polymarket's price and follows it. Pulls the bid if the strikes drift apart or the close is near. Holds any fill to the end.",
   "inverse_logic": "Polymarket runs its own fifteen-minute BTC up or down market on nearly the same strike. When our price for a side is at least three cents above Polymarket's, it buys the other side here. Sells out once the two markets are back within a cent of each other, otherwise holds to the close.",

@@ -22,6 +22,7 @@ has every one of them.
 |---|---|
 | `id` | template id; the count key on deployments |
 | `title` | card chrome |
+| `listed` | optional boolean, default `true` when absent; `listed: false` takes the template off the public list: it is still compiled, loadable by id and deployable, but the list route (`GET /api/strategies/templates?series=`) leaves it out |
 | `creator.handle`, `creator.username`, `creator.avatar` | the author shown on the card: the handle, the display name and the portrait filename under the frontend's `assets/market/avatars/` folder (`null` while no portrait is assigned; the card falls back to the handle's initials) |
 | `series` | the series slugs this template is listed on |
 | `logic`, `inverse_logic` | the prose shown under the Run and Inverse tabs |
@@ -36,9 +37,10 @@ an expression string or a param default.
 
 - `{{series}}` — the series slug (`btc-5m`, `btc-15m`). Every instrument and
   exchange-internal signal id is written as `{{series}}.current…`.
-- `{{spot}}` — the live BTC price signal, `pyth.btc_usd.spot.v1` with a Pyth
-  key and `coinbase.btc_usd.spot.v1` without (the registry's one `external`
-  signal). Both expose `last`.
+- `{{spot}}` — the round's reference price signal, `gemini.btc_usd.spot.v1`
+  (Gemini's index price, the one its contracts settle on). It exposes `last`.
+  No listed document uses it today: they read the distance from the strike
+  through `<series>.current.delta.v1` instead.
 - `{{stake}}` — the file's `envelope.order_fraction`, so an order's dollars are
   `envelope.allocation * {{stake}}`.
 - Everything else comes from `substitutions[<series>]`; a shared template must
@@ -102,32 +104,53 @@ an expression string or a param default.
   `signals` hides the card for nothing.
 - Nicknames avoid builtin names (`abs` is a builtin); decimals are canonical
   (`0.1`, never `0.10`).
+- **The book is Gemini's, and it is thin.** The engine's book is a mirror of
+  Gemini's public book for the contract, plus whatever pretend-money orders
+  rest here. On the 5 and 15 minute contracts the spread is several cents
+  wide, the top is often ten contracts, and one side is empty for part of
+  many rounds. `<series>.current.price.v1` reports an empty bid as `0` and an
+  empty ask as `1`, so a row that needs a real quote says so (`bid >= 0.03`,
+  `ask <= 0.97`), and a document that means "the offers are gone" tests for
+  exactly those values. A maker quotes inside the spread and never crosses
+  it; a taker names the most it will pay. Because the best bid and ask
+  include other pretend-money orders, two deployments of one maker can
+  outbid each other a cent at a time; the room check (`ask - bid >= 0.03`)
+  stops them two cents under the ask.
 
 ## Catalogue
 
 | id | series | kind | reads |
 |---|---|---|---|
-| fair-value-discount | both | maker | book, strike, spot (digital-call fair via `norm_cdf`) |
 | momentum-rider | both | taker | external micro_momentum, aggressor_flow |
-| late-closer | both | taker | window clock, strike, spot |
 | oracle-gap | both | taker | spot vs external spot_reference, strike |
 | order-flow-lead | both | taker | external order_flow_imbalance, actionable_depth_imbalance |
 | vwap-reversion | both | maker | external vwap_deviation, book |
-| sweep-follower | btc-5m | taker (inverse fades) | coinbase/kraken sweep_detection |
 | absorption-fade | btc-5m | taker | external absorption_state |
-| polymarket-discount | btc-15m | maker | polymarket prediction_quote, market_contract, strike |
-| polymarket-momentum | btc-15m | taker (inverse fades) | polymarket probability_momentum, market_contract |
-| trend-rider | btc-15m | taker with stop | external horizon_momentum, micro_momentum, book |
-| lead-change | nba-h2h | taker, flips a fixed stake on every lead change, locks in Q4 | margin, pbp phase and quarter, book |
-| sharp-money | nba-h2h | taker vs the sharp line (inverse fades noise moves) | sharp_line, book, margin |
-| fourth-quarter | nba-h2h | taker, late lock-in (inverse: comeback lottery) | pbp quarter and clock, margin, book |
-| pregame-pick | nba-h2h | taker before tipoff | sharp_line, window clock, book |
-| team-loyalty | nba-h2h | taker before tipoff on one team's games | matchup, window clock, book |
-| shooting-streak | nba-h2h | taker on make/miss streaks counted in state | pbp action, result and team, book |
+| inside-quote | both | maker, one cent inside the best on the side the strike favours (inverse quotes both sides when the strike says nothing) | book, strike distance, window clock |
+| late-fade | both | taker in the last minute, small, against a side whose offers are gone (inverse joins it with a resting bid) | book, window clock |
 
-NBA documents guard in-play rows with `pbp.phase == in_play`, because the
-play-by-play keeps the previous game's `final` as its latest state through
-the next round's pregame; pregame rows use the round clock's `remaining`
-above the tipoff mark (a five-minute round tips off after sixty seconds).
-The book quotes `home`; `away` prices are `1 - book.bid` and the venue
-complements them onto the home book.
+`inside-quote` and `late-fade` read nothing but the exchange's own signals, so
+they are ready as soon as a round is open, with every signal lane off. The rest
+wait on the spot lane (Coinbase and Kraken).
+
+How each one did against Gemini's live books is in the build notes
+(`research/template-runs.md` beside the repository); the templates taken off
+the public list as a result are named in the next section.
+
+## Unlisted: compiled, not on the public list
+
+These six templates carry `listed: false`: they still compile at boot and stay
+reachable by id and deployable, but the list route leaves them out, because of
+how each did against Gemini's live books. This is not the `parked/` folder
+above, whose files are not embedded at all.
+
+| template | run |
+|---|---|
+| `fair-value-discount` (Fair Price Finder) | Run sells inside the round and loses the spread every round; Inverse never sent an order. |
+| `late-closer` (Buzzer Beater) | Run never sent an order; Inverse lost 27 rounds of 27 on the five-minute series and 8 of 8 on the fifteen. |
+| `sweep-follower` (Whale Watch) | Both sides lost over 80 percent of the budget. |
+| `polymarket-discount`, `polymarket-momentum` | Traded in 1 round of 11; the Polymarket signal is not bound to the round it matches. |
+| `trend-rider` | Traded in 1 round of 11. It reads the spot momentum signals, not Polymarket: its trigger needs an 8 basis point move in a minute within the first five minutes of the round. |
+
+The runs behind these verdicts are in `build-3/research/template-runs.md`
+beside the repository.

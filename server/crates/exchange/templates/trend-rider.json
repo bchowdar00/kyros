@@ -1,7 +1,8 @@
 {
   "id": "trend-rider",
   "title": "Trend Line",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-08.jpg" },
+  "listed": false,
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-08.jpg" },
   "series": ["btc-15m"],
   "logic": "Early in the round, when BTC's one-minute and thirty-second moves both point the same way, it buys that side and holds. If the trade goes ten cents against it, it cuts the loss and sits out the rest of the round. Otherwise holds to the close.",
   "inverse_logic": "Waits for a trend to run, then for the last thirty seconds to turn against it. Buys the side the trend left behind. Sells out after a four-cent gain. If the trend comes back, it closes and switches sides to go with it.",

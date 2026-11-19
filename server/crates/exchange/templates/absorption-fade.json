@@ -1,7 +1,7 @@
 {
   "id": "absorption-fade",
   "title": "Brick Wall",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": null },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": null },
   "series": ["btc-5m"],
   "logic": "When heavy selling hits the market but the price will not budge, someone big is soaking it up. It bets the sellers give up first and buys Up; heavy buying that goes nowhere means Down. One trade per round, held to the close.",
   "inverse_logic": "When heavy buying is actually moving the price, it buys Up; heavy selling that is moving it, Down. If the market starts soaking up that pressure and the price stalls, it closes and switches sides. Otherwise holds to the close.",

@@ -1,7 +1,7 @@
 {
   "id": "order-flow-lead",
   "title": "Order Stack",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-05.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-05.jpg" },
   "series": ["btc-5m", "btc-15m"],
   "logic": "Watches the Coinbase and Kraken order books. When one side is filling up faster and has more size waiting near the price, traders are lining up before they trade. It bets with them: Up when bids are stacking, Down when asks are. One trade per round, held to the close.",
   "inverse_logic": "Watches the Coinbase and Kraken order books. When one side is stacking up but our price has already moved past sixty cents that way, the move is priced in and only the queue is left. It buys the other side. Sells out after a four-cent gain, otherwise holds to the close.",

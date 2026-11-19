@@ -1,7 +1,8 @@
 {
   "id": "late-closer",
   "title": "Buzzer Beater",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-03.jpg" },
+  "listed": false,
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-03.jpg" },
   "series": ["btc-5m", "btc-15m"],
   "logic": "Waits until the round is almost over. If BTC is clearly above the strike it buys Up; clearly below, Down; only while that side costs 92 cents or less. One trade per round, held to the close. The bet is that the last few cents are free once the result is nearly certain.",
   "inverse_logic": "Waits until the round is almost over and one side is priced above 90 cents. Then buys the other side for a dime or less and holds it. Most tickets expire worthless; the ones that hit pay several times their cost when BTC swings back through the strike at the end.",

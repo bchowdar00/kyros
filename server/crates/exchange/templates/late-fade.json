@@ -1,0 +1,417 @@
+{
+  "id": "late-fade",
+  "title": "Empty Book Fade",
+  "creator": {
+    "handle": "@kyros",
+    "username": "Kyros",
+    "avatar": null
+  },
+  "series": [
+    "btc-5m",
+    "btc-15m"
+  ],
+  "logic": "In the last minute, when one side is priced past ninety cents and nobody is left offering it, it buys the other side for a dime or less with a small stake and holds it. Most of these expire worthless. An emptied book is where a late reversal pays the most.",
+  "inverse_logic": "In the last minute, when one side is priced past ninety cents and nobody is left offering it, it bids for that side one cent above the best bid with a small stake. It is filled only if someone sells into it, and whatever is unfilled comes off five seconds before the close.",
+  "envelope": {
+    "loss_budget_fraction": "1",
+    "order_fraction": "0.05",
+    "max_order_size": "200",
+    "max_open_orders": "1",
+    "max_position_per_market": "400"
+  },
+  "substitutions": {
+    "btc-5m": {
+      "late_ms": "60000",
+      "pull": "5s"
+    },
+    "btc-15m": {
+      "late_ms": "60000",
+      "pull": "5s"
+    }
+  },
+  "primary": {
+    "meta": {
+      "name": "Fade the Runaway",
+      "description": "Inside the last minute of the round, when one side is bid at ninety cents or more and the book holds no offer for it, buy the other side with an immediate-or-cancel limit at its ask plus one cent, capped at the maximum price, for a small stake, once per round, and hold to settlement.",
+      "dsl_version": "0.3"
+    },
+    "instruments": {
+      "market": "{{series}}.current"
+    },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "clock": "{{series}}.current.window.v1"
+    },
+    "state": [],
+    "params": [
+      {
+        "name": "max_price",
+        "type": "decimal",
+        "default": "0.1"
+      }
+    ],
+    "triggers": [
+      {
+        "name": "up_runaway",
+        "condition": {
+          "all": [
+            {
+              "signal": "clock",
+              "field": "phase",
+              "comparator": "==",
+              "value": "open"
+            },
+            {
+              "signal": "clock",
+              "field": "remaining",
+              "comparator": "<=",
+              "value": "{{late_ms}}"
+            },
+            {
+              "signal": "book",
+              "field": "bid",
+              "comparator": ">=",
+              "value": "0.9"
+            },
+            {
+              "signal": "book",
+              "field": "ask",
+              "comparator": ">=",
+              "value": "1"
+            }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "down_runaway",
+        "condition": {
+          "all": [
+            {
+              "signal": "clock",
+              "field": "phase",
+              "comparator": "==",
+              "value": "open"
+            },
+            {
+              "signal": "clock",
+              "field": "remaining",
+              "comparator": "<=",
+              "value": "{{late_ms}}"
+            },
+            {
+              "signal": "book",
+              "field": "ask",
+              "comparator": "<=",
+              "value": "0.1"
+            },
+            {
+              "signal": "book",
+              "field": "bid",
+              "comparator": "<=",
+              "value": "0"
+            }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      }
+    ],
+    "legs": [
+      {
+        "name": "waiting",
+        "resident": true,
+        "arm": [
+          "up_runaway",
+          "down_runaway"
+        ],
+        "body": [
+          {
+            "name": "fade_up",
+            "if": "triggered(up_runaway) and 1 - signal.book.bid <= param.max_price",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "down",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp(min((1 - signal.book.bid) + 0.01, param.max_price), 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / (1 - signal.book.bid), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "fade",
+                  "on": {
+                    "fill": "holding",
+                    "partial": "holding",
+                    "reject": "waiting",
+                    "cancel_ack": "waiting",
+                    "expiry": "waiting"
+                  }
+                }
+              }
+            ],
+            "then": "holding"
+          },
+          {
+            "name": "fade_down",
+            "if": "triggered(down_runaway) and signal.book.ask <= param.max_price",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "up",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "ioc",
+                  "price": "clamp(min(signal.book.ask + 0.01, param.max_price), 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / (signal.book.ask), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "fade",
+                  "on": {
+                    "fill": "holding",
+                    "partial": "holding",
+                    "reject": "waiting",
+                    "cancel_ack": "waiting",
+                    "expiry": "waiting"
+                  }
+                }
+              }
+            ],
+            "then": "holding"
+          }
+        ]
+      },
+      {
+        "name": "holding",
+        "resident": true,
+        "arm": [],
+        "body": []
+      }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Join the Runaway",
+      "description": "Inside the last minute of the round, when one side is bid at ninety cents or more and the book holds no offer for it, rest a good-till-cancelled bid for that side one cent above the best bid for a small stake, once per round. Hold whatever fills to settlement and pull the rest when the round clock reaches the pull mark.",
+      "dsl_version": "0.3"
+    },
+    "instruments": {
+      "market": "{{series}}.current"
+    },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "clock": "{{series}}.current.window.v1"
+    },
+    "state": [],
+    "params": [],
+    "triggers": [
+      {
+        "name": "up_runaway",
+        "condition": {
+          "all": [
+            {
+              "signal": "clock",
+              "field": "phase",
+              "comparator": "==",
+              "value": "open"
+            },
+            {
+              "signal": "clock",
+              "field": "remaining",
+              "comparator": "<=",
+              "value": "{{late_ms}}"
+            },
+            {
+              "signal": "book",
+              "field": "bid",
+              "comparator": ">=",
+              "value": "0.9"
+            },
+            {
+              "signal": "book",
+              "field": "ask",
+              "comparator": ">=",
+              "value": "1"
+            }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "down_runaway",
+        "condition": {
+          "all": [
+            {
+              "signal": "clock",
+              "field": "phase",
+              "comparator": "==",
+              "value": "open"
+            },
+            {
+              "signal": "clock",
+              "field": "remaining",
+              "comparator": "<=",
+              "value": "{{late_ms}}"
+            },
+            {
+              "signal": "book",
+              "field": "ask",
+              "comparator": "<=",
+              "value": "0.1"
+            },
+            {
+              "signal": "book",
+              "field": "bid",
+              "comparator": "<=",
+              "value": "0"
+            }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "closing",
+        "timer": {
+          "kind": "window_clock",
+          "instrument": "market",
+          "remaining": "{{pull}}"
+        },
+        "fire": "on_crossing",
+        "rearm": {
+          "mode": "fresh_crossing"
+        }
+      }
+    ],
+    "legs": [
+      {
+        "name": "waiting",
+        "resident": true,
+        "arm": [
+          "up_runaway",
+          "down_runaway"
+        ],
+        "body": [
+          {
+            "name": "join_up",
+            "if": "triggered(up_runaway)",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "up",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "gtc",
+                  "price": "clamp(signal.book.bid + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / (signal.book.bid + 0.01), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "join",
+                  "on": {
+                    "fill": "holding",
+                    "partial": "quoting",
+                    "reject": "waiting",
+                    "cancel_ack": "done",
+                    "expiry": "done"
+                  }
+                }
+              }
+            ],
+            "then": "quoting"
+          },
+          {
+            "name": "join_down",
+            "if": "triggered(down_runaway)",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "down",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "gtc",
+                  "price": "clamp((1 - signal.book.ask) + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / ((1 - signal.book.ask) + 0.01), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "join",
+                  "on": {
+                    "fill": "holding",
+                    "partial": "quoting",
+                    "reject": "waiting",
+                    "cancel_ack": "done",
+                    "expiry": "done"
+                  }
+                }
+              }
+            ],
+            "then": "quoting"
+          }
+        ]
+      },
+      {
+        "name": "quoting",
+        "resident": true,
+        "arm": [
+          "closing"
+        ],
+        "body": [
+          {
+            "name": "pull",
+            "if": "triggered(closing)",
+            "do": [
+              {
+                "cancel": {
+                  "tag": "join"
+                }
+              }
+            ],
+            "then": "done"
+          }
+        ]
+      },
+      {
+        "name": "holding",
+        "resident": true,
+        "arm": [],
+        "body": []
+      },
+      {
+        "name": "done",
+        "resident": true,
+        "arm": [],
+        "body": []
+      }
+    ]
+  }
+}

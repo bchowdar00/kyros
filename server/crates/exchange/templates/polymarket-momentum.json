@@ -1,7 +1,8 @@
 {
   "id": "polymarket-momentum",
   "title": "Polymarket Pulse",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": null },
+  "listed": false,
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": null },
   "series": ["btc-15m"],
   "logic": "Polymarket's fifteen-minute BTC market is a crowd betting on the same price we settle on. When its Up odds move at least three points in thirty seconds, it goes with the crowd: Up when the odds are rising, Down when they are falling. One trade per round, held to the close. Nothing in the final ninety seconds.",
   "inverse_logic": "Polymarket's fifteen-minute BTC market is a crowd betting on the same price we settle on. When its Up odds move at least three points in thirty seconds, it bets the crowd is late: Down when the odds are rising, Up when they are falling. One trade per round, held to the close. Nothing in the final ninety seconds.",

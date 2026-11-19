@@ -1,0 +1,559 @@
+{
+  "id": "inside-quote",
+  "title": "Inside the Spread",
+  "creator": {
+    "handle": "@kyros",
+    "username": "Kyros",
+    "avatar": null
+  },
+  "series": [
+    "btc-5m",
+    "btc-15m"
+  ],
+  "logic": "Looks at which side BTC's distance from the strike favours and bids for that side one cent above the best bid, never crossing the spread. It is filled only when someone sells down to it. The bid is pulled and put back every few seconds so it follows the book, and it comes off thirty seconds before the close. One fill a round, held to the end.",
+  "inverse_logic": "When BTC is sitting on the strike and the spread is at least four cents wide, it bids for both Up and Down one cent inside the book. If both fill, the pair pays a dollar and cost less than one. If only one fills, it holds that side to the close. Everything unfilled comes off thirty seconds before the close.",
+  "envelope": {
+    "loss_budget_fraction": "1",
+    "order_fraction": "0.2",
+    "max_order_size": "200",
+    "max_open_orders": "2",
+    "max_position_per_market": "400"
+  },
+  "substitutions": {
+    "btc-5m": {
+      "margin_bps": "3",
+      "ceiling": "0.85",
+      "floor": "0.15",
+      "refresh": "5s",
+      "pull": "30s"
+    },
+    "btc-15m": {
+      "margin_bps": "6",
+      "ceiling": "0.85",
+      "floor": "0.15",
+      "refresh": "10s",
+      "pull": "30s"
+    }
+  },
+  "primary": {
+    "meta": {
+      "name": "Quote With the Lean",
+      "description": "While BTC sits at least the margin in basis points from the strike and the book has room, rest a good-till-cancelled bid one cent above the best bid on the side the distance favours: Up above the strike, Down below it. Pull the bid every refresh interval and place it again once the book has been published without it. Pull it for good when the round clock reaches the pull mark. One fill per round, held to settlement.",
+      "dsl_version": "0.3"
+    },
+    "instruments": {
+      "market": "{{series}}.current"
+    },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "delta": "{{series}}.current.delta.v1"
+    },
+    "state": [],
+    "params": [],
+    "triggers": [
+      {
+        "name": "leans_up",
+        "condition": {
+          "all": [
+            {
+              "signal": "delta",
+              "field": "delta_bps",
+              "comparator": ">=",
+              "value": "{{margin_bps}}"
+            },
+            {
+              "signal": "book",
+              "field": "bid",
+              "comparator": ">=",
+              "value": "0.03"
+            },
+            {
+              "signal": "book",
+              "field": "bid",
+              "comparator": "<",
+              "value": "{{ceiling}}"
+            },
+            {
+              "expr": "signal.book.ask - signal.book.bid",
+              "comparator": ">=",
+              "value": "0.03"
+            }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "leans_down",
+        "condition": {
+          "all": [
+            {
+              "signal": "delta",
+              "field": "delta_bps",
+              "comparator": "<=",
+              "value": "-{{margin_bps}}"
+            },
+            {
+              "signal": "book",
+              "field": "ask",
+              "comparator": "<=",
+              "value": "0.97"
+            },
+            {
+              "signal": "book",
+              "field": "ask",
+              "comparator": ">",
+              "value": "{{floor}}"
+            },
+            {
+              "expr": "signal.book.ask - signal.book.bid",
+              "comparator": ">=",
+              "value": "0.03"
+            }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "tick",
+        "condition": {
+          "signal": "book"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "{{refresh}}"
+        }
+      },
+      {
+        "name": "book_tick",
+        "condition": {
+          "signal": "book"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "closing",
+        "timer": {
+          "kind": "window_clock",
+          "instrument": "market",
+          "remaining": "{{pull}}"
+        },
+        "fire": "on_crossing",
+        "rearm": {
+          "mode": "fresh_crossing"
+        }
+      }
+    ],
+    "legs": [
+      {
+        "name": "hunting",
+        "resident": true,
+        "arm": [
+          "leans_up",
+          "leans_down",
+          "closing"
+        ],
+        "body": [
+          {
+            "name": "quote_up",
+            "if": "triggered(leans_up) and platform.window.remaining_ms > {{pull}} and abs(platform.position.size) < 1",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "up",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "gtc",
+                  "price": "clamp(signal.book.bid + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / (signal.book.bid + 0.01), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "quote",
+                  "on": {
+                    "fill": "holding",
+                    "partial": "quoting",
+                    "reject": "hunting",
+                    "cancel_ack": "settling",
+                    "expiry": "hunting"
+                  }
+                }
+              }
+            ],
+            "then": "quoting"
+          },
+          {
+            "name": "quote_down",
+            "if": "triggered(leans_down) and platform.window.remaining_ms > {{pull}} and abs(platform.position.size) < 1",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "down",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "gtc",
+                  "price": "clamp((1 - signal.book.ask) + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / ((1 - signal.book.ask) + 0.01), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "quote",
+                  "on": {
+                    "fill": "holding",
+                    "partial": "quoting",
+                    "reject": "hunting",
+                    "cancel_ack": "settling",
+                    "expiry": "hunting"
+                  }
+                }
+              }
+            ],
+            "then": "quoting"
+          },
+          {
+            "name": "stop",
+            "if": "triggered(closing)",
+            "do": [],
+            "then": "done"
+          }
+        ]
+      },
+      {
+        "name": "quoting",
+        "resident": true,
+        "arm": [
+          "tick",
+          "closing"
+        ],
+        "body": [
+          {
+            "name": "refresh",
+            "if": "triggered(tick)",
+            "do": [
+              {
+                "cancel": {
+                  "tag": "quote"
+                }
+              }
+            ],
+            "then": "settling"
+          },
+          {
+            "name": "pull",
+            "if": "triggered(closing)",
+            "do": [
+              {
+                "cancel": {
+                  "tag": "quote"
+                }
+              }
+            ],
+            "then": "done"
+          }
+        ]
+      },
+      {
+        "name": "settling",
+        "resident": true,
+        "arm": [
+          "book_tick"
+        ],
+        "body": [
+          {
+            "name": "ready",
+            "if": "triggered(book_tick)",
+            "do": [],
+            "then": "hunting"
+          }
+        ]
+      },
+      {
+        "name": "holding",
+        "resident": true,
+        "arm": [],
+        "body": []
+      },
+      {
+        "name": "done",
+        "resident": true,
+        "arm": [],
+        "body": []
+      }
+    ]
+  },
+  "inverse": {
+    "meta": {
+      "name": "Quote Both Sides",
+      "description": "While BTC sits within the margin in basis points of the strike and the spread is at least four cents, rest a good-till-cancelled bid one cent inside the book on both Up and Down, each for the number of lots that makes the pair cost the stake. When both fill the pair is closed for less than a dollar a lot and the document starts again; when one fills, the other stays out and the filled side is held. Unfilled bids are pulled every refresh interval while neither has filled, and for good when the round clock reaches the pull mark.",
+      "dsl_version": "0.3"
+    },
+    "instruments": {
+      "market": "{{series}}.current"
+    },
+    "signals": {
+      "book": "{{series}}.current.price.v1",
+      "delta": "{{series}}.current.delta.v1"
+    },
+    "state": [],
+    "params": [],
+    "triggers": [
+      {
+        "name": "flat",
+        "condition": {
+          "all": [
+            {
+              "expr": "abs(signal.delta.delta_bps)",
+              "comparator": "<",
+              "value": "{{margin_bps}}"
+            },
+            {
+              "signal": "book",
+              "field": "bid",
+              "comparator": ">=",
+              "value": "0.03"
+            },
+            {
+              "signal": "book",
+              "field": "ask",
+              "comparator": "<=",
+              "value": "0.97"
+            },
+            {
+              "expr": "signal.book.ask - signal.book.bid",
+              "comparator": ">=",
+              "value": "0.04"
+            }
+          ]
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "tick",
+        "condition": {
+          "signal": "book"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "{{refresh}}"
+        }
+      },
+      {
+        "name": "book_tick",
+        "condition": {
+          "signal": "book"
+        },
+        "fire": "if_true",
+        "rearm": {
+          "mode": "immediate",
+          "cooldown": "1s"
+        }
+      },
+      {
+        "name": "closing",
+        "timer": {
+          "kind": "window_clock",
+          "instrument": "market",
+          "remaining": "{{pull}}"
+        },
+        "fire": "on_crossing",
+        "rearm": {
+          "mode": "fresh_crossing"
+        }
+      }
+    ],
+    "legs": [
+      {
+        "name": "hunting",
+        "resident": true,
+        "arm": [
+          "flat",
+          "closing"
+        ],
+        "body": [
+          {
+            "name": "quote_both",
+            "if": "triggered(flat) and platform.window.remaining_ms > {{pull}} and abs(platform.position.size) < 1",
+            "do": [
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "up",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "gtc",
+                  "price": "clamp(signal.book.bid + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / ((signal.book.bid + 0.01) + ((1 - signal.book.ask) + 0.01)), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "up_quote",
+                  "on": {
+                    "fill": "one_side",
+                    "partial": "quoting",
+                    "reject": "quoting",
+                    "cancel_ack": "settling",
+                    "expiry": "quoting"
+                  }
+                }
+              },
+              {
+                "place": {
+                  "instrument": "market",
+                  "outcome": "down",
+                  "side": "buy",
+                  "order_type": "limit",
+                  "tif": "gtc",
+                  "price": "clamp((1 - signal.book.ask) + 0.01, 0.01, 0.99)",
+                  "price_band": [
+                    "0.01",
+                    "0.99"
+                  ],
+                  "size": "clamp(envelope.allocation * {{stake}} / ((signal.book.bid + 0.01) + ((1 - signal.book.ask) + 0.01)), 0, envelope.max_order_size)",
+                  "max_size": "envelope.max_order_size",
+                  "tag": "down_quote",
+                  "on": {
+                    "fill": "one_side",
+                    "partial": "quoting",
+                    "reject": "quoting",
+                    "cancel_ack": "settling",
+                    "expiry": "quoting"
+                  }
+                }
+              }
+            ],
+            "then": "quoting"
+          },
+          {
+            "name": "stop",
+            "if": "triggered(closing)",
+            "do": [],
+            "then": "done"
+          }
+        ]
+      },
+      {
+        "name": "quoting",
+        "resident": true,
+        "arm": [
+          "tick",
+          "closing"
+        ],
+        "body": [
+          {
+            "name": "refresh",
+            "if": "triggered(tick)",
+            "do": [
+              {
+                "cancel": {
+                  "tag": "up_quote"
+                }
+              },
+              {
+                "cancel": {
+                  "tag": "down_quote"
+                }
+              }
+            ],
+            "then": "settling"
+          },
+          {
+            "name": "pull",
+            "if": "triggered(closing)",
+            "do": [
+              {
+                "cancel": {
+                  "tag": "up_quote"
+                }
+              },
+              {
+                "cancel": {
+                  "tag": "down_quote"
+                }
+              }
+            ],
+            "then": "done"
+          }
+        ]
+      },
+      {
+        "name": "one_side",
+        "resident": true,
+        "arm": [
+          "book_tick",
+          "closing"
+        ],
+        "body": [
+          {
+            "name": "again",
+            "if": "triggered(book_tick) and abs(platform.position.size) < 1",
+            "do": [],
+            "then": "hunting"
+          },
+          {
+            "name": "pull",
+            "if": "triggered(closing)",
+            "do": [
+              {
+                "cancel": {
+                  "tag": "up_quote"
+                }
+              },
+              {
+                "cancel": {
+                  "tag": "down_quote"
+                }
+              }
+            ],
+            "then": "done"
+          }
+        ]
+      },
+      {
+        "name": "settling",
+        "resident": true,
+        "arm": [
+          "book_tick"
+        ],
+        "body": [
+          {
+            "name": "ready",
+            "if": "triggered(book_tick)",
+            "do": [],
+            "then": "hunting"
+          }
+        ]
+      },
+      {
+        "name": "done",
+        "resident": true,
+        "arm": [],
+        "body": []
+      }
+    ]
+  }
+}

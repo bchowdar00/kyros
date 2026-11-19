@@ -1,7 +1,7 @@
 {
   "id": "oracle-gap",
   "title": "Oracle's Edge",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-04.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-04.jpg" },
   "series": ["btc-5m", "btc-15m"],
   "logic": "Rounds settle on Pyth's price, but the book trades off Coinbase and Kraken. When Pyth pulls ahead of them while BTC is still near the strike, it bets the book will catch up: Up when Pyth is higher, Down when it is lower. One trade per round, held to the close.",
   "inverse_logic": "Rounds settle on Pyth's price, but the book trades off Coinbase and Kraken. When Pyth has been leading and then snaps back in line, the book was leaning the wrong way, so it buys the side the exchanges were pointing at. Sells out after a four-cent gain, otherwise holds to the close.",

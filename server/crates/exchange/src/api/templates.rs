@@ -236,11 +236,12 @@ pub fn template_view(t: &Template, series: SeriesId, tally: &TemplateTally, read
     }
 }
 
-/// Every template listed on `series`, catalogue order.
+/// Every listed template on `series`, catalogue order; a template with
+/// `listed: false` is left out (it stays reachable by id and deployable).
 pub fn catalogue(templates: &TemplateCatalogue, series: SeriesId, tally: &TemplateTally, readiness: &Readiness) -> TemplateCatalogueResponse {
     TemplateCatalogueResponse {
         series: series.slug().to_string(),
-        templates: templates.for_series(series).map(|t| template_view(t, series, tally, readiness)).collect(),
+        templates: templates.for_series(series).filter(|t| t.listed).map(|t| template_view(t, series, tally, readiness)).collect(),
     }
 }
 
@@ -298,20 +299,46 @@ mod tests {
     }
 
     #[test]
+    fn list_omits_parked_templates_per_series() {
+        let templates = full_catalogue();
+        let five = catalogue(&templates, SERIES[0].id, &empty(), &all_ready());
+        let fifteen = catalogue(&templates, SERIES[1].id, &empty(), &all_ready());
+        let mut five_ids: Vec<&str> = five.templates.iter().map(|t| t.id.as_str()).collect();
+        five_ids.sort_unstable();
+        let mut fifteen_ids: Vec<&str> = fifteen.templates.iter().map(|t| t.id.as_str()).collect();
+        fifteen_ids.sort_unstable();
+        assert_eq!(five_ids, ["absorption-fade", "inside-quote", "late-fade", "momentum-rider", "oracle-gap", "order-flow-lead", "vwap-reversion"]);
+        assert_eq!(fifteen_ids, ["inside-quote", "late-fade", "momentum-rider", "oracle-gap", "order-flow-lead", "vwap-reversion"]);
+    }
+
+    #[tokio::test]
+    async fn parked_template_is_still_served_by_id() {
+        let templates = full_catalogue();
+        let (mut state, _) = crate::api::strategy::store::tests::app_state_pair();
+        state.templates = std::sync::Arc::new(templates);
+        // `late-closer` is parked (not in the list) but lists the 5-minute
+        // series, so the by-id route still serves it.
+        let Json(view) = get_template(State(state), Path("late-closer".into()), Query(SeriesQuery { series: Some(SERIES[0].id) })).await.unwrap();
+        assert_eq!(view.id, "late-closer");
+    }
+
+    #[test]
     fn list_is_per_series_and_carries_both_sides() {
         let templates = full_catalogue();
         let two = catalogue(&templates, SERIES[0].id, &empty(), &all_ready());
         let fifteen = catalogue(&templates, SERIES[1].id, &empty(), &all_ready());
         assert_eq!(two.series, "btc-5m");
-        assert_eq!((two.templates.len(), fifteen.templates.len()), (8, 9));
+        assert_eq!((two.templates.len(), fifteen.templates.len()), (7, 6));
         let ids: Vec<&str> = two.templates.iter().map(|t| t.id.as_str()).collect();
-        assert!(ids.contains(&"sweep-follower") && !ids.contains(&"trend-rider"));
+        assert!(ids.contains(&"absorption-fade") && !ids.contains(&"trend-rider"));
 
-        let fair = two.templates.iter().find(|t| t.id == "fair-value-discount").unwrap();
+        // `fair-value-discount` is parked, so it is off the list but still
+        // served by id; its view carries the same fields.
+        let fair = template_view(templates.get("fair-value-discount").unwrap(), SERIES[0].id, &empty(), &all_ready());
         assert_eq!(fair.title, "Fair Price Finder");
         assert_eq!(fair.series, vec!["btc-5m", "btc-15m"]);
-        assert_eq!(fair.creator.handle, "@tiny");
-        assert_eq!(fair.creator.username, "Tiny");
+        assert_eq!(fair.creator.handle, "@kyros");
+        assert_eq!(fair.creator.username, "Kyros");
         assert_eq!(fair.creator.avatar.as_deref(), Some("strategy-01.jpg"));
         assert_eq!(fair.primary.name, "Buy the Bargain");
         assert_eq!(fair.inverse.name, "Ride the Odds");
@@ -322,8 +349,8 @@ mod tests {
         assert_eq!((fair.running, fair.deployed_tenths), (0, 0));
         assert!(fair.runners.is_empty());
 
-        let poly = fifteen.templates.iter().find(|t| t.id == "polymarket-discount").unwrap();
-        assert_eq!(poly.creator.avatar, None, "no portrait assigned yet");
+        let inside = fifteen.templates.iter().find(|t| t.id == "inside-quote").unwrap();
+        assert_eq!(inside.creator.avatar, None, "no portrait assigned yet");
     }
 
     #[test]
@@ -363,7 +390,7 @@ mod tests {
 
         let Json(list) = list_templates(State(state), Query(SeriesQuery::default())).await;
         assert_eq!(list.series, "btc-5m");
-        assert_eq!(list.templates.len(), 8);
+        assert_eq!(list.templates.len(), 7);
     }
 
     /// A ready frame carrying every declared field of `signal_id`, typed
@@ -431,9 +458,9 @@ mod tests {
         assert!(!two.ready);
         assert_eq!(waiting_ids(&two.inverse), ["btc-5m.current.price.v1", "btc-5m.current.window.v1"]);
 
-        // The list carries the same readiness as the single route.
-        let list = catalogue(&templates, fifteen, &empty(), &readiness);
-        let trend = list.templates.iter().find(|t| t.id == "trend-rider").unwrap();
+        // The by-id route carries the same readiness (`trend-rider` is parked,
+        // so it is off the list but still served by id).
+        let trend = template_view(templates.get("trend-rider").unwrap(), fifteen, &empty(), &readiness);
         assert!(!trend.ready);
         assert_eq!(
             trend.waiting_on.iter().map(|w| (w.signal_id.as_str(), w.name.as_str())).collect::<Vec<_>>(),
@@ -504,7 +531,7 @@ mod tests {
         assert!(late.ready, "{:?}", late.waiting_on);
         let Json(list) = list_templates(State(state), Query(SeriesQuery { series: Some(series) })).await;
         let by_id = |id: &str| list.templates.iter().find(|t| t.id == id).unwrap();
-        assert!(by_id("fair-value-discount").ready, "internals only");
+        assert!(by_id("inside-quote").ready, "internals only");
         assert!(!by_id("momentum-rider").ready, "external signals have not published");
     }
 
@@ -534,10 +561,16 @@ mod tests {
         assert!(late.runners.is_empty(), "the parent is not the creator");
 
         let Json(list) = list_templates(State(state.clone()), Query(SeriesQuery { series: Some(fifteen) })).await;
-        let late15 = list.templates.iter().find(|t| t.id == "late-closer").unwrap();
+        // `late-closer` is parked, so it is off the list but still served by
+        // id; its counts on the 15-minute series are the same either way.
+        let Json(late15) = get_template(State(state.clone()), Path("late-closer".into()), Query(SeriesQuery { series: Some(fifteen) })).await.unwrap();
         assert_eq!((late15.primary.running, late15.inverse.running, late15.deployed_tenths), (0, 1, 10_000));
         let mom15 = list.templates.iter().find(|t| t.id == "momentum-rider").unwrap();
         assert_eq!(mom15.running, 0, "the 2-minute deployment does not count on the 15-minute card");
+        // The list carries the counts too, not only the by-id route.
+        let Json(list5) = list_templates(State(state.clone()), Query(SeriesQuery { series: Some(two) })).await;
+        let mom5 = list5.templates.iter().find(|t| t.id == "momentum-rider").unwrap();
+        assert_eq!((mom5.primary.running, mom5.inverse.running, mom5.deployed_tenths), (1, 0, 10_000));
 
         // A paused deployment stops counting; a deleted one is gone.
         let Json(_) = crate::api::strategy::update_strategy(
@@ -553,7 +586,7 @@ mod tests {
         assert_eq!((late.inverse.running, late.inverse.deployed_tenths), (0, 0));
 
         // The creator's own account running it puts the portrait on the card.
-        state.exchange.lock().unwrap().get_or_create_account(parent).username = Some("Tiny".into());
+        state.exchange.lock().unwrap().get_or_create_account(parent).username = Some("Kyros".into());
         let Json(late) = get_template(State(state), Path("late-closer".into()), Query(SeriesQuery { series: Some(two) })).await.unwrap();
         assert_eq!(late.runners, vec!["strategy-03.jpg".to_string()]);
     }

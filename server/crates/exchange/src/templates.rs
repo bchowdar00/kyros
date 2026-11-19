@@ -39,6 +39,8 @@ const TEMPLATE_FILES: &[(&str, &str)] = &[
     ("polymarket-discount", include_str!("../templates/polymarket-discount.json")),
     ("polymarket-momentum", include_str!("../templates/polymarket-momentum.json")),
     ("trend-rider", include_str!("../templates/trend-rider.json")),
+    ("inside-quote", include_str!("../templates/inside-quote.json")),
+    ("late-fade", include_str!("../templates/late-fade.json")),
 ];
 
 // ───────────────────────────── File shape ─────────────────────────────
@@ -78,6 +80,8 @@ pub struct EnvelopeRatios {
 struct TemplateFile {
     id: String,
     title: String,
+    #[serde(default = "default_listed")]
+    listed: bool,
     creator: Creator,
     series: Vec<String>,
     logic: String,
@@ -87,6 +91,11 @@ struct TemplateFile {
     substitutions: BTreeMap<String, BTreeMap<String, String>>,
     primary: serde_json::Value,
     inverse: serde_json::Value,
+}
+
+/// A template file with no `listed` key is listed; the key only ever parks one.
+fn default_listed() -> bool {
+    true
 }
 
 // ───────────────────────────── Catalogue ─────────────────────────────
@@ -120,6 +129,9 @@ pub struct CompiledSide {
 pub struct Template {
     pub id: String,
     pub title: String,
+    /// A template with `listed: false` is compiled and can be fetched by id
+    /// and deployed, but the list route leaves it out.
+    pub listed: bool,
     pub creator: Creator,
     /// The series this template is listed on, file order.
     pub series: Vec<SeriesId>,
@@ -242,6 +254,7 @@ fn compile_template(file: TemplateFile, registry: &Registry, spot: &str) -> Resu
     Ok(Template {
         id: file.id,
         title: file.title,
+        listed: file.listed,
         creator: file.creator,
         series,
         logic: file.logic,
@@ -394,10 +407,22 @@ mod tests {
             let inverse = t.compiled(t.series[0], Side::Inverse).unwrap();
             assert_ne!(primary.program.strategy_id, inverse.program.strategy_id, "{}: inverse is its own document", t.id);
         }
-        // The published mix: six on both series, two 2-minute only, three 15-minute only.
-        let two = catalogue.for_series(SERIES[0].id).count();
+        // The published mix: eight on both series, two 5-minute only, three 15-minute only.
+        let five = catalogue.for_series(SERIES[0].id).count();
         let fifteen = catalogue.for_series(SERIES[1].id).count();
-        assert_eq!((two, fifteen), (8, 9));
+        assert_eq!((five, fifteen), (10, 11));
+    }
+
+    #[test]
+    fn listed_defaults_true_and_parked_templates_load_unlisted() {
+        let registry = full_registry();
+        let catalogue = TemplateCatalogue::load(&registry, PriceSource::GeminiIndex).unwrap_or_else(|e| panic!("{e}"));
+        // A file with no `listed` key loads listed.
+        assert!(catalogue.get("inside-quote").unwrap().listed);
+        // The six parked files declare `listed: false`.
+        for id in ["fair-value-discount", "late-closer", "sweep-follower", "polymarket-discount", "polymarket-momentum", "trend-rider"] {
+            assert!(!catalogue.get(id).unwrap().listed, "{id} is parked");
+        }
     }
 
     #[test]

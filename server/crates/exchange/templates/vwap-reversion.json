@@ -1,7 +1,7 @@
 {
   "id": "vwap-reversion",
   "title": "Rubber Band",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-06.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-06.jpg" },
   "series": ["btc-5m", "btc-15m"],
   "logic": "Compares BTC with the average price of the last minute of trading. When BTC has stretched a few basis points away from it, it bets on the snap back: bids for Up when BTC is below the average, Down when above, as long as that side is under sixty cents. Keeps the bid at the top of the book, pulls it before the close, and holds any fill to the end.",
   "inverse_logic": "Compares BTC with the average price of the last minute of trading. When BTC has stretched a few basis points away from it, it bets the stretch continues: Up when BTC is above the average, Down when below. If BTC crosses back through the average, it closes and switches sides. Otherwise holds to the close.",

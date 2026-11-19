@@ -1,7 +1,7 @@
 {
   "id": "momentum-rider",
   "title": "Flash Move",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-02.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-02.jpg" },
   "series": ["btc-5m", "btc-15m"],
   "logic": "When BTC jumps in the last ten seconds and the buying or selling behind it is still pushing, it bets the move keeps going: Up after a jump up, Down after a jump down. One trade per round, held to the close.",
   "inverse_logic": "When BTC jumps in the last ten seconds and then stalls, it bets the move comes back: Down after a jump up, Up after a jump down. Sells out after a four-cent gain, otherwise holds to the close.",

@@ -1,7 +1,8 @@
 {
   "id": "fair-value-discount",
   "title": "Fair Price Finder",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-01.jpg" },
+  "listed": false,
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-01.jpg" },
   "series": ["btc-5m", "btc-15m"],
   "logic": "Works out what each side is really worth from where BTC sits against the strike and how much time is left. When either side is selling at least three cents under that, it buys it. Sells once the price catches up, then hunts for the next bargain. Stops buying near the close.",
   "inverse_logic": "Watches which way the fair odds are moving, not where they sit. When the odds of Up rise two cents and the book has not followed, it buys Up; when they fall, it buys Down. If the odds turn against it, it closes and switches sides.",
