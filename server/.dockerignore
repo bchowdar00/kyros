@@ -1,0 +1,13 @@
+# Keep local build output, the signal lanes' file generations, secrets and
+# the generated registry out of the build context. The build needs the Cargo
+# manifests, crates/, and the definitions/, schemas/ and copy/ data trees.
+target/
+**/target/
+signals-data/
+registry.json
+registry.json.tmp
+.env
+.env.*
+*.log
+.git/
+.gitignore

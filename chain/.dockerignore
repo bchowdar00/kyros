@@ -1,0 +1,17 @@
+# The image needs only package.json, package-lock.json and recorder/src.
+# Keep installed modules, build artefacts, secrets and everything the
+# recorder does not load at run time out of the build context.
+node_modules/
+artifacts/
+cache/
+contracts/
+scripts/
+test/
+recorder/test/
+hardhat.config.ts
+tsconfig.json
+.env
+.env.*
+*.log
+.git/
+.gitignore
