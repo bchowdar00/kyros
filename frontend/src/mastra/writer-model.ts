@@ -2,6 +2,7 @@ import 'server-only'
 import Anthropic from '@anthropic-ai/sdk'
 import { env } from '@/env'
 import type { WriterModel } from './writer-models'
+import { countUnionParameters, MAX_UNION_PARAMETERS, withMissingNulls } from './writer-schema'
 
 /**
  * The strategy writer's model calls. Kyros's chat runs through Mastra's Anthropic route,
@@ -39,7 +40,8 @@ export interface WriterRequest {
   max_tokens: number
   system: string
   messages: { role: 'user'; content: string }[]
-  output_config: { format: WriterOutputFormat }
+  /** Absent when the schema is too large to compile and travels in the prompt instead. */
+  output_config?: { format: WriterOutputFormat }
 }
 
 export interface WriterResponse {
@@ -105,37 +107,52 @@ export function sanitizeSchema(schema: unknown): unknown {
   return node
 }
 
-/**
- * One structured-output call. Returns the parsed JSON object (the caller validates it with
- * its zod schema), or throws `WriterUnavailableError` with a plain message when the model
- * refuses, runs out of room, or does not return a JSON body.
- */
-export async function generateWriterObject(args: {
+/** Answers asked for before an object that does not fit its schema fails the build. */
+const MAX_ANSWERS = 2
+
+/** How much of a misfit is kept in the error the build logs. */
+const MAX_MISFIT_CHARS = 2000
+
+/** The format instruction for a schema that travels in the prompt. */
+function formatAsText(jsonSchema: Record<string, unknown>): string {
+  return (
+    'Answer with one JSON object and nothing else: no words before or after it and no code ' +
+    'fence. Write every field the schema lists; a field that does not apply is null. The ' +
+    `object must validate against this JSON Schema:\n${JSON.stringify(jsonSchema)}`
+  )
+}
+
+/** The JSON object inside free text: the span from its first `{` to its last `}`. */
+function jsonObjectIn(text: string): unknown {
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+  if (start === -1 || end < start) throw new SyntaxError('No JSON object in the answer.')
+  return JSON.parse(text.slice(start, end + 1))
+}
+
+/** Whether the API refused (HTTP 400) to compile the format schema into a grammar. */
+function isSchemaRefusal(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    'status' in error &&
+    error.status === 400 &&
+    /schema|grammar/i.test(error.message.slice(0, MAX_MISFIT_CHARS))
+  )
+}
+
+interface WriterCall {
   transport: WriterTransport
   model: WriterModel
-  system: string
-  prompt: string
-  schemaName: string
-  jsonSchema: Record<string, unknown>
   /** Called with the tokens this call spent, whatever the stop reason. Best effort. */
   onUsage?: (usage: WriterUsage) => void
-}): Promise<unknown> {
-  const request: WriterRequest = {
-    model: args.model,
-    max_tokens: WRITER_MAX_TOKENS,
-    system: args.system,
-    messages: [{ role: 'user', content: args.prompt }],
-    output_config: {
-      format: {
-        type: 'json_schema',
-        schema: sanitizeSchema(args.jsonSchema) as Record<string, unknown>,
-      },
-    },
-  }
-  const response = await args.transport(request)
+}
+
+/** One request; the answer's text, or a `WriterUnavailableError` in plain words. */
+async function answerText(call: WriterCall, request: WriterRequest): Promise<string> {
+  const response = await call.transport(request)
   // Tokens were spent whatever the stop reason, so report before any throw.
-  args.onUsage?.({
-    model: args.model,
+  call.onUsage?.({
+    model: call.model,
     inputTokens: response.usage?.input_tokens ?? 0,
     outputTokens: response.usage?.output_tokens ?? 0,
   })
@@ -150,10 +167,70 @@ export async function generateWriterObject(args: {
   const text = response.content.find(block => block.type === 'text')?.text
   if (text === undefined)
     throw new WriterUnavailableError('The strategy writer did not return a document.')
-  try {
-    return JSON.parse(text)
-  } catch {
-    throw new WriterUnavailableError('The strategy writer returned an unreadable document.')
+  return text
+}
+
+/**
+ * One object from the writer. A schema Claude can compile is sent as a structured-output
+ * format; one with too many nullable fields (see `writer-schema.ts`) travels as text in the
+ * prompt, and nullable fields the answer left out are read as null. Returns the parsed
+ * object, or throws `WriterUnavailableError` with a plain message when the model refuses,
+ * runs out of room, or does not return a JSON body.
+ *
+ * `check` returns what is wrong with an answer, or null. A wrong answer is asked for once
+ * more with that text; a second wrong answer throws an ordinary error carrying it, which
+ * the build logs and the user sees as the generic line.
+ */
+export async function generateWriterObject(
+  args: WriterCall & {
+    system: string
+    prompt: string
+    schemaName: string
+    jsonSchema: Record<string, unknown>
+    check?: (answered: unknown) => string | null
+  }
+): Promise<unknown> {
+  const schema = sanitizeSchema(args.jsonSchema) as Record<string, unknown>
+  let asText = countUnionParameters(schema) > MAX_UNION_PARAMETERS
+  let misfit: string | null = null
+  const request = (): WriterRequest => {
+    const asked = asText ? `${args.prompt}\n\n${formatAsText(args.jsonSchema)}` : args.prompt
+    const again =
+      misfit === null
+        ? ''
+        : `\n\nYour previous answer did not fit the format:\n${misfit}\n` +
+          'Answer again, in full, in the exact format.'
+    return {
+      model: args.model,
+      max_tokens: WRITER_MAX_TOKENS,
+      system: args.system,
+      messages: [{ role: 'user', content: `${asked}${again}` }],
+      ...(asText ? {} : { output_config: { format: { type: 'json_schema', schema } } }),
+    }
+  }
+  for (let answers = 1; ; answers += 1) {
+    let text: string
+    try {
+      text = await answerText(args, request())
+    } catch (error) {
+      // The grammar's size limit cannot be computed here, so a schema the API will not
+      // compile is found out by asking; the same call then goes with the schema as text.
+      if (asText || !isSchemaRefusal(error)) throw error
+      asText = true
+      text = await answerText(args, request())
+    }
+    let answered: unknown
+    try {
+      answered = asText ? withMissingNulls(jsonObjectIn(text), schema) : JSON.parse(text)
+    } catch {
+      throw new WriterUnavailableError('The strategy writer returned an unreadable document.')
+    }
+    misfit = args.check?.(answered) ?? null
+    if (misfit === null) return answered
+    if (answers >= MAX_ANSWERS)
+      throw new Error(
+        `The writer did not answer in the requested shape (${args.schemaName}): ${misfit.slice(0, MAX_MISFIT_CHARS)}`
+      )
   }
 }
 

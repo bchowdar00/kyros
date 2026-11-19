@@ -101,6 +101,10 @@ async function generateObject<Schema extends z.ZodMiniType>(
     prompt,
     schemaName,
     jsonSchema: z.toJSONSchema(schema) as Record<string, unknown>,
+    check: answered => {
+      const fit = z.safeParse(schema, answered)
+      return fit.success ? null : z.prettifyError(fit.error)
+    },
     onUsage: usage =>
       void reportWriterUsage({
         exchangeUrl: exchangeUrl(),
