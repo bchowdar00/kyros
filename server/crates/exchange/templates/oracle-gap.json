@@ -3,8 +3,8 @@
   "title": "Oracle's Edge",
   "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-04.jpg" },
   "series": ["btc-5m", "btc-15m"],
-  "logic": "Rounds settle on Pyth's price, but the book trades off Coinbase and Kraken. When Pyth pulls ahead of them while BTC is still near the strike, it bets the book will catch up: Up when Pyth is higher, Down when it is lower. One trade per round, held to the close.",
-  "inverse_logic": "Rounds settle on Pyth's price, but the book trades off Coinbase and Kraken. When Pyth has been leading and then snaps back in line, the book was leaning the wrong way, so it buys the side the exchanges were pointing at. Sells out after a four-cent gain, otherwise holds to the close.",
+  "logic": "Rounds settle on Gemini's index price, which can run ahead of the price on Coinbase and Kraken. When the index pulls ahead of them while BTC is still near the strike, it bets the book will catch up: Up when the index is higher, Down when it is lower. One trade per round, held to the close.",
+  "inverse_logic": "Rounds settle on Gemini's index price, which can run ahead of the price on Coinbase and Kraken. When the index has been leading and then snaps back in line, the book was leaning the wrong way, so it buys the side the exchanges were pointing at. Sells out after a four-cent gain, otherwise holds to the close.",
   "envelope": { "loss_budget_fraction": "1", "order_fraction": "0.2", "max_order_size": "200", "max_open_orders": "1", "max_position_per_market": "400" },
   "substitutions": {
     "btc-5m": { "cutoff": "20s", "gap": "0.0002", "closed": "0.00005", "near_band": "0.0005", "gain": "0.04", "check": "1s", "patience": "30s" },
@@ -13,7 +13,7 @@
   "primary": {
     "meta": {
       "name": "Follow the Oracle",
-      "description": "When the Pyth spot price differs from the blended Coinbase and Kraken reference by at least the gap while spot is within the near band of the strike, take the side Pyth leads toward with an immediate-or-cancel limit two cents over the ask, once per round, and hold to settlement. No entries inside the cutoff before the close.",
+      "description": "When Gemini's index price differs from the blended Coinbase and Kraken reference by at least the gap while spot is within the near band of the strike, take the side the index leads toward with an immediate-or-cancel limit two cents over the ask, once per round, and hold to settlement. No entries inside the cutoff before the close.",
       "dsl_version": "0.3"
     },
     "instruments": { "market": "{{series}}.current" },
@@ -77,7 +77,7 @@
   "inverse": {
     "meta": {
       "name": "Oracle Snapback",
-      "description": "When the Pyth spot price has led the blended Coinbase and Kraken reference by at least the gap and then the gap closes to within the closed band, take the side the venues had been on: Down after Pyth led upward, Up after it led downward, with an immediate-or-cancel limit two cents over the ask. Sell out with an immediate-or-cancel once that side's bid is the gain above the entry, else hold to settlement. A gap that does not close within the patience window is abandoned.",
+      "description": "When Gemini's index price has led the blended Coinbase and Kraken reference by at least the gap and then the gap closes to within the closed band, take the side the venues had been on: Down after the index led upward, Up after it led downward, with an immediate-or-cancel limit two cents over the ask. Sell out with an immediate-or-cancel once that side's bid is the gain above the entry, else hold to settlement. A gap that does not close within the patience window is abandoned.",
       "dsl_version": "0.3"
     },
     "instruments": { "market": "{{series}}.current" },
