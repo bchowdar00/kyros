@@ -116,11 +116,11 @@ impl SeriesLink {
         *self.book.lock().expect("series link poisoned")
     }
 
-    pub(super) fn set_book(&self, state: BookState) {
+    pub(crate) fn set_book(&self, state: BookState) {
         *self.book.lock().expect("series link poisoned") = state;
     }
 
-    pub(super) fn set(&self, phase: Phase, window: Option<UpWindow>) {
+    pub(crate) fn set(&self, phase: Phase, window: Option<UpWindow>) {
         *self.inner.lock().expect("series link poisoned") = (phase, window);
     }
 }

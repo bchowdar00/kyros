@@ -22,7 +22,11 @@ builder = "RAILPACK"
 
 [deploy]
 startCommand = "./bin/exchange"
-healthcheckPath = "/health"
+# /live says the process is serving. /health is stricter (index arriving, a round
+# open on every series, templates loaded) and is for people and monitors: a host
+# that restarts on a failed probe must not use it, because a restart wipes every
+# account and Gemini being late is no reason for that.
+healthcheckPath = "/live"
 # Boot connects the price feed, compiles every template and seeds the
 # house before the listener opens; give it room.
 healthcheckTimeout = 300

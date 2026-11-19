@@ -38,6 +38,7 @@ use mid_history::{MidHistory, MidPoint};
 pub mod accounts;
 pub mod accounts_ws;
 pub mod handlers;
+pub mod health;
 pub mod mid_history;
 pub mod positions;
 pub mod rounds;

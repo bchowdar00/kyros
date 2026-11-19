@@ -38,10 +38,6 @@ use exchange::types::Tenths;
 
 const STARTING_BALANCE: Tenths = Tenths(1_000_000); // $1000
 
-async fn health() -> &'static str {
-    "ok"
-}
-
 async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
     ws.on_upgrade(handle_socket)
 }
@@ -164,6 +160,7 @@ async fn main() {
     spawn_audit(round_audit.clone(), RestSource(gemini_env));
     let mut gemini = GeminiState::new(gemini_env, gemini_clock.clone(), round_audit.clone());
     gemini.socket = Some(gemini_socket.clone());
+    gemini.index = index_tape.clone();
     tracing::info!(env = gemini_env.name, index = BTC_INDEX_STREAM, "gemini: public socket started");
     // Signals platform: the runtime's matching engine, catalogued from the
     // generated registry (every signal starts disabled; a signal is enabled
@@ -264,7 +261,8 @@ async fn main() {
     };
 
     let app = Router::new()
-        .route("/health", get(health))
+        .route("/health", get(api::health::get_health))
+        .route("/live", get(api::health::get_live))
         .route("/ws", get(ws_handler))
         .route("/ws/price", get(api::price_ws))
         .route("/ws/book", get(api::book_ws))

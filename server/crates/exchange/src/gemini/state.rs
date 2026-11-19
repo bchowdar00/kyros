@@ -9,7 +9,7 @@ use super::audit::{AuditSummary, RoundAudit};
 use super::driver::{Phase, SeriesLink};
 use super::env::GeminiEnv;
 use super::mirror_task::BookState;
-use super::strikes::GeminiClock;
+use super::strikes::{GeminiClock, IndexTape};
 use super::ws::PublicSocket;
 use crate::types::SeriesId;
 
@@ -60,12 +60,15 @@ pub struct GeminiState {
     /// come from. Held here so it lives as long as the server; `None`
     /// in tests.
     pub socket: Option<PublicSocket>,
+    /// The index price, second by second, as it arrives. The health
+    /// check reads how old the newest one is.
+    pub index: IndexTape,
     links: Vec<(SeriesId, &'static str, SeriesLink)>,
 }
 
 impl GeminiState {
     pub fn new(env: GeminiEnv, clock: GeminiClock, audit: RoundAudit) -> Self {
-        Self { env, clock, audit, socket: None, links: Vec::new() }
+        Self { env, clock, audit, socket: None, index: IndexTape::new(), links: Vec::new() }
     }
 
     /// Register the link of a series that follows `gemini_series`.
@@ -88,6 +91,11 @@ impl GeminiState {
             symbol: window.as_ref().map(|w| w.symbol.clone()),
             event_ticker: window.map(|w| w.event_ticker),
         })
+    }
+
+    /// The newest second an index price has arrived for.
+    pub fn last_index_second(&self) -> Option<u64> {
+        self.index.latest().map(|(second, _)| second)
     }
 
     pub fn audit_summary(&self) -> AuditSummary {
@@ -119,6 +127,15 @@ mod tests {
         let link = SeriesLink::new();
         state.follow(SeriesId(0), "BTC05M", link.clone());
         (state, link)
+    }
+
+    #[test]
+    fn the_newest_index_second_comes_from_the_tape_the_state_holds() {
+        let (state, _) = state();
+        assert_eq!(state.last_index_second(), None);
+        state.index.record(1_795_030_000, 62_000.0);
+        state.index.record(1_795_030_001, 62_001.5);
+        assert_eq!(state.last_index_second(), Some(1_795_030_001));
     }
 
     #[test]

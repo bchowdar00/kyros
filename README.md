@@ -220,7 +220,8 @@ Every route marked *series* below takes an optional `series` slug (`btc-2m` | `b
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/health` | returns `ok` |
+| `GET` | `/health` | `200` with a report when the index price is arriving, every series has a round open (or closed one under a minute ago) and has templates; otherwise `503` with the reasons |
+| `GET` | `/live` | returns `ok` while the process is serving; the probe a host should use |
 | `POST` | `/api/accounts` | `{username}` → creates an account with a random address, color, emoji and $1,000 |
 | `GET` | `/api/accounts/{address}` | full account record (balance, locked, `home_series` when bound, strategy) plus the default series' position fields |
 | `GET` | `/api/accounts/{address}/trades?strategy=main\|{id}` | this user's and their strategies' orders across every series — current round plus the last 10 resolved — with `series`, fill progress, VWAP, per-order realized PnL and a `settled` flag; `strategy` narrows to the main account or one strategy |
@@ -342,7 +343,8 @@ PORT=8080
 Confirm it is up:
 
 ```bash
-curl localhost:8080/health          # ok
+curl localhost:8080/live            # ok
+curl localhost:8080/health          # the report; 503 until every series has a round
 curl localhost:8080/api/market/stats
 ```
 
@@ -450,7 +452,7 @@ Two deployables: a stateless-looking but actually stateful Rust process, and a s
 
 ### Server on Railway (what the repo is set up for)
 
-`server/railway.toml` configures Nixpacks with a `/health` healthcheck and on-failure restarts. The workspace root has no package, so `railway.toml` sets `buildCommand = cargo build --release -p exchange` and `startCommand = ./target/release/exchange` explicitly.
+`server/railway.toml` configures Nixpacks with a `/live` healthcheck and on-failure restarts (`/health` is stricter and is not for restart probes). The workspace root has no package, so `railway.toml` sets `buildCommand = cargo build --release -p exchange` and `startCommand = ./target/release/exchange` explicitly.
 
 Setup:
 
