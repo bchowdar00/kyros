@@ -1,4 +1,4 @@
-import { createMoneyFormatter } from '@tiny/money'
+import { createMoneyFormatter } from '@kyros/money'
 
 import { DataTable } from '../widgets/data-table'
 

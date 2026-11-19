@@ -7,7 +7,7 @@ import { widgets } from './widgets'
 import { strategy } from './strategy'
 
 /**
- * Every capability Teeny may have, in the order their instructions appear in the
+ * Every capability Kyros may have, in the order their instructions appear in the
  * prompt. This list is the one shared file: adding a capability is one import and
  * one entry here. Everything else about it lives in its own folder.
  */

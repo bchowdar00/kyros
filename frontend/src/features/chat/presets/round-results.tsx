@@ -1,5 +1,5 @@
-import { MarketResultTriangleIcon } from '@tiny/ui/icons/market-result-triangle-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import { MarketResultTriangleIcon } from '@kyros/ui/icons/market-result-triangle-icon'
+import { cn } from '@kyros/ui/lib/cn'
 
 import { WidgetFrame } from '../widget-frame'
 

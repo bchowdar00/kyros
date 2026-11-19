@@ -1,25 +1,26 @@
 import { render, screen } from '@testing-library/react'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
 import { RecentMarketResults } from '../charts/recent-market-results'
 
 describe('RecentMarketResults', () => {
-  it('shows only the five latest resolved markets', async () => {
-    const { container } = render(
-      <RecentMarketResults results={['above', 'below', 'above', 'below', 'above', 'below']} />
+  it('shows only the fourteen latest resolved markets, lettered by side', async () => {
+    const sixteen = Array.from({ length: 16 }, (_, index) =>
+      index % 2 === 0 ? ('above' as const) : ('below' as const)
     )
+    const { container } = render(<RecentMarketResults results={sixteen} />)
 
     expect(
-      screen.getByRole('list', { name: 'Results for the 5 most recent markets' })
+      screen.getByRole('list', { name: 'Results for the 14 most recent markets' })
     ).toBeInTheDocument()
-    expect(screen.getAllByRole('listitem').map(item => item.getAttribute('aria-label'))).toEqual([
-      'Market resolved below the price to beat',
-      'Market resolved above the price to beat',
-      'Market resolved below the price to beat',
-      'Market resolved above the price to beat',
-      'Market resolved below the price to beat',
-    ])
+    const markers = screen.getAllByRole('listitem')
+    expect(markers).toHaveLength(14)
+    // The two oldest are dropped, so the line still opens on an "above" round.
+    expect(markers[0]).toHaveAccessibleName('Market resolved above the price to beat')
+    expect(markers[0]).toHaveTextContent('U')
+    expect(markers[13]).toHaveAccessibleName('Market resolved below the price to beat')
+    expect(markers[13]).toHaveTextContent('D')
 
     await expectNoA11yViolations(container)
   })

@@ -75,7 +75,7 @@ export const reEntry: Derivation = {
   document: {
     name: 'Re-Entry',
     description:
-      'On the 2-minute BTC up/down: when the up price crosses above 60 cents, buy up at once with a quarter of the round budget. While holding, sell the whole position at market once the bid is 5 cents above the average entry, or cut the loss when it falls 10 cents below; either way go back to hunting and wait for the next crossing above 60 cents. At most three entries per round. Ten seconds before the close, stop and hold whatever is open to settlement.',
+      'On the 5-minute BTC up/down: when the up price crosses above 60 cents, buy up at once with a quarter of the round budget. While holding, sell the whole position at market once the bid is 5 cents above the average entry, or cut the loss when it falls 10 cents below; either way go back to hunting and wait for the next crossing above 60 cents. At most three entries per round. Ten seconds before the close, stop and hold whatever is open to settlement.',
     ...bookOnly(),
     state: [
       {

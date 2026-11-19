@@ -6,7 +6,6 @@ import { MarketDetailLayout } from './market-detail-layout'
 import { MarketHeader } from './market-header'
 import { MarketPriceCard } from './market-price-card'
 import { MarketProbabilityCard } from './market-probability-card'
-import { MarketScoreboard } from './market-scoreboard'
 import { MyStrategiesPanel } from './my-strategies-panel'
 import { OrderBookPanel } from './order-book-panel'
 import { LiveSignalsSection } from './live-signals-section'
@@ -64,9 +63,6 @@ export function MarketDetailScreen({
               key={market.liveEvent?.seriesId ?? market.slug}
             >
               <div className="flex flex-col gap-lg pt-xl">
-                {market.scoreboard && market.header.teams ? (
-                  <MarketScoreboard scoreboard={market.scoreboard} teams={market.header.teams} />
-                ) : null}
                 {market.priceChart ? (
                   <MarketPriceCard {...market.priceChart} />
                 ) : market.probabilityChart ? (
@@ -92,6 +88,7 @@ export function MarketDetailScreen({
               {market.myStrategies ? (
                 <MyStrategiesPanel
                   {...market.myStrategies}
+                  apiUrl={signalsApi?.apiUrl}
                   key={`strategies:${marketKey}`}
                   openOrders={exchangeOrders}
                   tradeHistory={exchangeHistory}

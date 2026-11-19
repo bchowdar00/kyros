@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { cents } from '@tiny/money'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { cents } from '@kyros/money'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
 
@@ -42,7 +42,7 @@ describe('buy amount controls', () => {
       </>
     )
     expect(screen.getByRole('button', { name: 'Max' })).toBeDisabled()
-    expect(screen.getByText('To win')).toBeInTheDocument()
+    expect(screen.getByText('You win if right')).toBeInTheDocument()
     expect(screen.getByRole('status', { name: 'Potential payout' })).toHaveTextContent('Unknown')
     rerender(<BuyPayoutSummary payoutCents={cents(0)} averagePriceCents={cents(31)} />)
     expect(screen.getByRole('status', { name: 'Potential payout' })).toHaveTextContent('$0.00')

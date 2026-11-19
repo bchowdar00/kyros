@@ -8,7 +8,7 @@ const description = 'Live prediction markets with automated trading strategies.'
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
   description,
-  openGraph: { description, title: 'Tiny', type: 'website' },
+  openGraph: { description, title: 'Kyros', type: 'website' },
   title: 'Markets',
   twitter: { card: 'summary_large_image' },
 }

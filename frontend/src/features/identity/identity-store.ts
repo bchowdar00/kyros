@@ -1,7 +1,10 @@
-import { createRustExchangeClient } from '@tiny/api'
+import { createRustExchangeClient } from '@kyros/api'
 import { create } from 'zustand'
 
-const STORAGE_KEY = 'tiny:exchange-identity'
+const STORAGE_KEY = 'kyros:exchange-identity'
+const GUEST_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
+/** Six characters of 36 keep collisions unlikely; the exchange only needs a non-empty name. */
+const GUEST_SUFFIX_LENGTH = 6
 
 export interface ExchangeIdentity {
   address: string
@@ -17,10 +20,15 @@ interface IdentityState {
   /** False until the stored identity has been read and checked against the exchange. */
   verified: boolean
   isCreating: boolean
+  isVerifying: boolean
   error: string | null
-  /** Reads local storage and confirms the exchange still knows the account (restarts wipe it). */
+  /**
+   * Reads local storage and confirms the exchange still knows the account (restarts wipe it);
+   * a second call while one is in flight is a no-op.
+   */
   verify: (apiUrl: string) => Promise<void>
-  createAccount: (apiUrl: string, username: string) => Promise<void>
+  /** Opens a paper account under a random guest name; a second call while one is in flight is a no-op. */
+  createGuest: (apiUrl: string) => Promise<void>
   setBalance: (balanceTenths: number) => void
   logout: () => void
 }
@@ -54,6 +62,11 @@ function writeStored(identity: ExchangeIdentity | null): void {
   }
 }
 
+function guestUsername(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(GUEST_SUFFIX_LENGTH))
+  return `guest-${Array.from(bytes, byte => GUEST_ALPHABET[byte % GUEST_ALPHABET.length]).join('')}`
+}
+
 const client = (apiUrl: string) =>
   createRustExchangeClient({ baseUrl: apiUrl, retry: { attempts: 1 }, timeoutMs: 5_000 })
 
@@ -63,38 +76,51 @@ export const useIdentityStore = create<IdentityState>((set, get) => ({
   balanceTenths: null,
   verified: false,
   isCreating: false,
+  isVerifying: false,
   error: null,
 
   verify: async apiUrl => {
-    const stored = readStored()
-    if (stored === null) {
+    if (get().isVerifying) return
+    // Storage that cannot be read (disabled, private mode) says nothing about the account
+    // this session already holds, so the held one is the one to check.
+    const current = () => readStored() ?? get().identity
+    const subject = current()
+    if (subject === null) {
       set({ identity: null, verified: true })
       return
     }
-    const account = await client(apiUrl).getAccount(stored.address)
+    set({ isVerifying: true })
+    const account = await client(apiUrl).getAccount(subject.address)
+    // "New paper account" (here or in another tab) may have replaced the account while its
+    // check was on the way; an answer about the old one says nothing about the new one.
+    if (current()?.address !== subject.address) {
+      set({ isVerifying: false })
+      return get().verify(apiUrl)
+    }
     if (account.ok) {
-      set({ identity: stored, balanceTenths: account.data.usdc_balance, verified: true })
+      set({
+        identity: subject,
+        balanceTenths: account.data.usdc_balance,
+        verified: true,
+        isVerifying: false,
+      })
       return
     }
     // A 404 means the exchange restarted; a network failure keeps the identity for retry.
     if (account.error.status === 404) {
       writeStored(null)
-      set({ identity: null, balanceTenths: null, verified: true })
+      set({ identity: null, balanceTenths: null, verified: true, isVerifying: false })
       return
     }
-    set({ identity: stored, verified: true })
+    set({ identity: subject, verified: true, isVerifying: false })
   },
 
-  createAccount: async (apiUrl, rawName) => {
-    const username = rawName.trim()
-    if (username.length === 0) {
-      set({ error: 'Enter a name to trade under.' })
-      return
-    }
+  createGuest: async apiUrl => {
+    if (get().isCreating) return
     set({ isCreating: true, error: null })
-    const created = await client(apiUrl).createAccount(username)
+    const created = await client(apiUrl).createAccount(guestUsername())
     if (!created.ok) {
-      set({ isCreating: false, error: 'Could not reach the exchange. Is the server running?' })
+      set({ isCreating: false, error: 'Could not reach the exchange.' })
       return
     }
     const identity: ExchangeIdentity = {

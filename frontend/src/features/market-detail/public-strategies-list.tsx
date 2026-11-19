@@ -1,6 +1,6 @@
 'use client'
 
-import { NanoChevronIcon } from '@tiny/ui/icons/nano-chevron-icon'
+import { NanoChevronIcon } from '@kyros/ui/icons/nano-chevron-icon'
 import { useId, useState } from 'react'
 
 import { PublicStrategyCard, type PublicStrategyAction } from './public-strategy-card'
@@ -49,7 +49,10 @@ export function PublicStrategiesList({
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-lg">
       <div className="flex items-center justify-between">
-        <h2 className="text-label font-medium text-foreground" id={headingId}>
+        <h2
+          className="font-display text-display-sm font-bold tracking-heading text-foreground"
+          id={headingId}
+        >
           {sectionTitle}
         </h2>
 
@@ -75,13 +78,13 @@ export function PublicStrategiesList({
       </div>
 
       {strategies.length === 0 ? (
-        <output className="rounded-md border-[0.5px] border-border-subtle bg-surface-subtle p-xl text-body text-muted-foreground">
+        <output className="w-fit rounded-sm border-[1.5px] border-dashed border-muted-foreground px-md py-sm text-body font-semibold text-foreground">
           {availability === 'unavailable'
             ? 'No public strategies to display.'
             : 'No public strategies yet.'}
         </output>
       ) : null}
-      <div className="flex flex-col gap-md">
+      <div className="flex flex-col border-t border-border-subtle pt-xl">
         {sortedStrategies.map(strategy => (
           <PublicStrategyCard
             marketKey={marketKey}

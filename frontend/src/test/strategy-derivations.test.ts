@@ -58,22 +58,6 @@ describe('strategy derivations', () => {
     expect(nearestDerivation(threshold.plan).id).toBe('threshold-entry-exit')
   })
 
-  it('prefers the derivation written in the market’s own labels', () => {
-    const nba = DERIVATIONS.find(d => d.id === 'model-vs-crowd')
-    if (!nba) throw new Error('NBA derivation exists')
-    expect(nba.brief.sides).toEqual(['home', 'away'])
-    const outcomes = new Set(nba.document.blocks.flatMap(b => b.items.map(i => i.outcome)))
-    expect([...outcomes]).toEqual(expect.arrayContaining(['home', 'away']))
-    expect(outcomes.has('up')).toBe(false)
-    const sides = { quoted: 'home', other: 'away' }
-    expect(nearestDerivation(nba.plan, sides).id).toBe('model-vs-crowd')
-    // Shape still comes first: a BTC flip on an NBA page is nearer the flip than the NBA shape.
-    const flip = DERIVATIONS.find(d => d.id === 'momentum-flip')
-    if (!flip) throw new Error('flip derivation exists')
-    expect(nearestDerivation(flip.plan, sides).id).toBe('momentum-flip')
-    expect(renderDerivationReasoning()).toContain('### model-vs-crowd')
-  })
-
   it('renders a derivation with its reasoning, plan and document', () => {
     const [first] = DERIVATIONS
     if (!first) throw new Error('derivations exist')

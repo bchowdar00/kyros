@@ -12,7 +12,7 @@ export type CapabilityEnv = typeof env
 export type CapabilityTools = Record<string, Tool<any, any, any, any, any, any, any>>
 
 /**
- * One thing Teeny can do: a named bundle of tools plus the prompt fragment that
+ * One thing Kyros can do: a named bundle of tools plus the prompt fragment that
  * teaches the model when and how to use them.
  *
  * A capability owns its whole surface. Its tools, its instructions, its
@@ -30,7 +30,7 @@ export interface Capability {
    */
   enabled: (env: CapabilityEnv) => boolean
   /**
-   * The prompt fragment appended to Teeny's base instructions when the capability
+   * The prompt fragment appended to Kyros's base instructions when the capability
    * is enabled. Describe what the tools can do, their limits, and what they must
    * never claim. Keep the base persona out of it.
    */

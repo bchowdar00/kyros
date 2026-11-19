@@ -1,8 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { createRustExchangeClient } from '@tiny/api'
-import type { RustSignalCatalogue } from '@tiny/domain'
+import { createRustExchangeClient } from '@kyros/api'
+import type { RustSignalCatalogue } from '@kyros/domain'
 
 /** Values stream over `/ws/signals`; this only resyncs the metadata and readiness. */
 const POLL_INTERVAL_MS = 30_000

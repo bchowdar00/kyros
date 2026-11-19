@@ -1,5 +1,5 @@
 {
-  "name": "@tiny/domain",
+  "name": "@kyros/domain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,11 +14,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@tiny/money": "workspace:*",
+    "@kyros/money": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tiny/typescript-config": "workspace:*",
+    "@kyros/typescript-config": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -1,13 +1,13 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it, vi } from 'vitest'
 
 import { PublicStrategiesList } from '@/features/market-detail/public-strategies-list'
 import { MARKET_DETAIL_FIXTURES } from '@/features/market-detail/market-detail.fixture'
 import type { PublicStrategy } from '@/features/market-detail/types'
 
-const chatPanel = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].chatPanel
+const chatPanel = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].chatPanel
 
 function renderPublicStrategies(
   actions: { onRunStrategy?: (strategy: PublicStrategy) => void } = {}
@@ -44,7 +44,11 @@ describe('PublicStrategiesList', () => {
     const firstStrategy = chatPanel.publicStrategies[0]
     const firstCard = screen.getByRole('article', { name: firstStrategy.title })
 
-    expect(within(firstCard).getByText(`By ${firstStrategy.creator.handle}`)).toBeInTheDocument()
+    expect(
+      within(firstCard).getByText(`A template by ${firstStrategy.creator.handle}`)
+    ).toBeInTheDocument()
+    // The row says what Run does, in the template's own words.
+    expect(within(firstCard).getByText(firstStrategy.logic)).toBeInTheDocument()
     expect(within(firstCard).getByText('411')).toBeInTheDocument()
     expect(within(firstCard).getByText('$2.08M')).toBeInTheDocument()
     expect(

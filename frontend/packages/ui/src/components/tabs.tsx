@@ -26,7 +26,7 @@ export function TabsTrigger({ className, ...props }: TabsTriggerProps) {
     <TabsPrimitive.Trigger
       {...props}
       className={cn(
-        'rounded-xs text-heading-sm font-regular text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:opacity-50 data-[state=active]:text-foreground',
+        'rounded-xs border-b-2 border-transparent pb-xs font-display text-display-sm font-bold tracking-heading text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:opacity-50 data-[state=active]:border-action data-[state=active]:text-foreground',
         className
       )}
     />

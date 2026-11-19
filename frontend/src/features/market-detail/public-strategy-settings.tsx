@@ -1,8 +1,8 @@
 'use client'
 
-import { NanoChevronIcon } from '@tiny/ui/icons/nano-chevron-icon'
-import { MiniInfoIcon } from '@tiny/ui/icons/mini-info-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import { NanoChevronIcon } from '@kyros/ui/icons/nano-chevron-icon'
+import { MiniInfoIcon } from '@kyros/ui/icons/mini-info-icon'
+import { cn } from '@kyros/ui/lib/cn'
 import { useId } from 'react'
 
 interface PublicStrategySettingsProps {

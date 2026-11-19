@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@tiny/ui/components/button'
+import { Button } from '@kyros/ui/components/button'
 import { useId, useState } from 'react'
 
 import { type ExchangeIdentity, useIdentityStore } from './identity-store'
@@ -76,7 +76,7 @@ export function ProfileMenu({ identity }: { identity: ExchangeIdentity }) {
           <span className="text-caption">{copied ? 'Copied' : 'Copy'}</span>
         </button>
         <Button className="min-h-touch w-full" onClick={logout} variant="ghost">
-          Log out
+          New paper account
         </Button>
       </div>
     </>

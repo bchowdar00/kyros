@@ -1,5 +1,5 @@
 /**
- * Teeny, Tiny's chat agent, and how this folder is organized.
+ * Kyros, Tiny's chat agent, and how this folder is organized.
  *
  *   mastra/
  *     index.ts              this file: the Mastra instance (storage, observability)

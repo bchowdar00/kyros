@@ -24,7 +24,7 @@ const LINKABLE_HOSTS = new Set([
   'coinbase.com',
   'pyth.network',
   'docs.pyth.network',
-  'tiny.xyz',
+  'kyros.example',
   'bitcoin.org',
 ])
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { cents, createMoneyFormatter, estimateWinningPayout } from '@tiny/money'
+import { cents, createMoneyFormatter, estimateWinningPayout } from '@kyros/money'
 
 import { getPriceStream, IDLE_PRICE_STREAM } from '@/features/exchange-streams/price-stream'
 import { useSignalsStream } from '@/features/exchange-streams/use-signals-stream'

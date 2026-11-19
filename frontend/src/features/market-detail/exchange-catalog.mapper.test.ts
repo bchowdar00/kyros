@@ -11,11 +11,11 @@ import {
 } from './exchange-catalog.mapper'
 
 const open = {
-  series: 'btc-2m',
-  duration_secs: 120,
+  series: 'btc-5m',
+  duration_secs: 300,
   current_market_id: 7,
   opens_at_ms: 1_788_598_800_000,
-  closes_at_ms: 1_788_598_920_000,
+  closes_at_ms: 1_788_599_100_000,
 }
 
 describe('exchange catalog mapper', () => {
@@ -26,7 +26,7 @@ describe('exchange catalog mapper', () => {
   })
 
   it('names the series from its round length', () => {
-    expect(toSeriesRecord(open, 100_001).title).toBe('BTC Up or Down 2m')
+    expect(toSeriesRecord(open, 100_001).title).toBe('BTC Up or Down 5m')
     expect(toSeriesRecord({ ...open, duration_secs: 900 }, 100_002).frequency).toBe('15m')
   })
 
@@ -35,7 +35,7 @@ describe('exchange catalog mapper', () => {
     expect(detail?.id).toBe(eventIdForMarket(7))
     expect(detail?.startsAt).toBe('2026-09-05T09:00:00.000Z')
     const resolved = detail === undefined ? undefined : resolvePriceMarket(detail)
-    expect(resolved?.priceChart.priceSymbol).toBe('btc-2m')
+    expect(resolved?.priceChart.priceSymbol).toBe('btc-5m')
     expect(resolved?.priceChart.targetPrice).toBeNaN()
     expect(resolved?.priceChart.range).toEqual({ start: open.opens_at_ms, end: open.closes_at_ms })
   })

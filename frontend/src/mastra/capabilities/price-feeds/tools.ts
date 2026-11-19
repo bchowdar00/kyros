@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools'
-import { createPriceFeedsClient } from '@tiny/api'
-import { FeedSymbolSchema } from '@tiny/domain'
+import { createPriceFeedsClient } from '@kyros/api'
+import { FeedSymbolSchema } from '@kyros/domain'
 import * as z from 'zod/mini'
 
 // Local chat policy, not a settlement guarantee or a provider SLA.
@@ -23,7 +23,7 @@ export function createPriceFeedTools(baseUrl: string | undefined) {
   const listPriceAssets = createTool({
     id: 'list-price-assets',
     description:
-      'Discover active underlying asset symbols available from Tiny Price Feeds. Use before price reads to resolve symbols; active does not guarantee fresh observations.',
+      'Discover active underlying asset symbols available from Kyros Price Feeds. Use before price reads to resolve symbols; active does not guarantee fresh observations.',
     inputSchema: z.object({}),
     execute: async (_input, context) => {
       if (!client) return unavailable
@@ -32,7 +32,7 @@ export function createPriceFeedTools(baseUrl: string | undefined) {
         return { status: 'unavailable', reason: 'Could not retrieve supported assets.' }
       return {
         status: 'ok',
-        source: 'Tiny Price Feeds',
+        source: 'Kyros Price Feeds',
         retrievedAt: new Date().toISOString(),
         assets: response.data.assets,
       }
@@ -42,7 +42,7 @@ export function createPriceFeedTools(baseUrl: string | undefined) {
   const getLivePrice = createTool({
     id: 'get-live-price',
     description:
-      'Read one fresh underlying asset observation from Tiny Price Feeds SSE, then disconnect. Not Tiny market odds, a settlement price, or continuous monitoring. Use a canonical symbol from listPriceAssets.',
+      'Read one fresh underlying asset observation from Kyros Price Feeds SSE, then disconnect. Not Kyros market odds, a settlement price, or continuous monitoring. Use a canonical symbol from listPriceAssets.',
     inputSchema: z.object({ symbol: FeedSymbolSchema }),
     execute: async ({ symbol }, context) => {
       if (!client) return unavailable
@@ -68,7 +68,7 @@ export function createPriceFeedTools(baseUrl: string | undefined) {
       }
       return {
         status: 'ok',
-        source: 'Tiny Price Feeds',
+        source: 'Kyros Price Feeds',
         retrievedAt: new Date(now).toISOString(),
         observedAt,
         ageMs: Math.max(0, now - observedMs),
@@ -107,7 +107,7 @@ export function createPriceFeedTools(baseUrl: string | undefined) {
       }
       return {
         status: 'ok',
-        source: 'Tiny Price Feeds',
+        source: 'Kyros Price Feeds',
         symbol,
         retrievedAt: new Date().toISOString(),
         from,

@@ -1,4 +1,4 @@
-import type { ChartPoint, TimeRange } from '@tiny/ui/charts/lib/types'
+import type { ChartPoint, TimeRange } from '@kyros/ui/charts/lib/types'
 
 export type HomeMarketSide = 'away' | 'home'
 
@@ -22,7 +22,6 @@ export interface MarketCardArtwork {
 export interface MarketCardImage {
   presentation?: 'full' | 'inset'
   src: string
-  tone?: 'default' | 'lakers'
 }
 
 export interface HomeMarketPriceChart {

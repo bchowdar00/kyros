@@ -10,7 +10,7 @@ const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
-const panel = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].chatPanel
+const panel = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].chatPanel
 const saved = { id: 'saved-chat', title: 'BTC price', updatedAt: '2026-09-05T12:00:00Z' }
 
 describe('saved chat navigation', () => {
@@ -47,19 +47,21 @@ describe('saved chat navigation', () => {
     const user = userEvent.setup()
     render(<ChatPanel data={panel} marketSlug="btc" />)
     expect(
-      screen.getByRole('heading', { name: 'Deploy an Automated Trading Strategy' })
+      screen.getByRole('heading', { name: /^Buy Up when BTC is 10 basis points above the strike/ })
     ).toBeVisible()
-    expect(screen.getByText('Start with a proven one or write your own below')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Build this strategy' })).toBeEnabled()
     await user.click(await screen.findByRole('button', { name: 'Open chat: BTC price' }))
     expect(await screen.findByText('My saved question')).toBeVisible()
     expect(screen.getByRole('heading', { name: 'BTC price' })).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Back to chats and public strategies' }))
     expect(
-      await screen.findByRole('heading', { name: 'Deploy an Automated Trading Strategy' })
+      await screen.findByRole('heading', {
+        name: /^Buy Up when BTC is 10 basis points above the strike/,
+      })
     ).toBeVisible()
     expect(screen.getByRole('heading', { name: panel.sectionTitle })).toBeVisible()
     await user.type(
-      screen.getByRole('textbox', { name: 'Message Teeny' }),
+      screen.getByRole('textbox', { name: 'Message Kyros' }),
       'A different question{Enter}'
     )
     expect(await screen.findByText('A new answer')).toBeVisible()
@@ -87,11 +89,11 @@ describe('saved chat navigation', () => {
     )
     const user = userEvent.setup()
     render(<ChatPanel data={panel} />)
-    await user.type(screen.getByRole('textbox', { name: 'Message Teeny' }), 'Keep this chat{Enter}')
-    expect(screen.getByRole('textbox', { name: 'Message Teeny' })).toHaveFocus()
+    await user.type(screen.getByRole('textbox', { name: 'Message Kyros' }), 'Keep this chat{Enter}')
+    expect(screen.getByRole('textbox', { name: 'Message Kyros' })).toHaveFocus()
     await user.click(screen.getByRole('button', { name: 'Back to chats and public strategies' }))
     expect(
-      screen.getByRole('heading', { name: 'Deploy an Automated Trading Strategy' })
+      screen.getByRole('heading', { name: /^Buy Up when BTC is 10 basis points above the strike/ })
     ).toHaveFocus()
     await user.click(screen.getByRole('button', { name: 'Open chat: Keep this chat' }))
     expect(await screen.findByText('Still here')).toBeVisible()
@@ -152,6 +154,6 @@ describe('saved chat navigation', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('Saved chats couldn’t be loaded')
     )
-    expect(screen.getByRole('textbox', { name: 'Message Teeny' })).toBeEnabled()
+    expect(screen.getByRole('textbox', { name: 'Message Kyros' })).toBeEnabled()
   })
 })

@@ -1,5 +1,5 @@
 {
-  "name": "@tiny/money",
+  "name": "@kyros/money",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@tiny/typescript-config": "workspace:*",
+    "@kyros/typescript-config": "workspace:*",
     "fast-check": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

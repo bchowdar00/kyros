@@ -89,8 +89,8 @@ reference/          Read-only reference material. Never imported, never modified
   `plannedRoute()` in `src/lib/routes.ts` and are listed in `e2e/routes.ts`; delete both entries
   when the route lands.
 - Data comes from `src/server/*.server.ts` loaders (wrapped in React `cache`) or
-  `*.query.ts` hooks built on `@tiny/api`. A route never imports a fixture; the one loader that
-  still does is the prototype's, and its body becomes an `@tiny/api` call.
+  `*.query.ts` hooks built on `@kyros/api`. A route never imports a fixture; the one loader that
+  still does is the prototype's, and its body becomes an `@kyros/api` call.
 - Whether a param exists is decided in the segment `layout.tsx`, above the `loading.tsx`
   boundary. A `notFound()` thrown after the shell has streamed answers 200 with `noindex`; from
   the layout it answers a real 404. The e2e suite asserts the status code.
@@ -100,7 +100,8 @@ reference/          Read-only reference material. Never imported, never modified
 - `src/proxy.ts` is a chain of small single-purpose functions, each with a test.
 - `next/image` always has a real `sizes`; `priority` only on the LCP image. `deviceSizes` and
   `imageSizes` in `next.config.ts` list only what the layouts use.
-- Fonts load through `next/font/local` in `src/app/fonts.ts`, not hand-written `@font-face`.
+- Fonts load through `next/font` in `src/app/fonts.ts` (today the Google loader, which downloads
+  the files at build and serves them from our own origin), not hand-written `@font-face`.
 - Named exports everywhere; default exports only where Next requires them.
 
 ## 4. Responsive (desktop-first interim)
@@ -152,22 +153,23 @@ reference/          Read-only reference material. Never imported, never modified
 - Focus is `focus-visible:outline-*` everywhere. One convention; `ring-*` is not used for focus.
 - `cn()` is for conditional or merged compositions only, in object form. A static string goes
   straight into `className`. New spacing tokens are also registered in `packages/ui/src/lib/cn.ts`.
-- Typography uses the Tiny scale (`text-caption`, `text-label`, `text-body`, `text-heading-sm`,
-  `text-heading-md`, `text-display-sm`). Every number that updates renders in the mono cut
-  (`font-mono`) and glides via `useTweenedNumber` when it ticks fast. `tabular-nums` is
-  banned: the Tiny Roobert proportional cut inverts the feature into narrow proportional
-  figures, which is exactly the jitter it was meant to prevent (guard tests enforce this).
+- Typography uses one scale (`text-caption`, `text-label`, `text-body`, `text-heading-sm`,
+  `text-heading-md`, `text-display-sm` and the display sizes above it). Headings and prices are
+  set in the display face (`font-display`); everything else in the body face. Tabular figures
+  are set once, on `body` in `src/app/globals.css`, so every number that updates keeps its
+  width; the `tabular-nums` class is banned everywhere else (a guard test enforces both).
+  Fast-ticking numbers glide via `useTweenedNumber`.
 - Custom CSS is limited to theme definitions, global resets, and behaviour Tailwind cannot express.
 
 ## 6. Components and assets
 
 - Named function declarations. Props extend `ComponentPropsWithRef<'x'>` and are spread onto the
   element. `asChild` via Radix `Slot`. Variants via `cva`. `data-slot` on every compound part.
-- Subpath imports only: `@tiny/ui/components/button`, `radix-ui/tabs`, `zod/mini`. No root
+- Subpath imports only: `@kyros/ui/components/button`, `radix-ui/tabs`, `zod/mini`. No root
   barrels.
 - React Compiler is on. No `useMemo`, `useCallback` or `memo` without a measurement. `'use no
   memo'` only with a TODO and a ticket.
-- Every `@tiny/ui` component ships with a behaviour test that calls `expectNoA11yViolations` and
+- Every `@kyros/ui` component ships with a behaviour test that calls `expectNoA11yViolations` and
   an accessible-name contract in its props type (`IconButton` requires `aria-label`).
 - Icons are generated from `packages/ui/src/assets/icons/<size>/` by `pnpm icons:generate`.
   `currentColor`, `aria-hidden` by default. Never hand-author SVG paths for supplied assets.
@@ -191,7 +193,7 @@ State has exactly one home.
 
 - A provider, store or SDK is mounted with its first consumer, never before. Until then the
   dependency is pinned and listed in `knip.ts` with that reason.
-- `@tiny/api` is the only HTTP client: request → parse (Standard Schema, `zod/mini`) → select,
+- `@kyros/api` is the only HTTP client: request → parse (Standard Schema, `zod/mini`) → select,
   returning `ApiResult`. It never throws into UI code. Retries live there and nowhere else, with a
   wall-clock budget; a POST retries only when it carries an idempotency key. Every mutation that
   moves money carries one.
@@ -209,7 +211,7 @@ State has exactly one home.
 
 ## 8. Money, numbers and copy
 
-- `@tiny/money` owns arithmetic and formatting with branded `Cents` and `Bps`. Integer minor
+- `@kyros/money` owns arithmetic and formatting with branded `Cents` and `Bps`. Integer minor
   units travel as integers; `applyBps` rounds half-to-even on `bigint`; division happens once, in
   `createMoneyFormatter`. A `new Intl.NumberFormat` anywhere else fails review. One formatter per
   locale, not per render.

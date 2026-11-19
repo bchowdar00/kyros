@@ -1,10 +1,11 @@
 'use client'
 
-import { createRustExchangeClient } from '@tiny/api'
-import type { RustCreateStrategyRequest } from '@tiny/domain'
+import { createRustExchangeClient } from '@kyros/api'
+import type { RustCreateStrategyRequest } from '@kyros/domain'
 import { useState } from 'react'
 
 import { useIdentityStore } from '../identity/identity-store'
+import { deployFailureNotice } from './exchange/order-error.mapper'
 import type { ExchangeApi } from './live-public-strategy-widget'
 
 /** Compiling again plus starting the runtime; well under this on a healthy exchange. */
@@ -39,7 +40,7 @@ export function useStrategyDeploy(exchange: ExchangeApi | undefined) {
       setStatus({ state: 'idle' })
       return true
     }
-    setStatus({ state: 'failed', message: deployed.error.message })
+    setStatus({ state: 'failed', message: deployFailureNotice(deployed.error) })
     return false
   }
 

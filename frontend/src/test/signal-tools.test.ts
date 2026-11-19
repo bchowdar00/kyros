@@ -15,11 +15,11 @@ const baseUrl = 'http://exchange.test'
 const tools = createSignalTools(baseUrl)
 const context = {
   observe: noopObserve,
-  requestContext: createChatContext({ marketSlug: 'btc-2m', resourceId: 'r' }),
+  requestContext: createChatContext({ marketSlug: 'btc-5m', resourceId: 'r' }),
 }
 
 const catalogue = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   underlying: 'btc',
   signals: [
     {
@@ -46,11 +46,11 @@ const catalogue = {
       ],
     },
     {
-      signal_id: 'btc-2m.current.stats.v1',
+      signal_id: 'btc-5m.current.stats.v1',
       name: 'Round Stats',
       description: 'Round activity.',
       location: 'internal',
-      scope: { kind: 'series', series_id: 'btc-2m' },
+      scope: { kind: 'series', series_id: 'btc-5m' },
       live: true,
       quality: { state: 'ready', reasons: [] },
       fields: [
@@ -73,13 +73,13 @@ const frame = (ts_ms: number, rsi: string) => ({
   values: { rsi_14: rsi, regime: 'oversold', sample_count: 14 },
 })
 
-describe('Teeny signal tools', () => {
+describe('Kyros signal tools', () => {
   it('searches the catalogue by words and returns readable headline fields', async () => {
     server.use(http.get(`${baseUrl}/api/signals`, () => HttpResponse.json(catalogue)))
     const found = await tools.searchSignals.execute?.({ query: 'coinbase rsi' }, context)
     expect(found).toMatchObject({
       status: 'ok',
-      series: 'btc-2m',
+      series: 'btc-5m',
       total: 1,
       signals: [
         {
@@ -111,7 +111,7 @@ describe('Teeny signal tools', () => {
         expect(query.get('history_ms')).toBe('120000')
         expect(query.get('max_points')).toBe('24')
         return HttpResponse.json({
-          series: 'btc-2m',
+          series: 'btc-5m',
           since_ms: 0,
           signals: [
             {
@@ -158,8 +158,8 @@ describe('Teeny signal tools', () => {
       )
     ).toEqual({
       status: 'unavailable',
-      series: 'btc-2m',
-      reason: 'regime is a state, not a number. nope.v1 is not a signal of btc-2m.',
+      series: 'btc-5m',
+      reason: 'regime is a state, not a number. nope.v1 is not a signal of btc-5m.',
     })
   })
 
@@ -188,7 +188,7 @@ describe('Teeny signal tools', () => {
       momentum(`venue${index}`, false, 'unknown')
     )
     const wide = {
-      series: 'btc-2m',
+      series: 'btc-5m',
       underlying: 'btc',
       signals: [
         ...offline,

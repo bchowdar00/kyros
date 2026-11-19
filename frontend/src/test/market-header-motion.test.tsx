@@ -27,7 +27,6 @@ describe('MarketHeaderMotion', () => {
       <MarketHeaderMotion
         actions={<button type="button">Buy UP</button>}
         actionSubtitle={<output aria-label="Potential payout">$100 to $200</output>}
-        background={null}
         identity={<h1>BTC Up or Down</h1>}
         subtitle={<button type="button">Share market</button>}
       />

@@ -1,6 +1,6 @@
 'use client'
 
-import { cents, createMoneyFormatter } from '@tiny/money'
+import { cents, createMoneyFormatter } from '@kyros/money'
 
 import { useIdentityStore } from '@/features/identity/identity-store'
 import { ProfileMenu } from '@/features/identity/profile-menu'
@@ -29,9 +29,7 @@ export function LiveAppNav(props: AppNavProps) {
     <AppNav
       {...props}
       balance={balance}
-      balanceLabel={
-        balanceTenths === null ? 'Exchange balance unknown' : `Exchange balance: ${balance}`
-      }
+      balanceLabel={balanceTenths === null ? 'Paper balance unknown' : `Paper balance: ${balance}`}
       profileMenu={<ProfileMenu identity={identity} />}
     />
   )

@@ -1,4 +1,4 @@
-import { createMoneyFormatter, formatExchangeTicks, type Cents } from '@tiny/money'
+import { createMoneyFormatter, formatExchangeTicks, type Cents } from '@kyros/money'
 
 interface BuyPayoutSummaryProps {
   priceTicks?: number
@@ -16,7 +16,7 @@ export function BuyPayoutSummary({
   return (
     <div className="-mx-xl flex items-center justify-between gap-lg border-t border-border-subtle px-xl pt-xl pb-sm">
       <div className="flex flex-col gap-sm">
-        <span className="text-heading-sm text-foreground">To win</span>
+        <span className="text-body font-semibold text-foreground">You win if right</span>
         <p className="text-label text-muted-foreground">
           {priceTicks === undefined ? 'Avg. price' : 'Price cap'}{' '}
           <span className="font-mono">
@@ -28,7 +28,10 @@ export function BuyPayoutSummary({
           </span>
         </p>
       </div>
-      <output aria-label="Potential payout" className="font-mono text-3xl text-positive">
+      <output
+        aria-label="Potential payout"
+        className="font-display text-display-md font-extrabold tracking-display text-foreground"
+      >
         {payoutCents === undefined ? (
           <>
             <span aria-hidden="true">—</span>

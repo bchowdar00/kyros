@@ -78,10 +78,10 @@ export async function POST(request: Request) {
       mastra,
       agentId: TEENY_AGENT_ID,
       version: 'v7',
-      onError: () => 'Teeny could not respond. Please try again.',
+      onError: () => 'Kyros could not respond. Please try again.',
       params: {
         messages: parsed.messages,
-        // The page decides the market; Teeny is told rather than asked.
+        // The page decides the market; Kyros is told rather than asked.
         system,
         ...(parsed.trigger ? { trigger: parsed.trigger } : {}),
         memory: { thread: chatThreadId(resource, parsed.id), resource },
@@ -108,6 +108,6 @@ export async function POST(request: Request) {
     })
     return createUIMessageStreamResponse({ stream, headers: { 'Cache-Control': 'no-store' } })
   } catch {
-    return Response.json({ error: 'Teeny could not respond. Please try again.' }, { status: 502 })
+    return Response.json({ error: 'Kyros could not respond. Please try again.' }, { status: 502 })
   }
 }

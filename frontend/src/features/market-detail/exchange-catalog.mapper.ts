@@ -1,6 +1,4 @@
-import type { EventDetail, RustSeriesInfo, SeriesRecord } from '@tiny/domain'
-
-import { nbaTeam } from '@/features/nba-market/teams'
+import type { EventDetail, RustSeriesInfo, SeriesRecord } from '@kyros/domain'
 
 /**
  * The Rust exchange numbers series 0, 1, … and rounds 1, 2, …; the app's `EntityId`
@@ -33,38 +31,8 @@ function frequencyLabel(durationSecs: number): string {
     : `${durationSecs}s`
 }
 
-/** Whether the series trades simulated NBA games rather than BTC rounds. */
-export function isNbaSeries(info: Pick<RustSeriesInfo, 'underlying'>): boolean {
-  return info.underlying === 'nba'
-}
-
-/** The matchup an NBA round opened on, if the series is NBA and a round is open. */
-function nbaMatchup(info: RustSeriesInfo) {
-  const reference = info.reference
-  if (!isNbaSeries(info) || reference === undefined || !('home_team' in reference)) {
-    return undefined
-  }
-  return reference
-}
-
-function teamName(code: string): string {
-  return nbaTeam(code)?.name ?? code
-}
-
 export function toSeriesRecord(info: RustSeriesInfo, seriesId: number): SeriesRecord {
   const frequency = frequencyLabel(info.duration_secs)
-
-  if (isNbaSeries(info)) {
-    return {
-      assetType: 'nba',
-      frequency,
-      id: seriesId,
-      marketType: 'h2h',
-      slug: info.series,
-      status: 'SERIES_STATUS_ACTIVE',
-      title: 'NBA Head-to-Head',
-    }
-  }
 
   return {
     assetType: 'btc',
@@ -90,50 +58,6 @@ export function toEventDetail(info: RustSeriesInfo, seriesId: number): EventDeta
   const startsAt = new Date(info.opens_at_ms).toISOString()
   const endsAt = new Date(info.closes_at_ms).toISOString()
   const slug = `${info.series}-${info.current_market_id}`
-  const matchup = nbaMatchup(info)
-
-  if (matchup !== undefined) {
-    const home = teamName(matchup.home_team)
-    const away = teamName(matchup.away_team)
-    return {
-      endsAt,
-      id: eventId,
-      markets: [
-        {
-          endsAt,
-          eventId,
-          id: eventId,
-          metadata: {
-            automation: {
-              kind: 'nba_h2h',
-              priceSymbol: info.series,
-              // The sharp pregame home win probability, in basis points.
-              reference: {
-                exponent: -4,
-                instant: startsAt,
-                mantissa: String(Math.round(matchup.pregame_home_prob * 10_000)),
-                publishTimeMicros: String(info.opens_at_ms * 1_000),
-              },
-              seriesId,
-              workflowId: `exchange:${slug}`,
-            },
-          },
-          noLabel: matchup.away_team,
-          question: `Will the ${home} beat the ${away} at home?`,
-          slug: `${slug}-nba-h2h`,
-          startsAt,
-          status: 'MARKET_STATUS_ACTIVE',
-          title: `${away} at ${home}`,
-          yesLabel: matchup.home_team,
-        },
-      ],
-      seriesId,
-      slug,
-      startsAt,
-      status: 'EVENT_STATUS_ACTIVE',
-      title: `${away} at ${home}`,
-    }
-  }
 
   return {
     endsAt,

@@ -1,8 +1,8 @@
 'use client'
 
-import { Button } from '@tiny/ui/components/button'
-import { NanoCheckIcon } from '@tiny/ui/icons/nano-check-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import { Button } from '@kyros/ui/components/button'
+import { NanoCheckIcon } from '@kyros/ui/icons/nano-check-icon'
+import { cn } from '@kyros/ui/lib/cn'
 import { useId, useState } from 'react'
 
 import { WidgetFrame } from '../widget-frame'

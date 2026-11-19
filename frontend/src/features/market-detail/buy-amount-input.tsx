@@ -1,7 +1,7 @@
 'use client'
 
-import { cents, createMoneyFormatter, type Cents } from '@tiny/money'
-import { Button } from '@tiny/ui/components/button'
+import { cents, createMoneyFormatter, type Cents } from '@kyros/money'
+import { Button } from '@kyros/ui/components/button'
 
 interface BuyAmountInputProps {
   amount: string
@@ -35,7 +35,7 @@ export function BuyAmountInput({
   return (
     <div className="flex flex-col gap-xl py-lg">
       <label className="flex min-h-trade-amount min-w-0 items-center justify-between gap-xl">
-        <span className="text-heading-sm text-foreground">Amount</span>
+        <span className="text-body font-semibold text-muted-foreground">How much</span>
         <input
           aria-label="Order amount in USD"
           inputMode="decimal"
@@ -45,7 +45,7 @@ export function BuyAmountInput({
             if (parseAmount(draft) !== undefined) onAmountChange(draft)
           }}
           placeholder="$0"
-          className="min-w-0 flex-1 rounded-sm bg-transparent text-right font-mono text-3xl text-foreground outline-none placeholder:text-foreground focus-visible:outline-2 focus-visible:outline-focus-ring"
+          className="min-w-0 flex-1 rounded-md border-[1.5px] border-foreground bg-transparent px-md py-xs text-right font-display text-display-md font-bold tracking-display text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
         />
       </label>
       <fieldset className="flex flex-wrap justify-end gap-sm" aria-label="Adjust order amount">

@@ -25,6 +25,23 @@ export function formatExchangeBalance(units: string): string {
   return `$${micros / 1000000n}.${(micros % 1000000n).toString().padStart(6, '0')}`
 }
 
+const MICROS_PER_CENT = 10_000n
+const HALF_CENT_MICROS = 5_000n
+const DIGITS_PER_GROUP = 3
+
+/** Micro-dollars read out to the cent, half a cent rounding up; integer arithmetic only. */
+export function formatExchangeDollars(units: string): string {
+  const micros = BigInt(units)
+  if (micros < 0n) throw new RangeError('Invalid balance')
+  const totalCents = (micros + HALF_CENT_MICROS) / MICROS_PER_CENT
+  const digits = (totalCents / 100n).toString()
+  const groups: string[] = []
+  for (let end = digits.length; end > 0; end -= DIGITS_PER_GROUP) {
+    groups.unshift(digits.slice(Math.max(0, end - DIGITS_PER_GROUP), end))
+  }
+  return `$${groups.join(',')}.${(totalCents % 100n).toString().padStart(2, '0')}`
+}
+
 /** USD input to exact micro-dollars; no float intermediate. */
 export function exchangeBudgetMicros(amount: string): bigint | undefined {
   if (amount.length > 16 || !/^\d+(?:\.\d{0,2})?$/.test(amount)) return undefined

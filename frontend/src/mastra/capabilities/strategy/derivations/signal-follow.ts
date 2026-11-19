@@ -57,7 +57,7 @@ export const signalFollow: Derivation = {
   document: {
     name: 'RSI Oversold Buy',
     description:
-      'On the 2-minute BTC up/down: when the Kraken RSI regime becomes the chosen regime (oversold by default), buy up at once with a quarter of the round budget and hold to settlement. Nothing happens in the last 10 seconds. Once per round.',
+      'On the 5-minute BTC up/down: when the Kraken RSI regime becomes the chosen regime (oversold by default), buy up at once with a quarter of the round budget and hold to settlement. Nothing happens in the last 10 seconds. Once per round.',
     instruments: [{ nick: 'market', id: MARKET }],
     signals: [
       { nick: 'rsi', id: RSI },

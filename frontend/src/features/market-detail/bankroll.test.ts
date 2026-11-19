@@ -4,7 +4,7 @@ import { deriveEnvelope } from '@/mastra/capabilities/strategy/envelope'
 import { applyBankroll, bankrollInputs, dollarsToTenths, initialBankroll } from './bankroll'
 
 const brief: StrategyBrief = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   summary: 'x',
   goal: 'x',
   entry: 'x',

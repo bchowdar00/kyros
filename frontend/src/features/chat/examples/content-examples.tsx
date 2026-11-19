@@ -46,8 +46,8 @@ export function SourcesExample() {
         },
         {
           id: 'series',
-          title: 'Tiny series table, btc-2m round rules',
-          url: 'https://tiny.xyz/markets/btc-2m',
+          title: 'Kyros series table, btc-5m round rules',
+          url: 'https://kyros.example/markets/btc-5m',
           retrieved: '2:30 PM',
           excerpt: 'Strike is the oracle price at open; close at or above resolves YES.',
         },
@@ -57,7 +57,7 @@ export function SourcesExample() {
 }
 
 const COMPILED_STRATEGY = `{
-  "series": "btc-2m",
+  "series": "btc-5m",
   "trigger": { "signal": "ema_cross", "op": ">", "value": 0 },
   "conditions": [
     { "signal": "rsi_14", "op": "<", "value": 40 },

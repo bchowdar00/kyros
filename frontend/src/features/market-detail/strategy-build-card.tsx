@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@tiny/ui/components/button'
-import { NanoCheckIcon } from '@tiny/ui/icons/nano-check-icon'
+import { Button } from '@kyros/ui/components/button'
+import { NanoCheckIcon } from '@kyros/ui/icons/nano-check-icon'
 import { BUILD_STEP_LABELS, type BuildStatus, type BuildStep } from './strategy-build'
 import { useStrategyBuild } from './use-strategy-build'
 
@@ -54,7 +54,7 @@ function StepRow({ step }: { step: BuildStep }) {
   )
 }
 
-/** Everything the card no longer shows travels with the question, so Teeny can raise it. */
+/** Everything the card no longer shows travels with the question, so Kyros can raise it. */
 function askText(build: BuildStatus) {
   if (build.status === 'compiled' && build.result) {
     const { readback, assumptions, mismatches, warnings } = build.result
@@ -135,7 +135,7 @@ export function StrategyBuildCard({ id, onAsk, onDeploy }: StrategyBuildCardProp
               Deploy
             </Button>
             <Button size="small" variant="secondary" onClick={() => onAsk(askText(build))}>
-              Ask Teeny about this
+              Ask Kyros about this
             </Button>
           </div>
         </div>
@@ -148,7 +148,7 @@ export function StrategyBuildCard({ id, onAsk, onDeploy }: StrategyBuildCardProp
               : (build.error ?? 'Something went wrong.')}
           </p>
           <Button size="small" variant="secondary" onClick={() => onAsk(askText(build))}>
-            Ask Teeny about this
+            Ask Kyros about this
           </Button>
         </div>
       ) : null}

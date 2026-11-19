@@ -1,15 +1,15 @@
-import type { RustSignal, RustSignalCatalogue } from '@tiny/domain'
+import type { RustSignal, RustSignalCatalogue } from '@kyros/domain'
 import { describe, expect, it } from 'vitest'
 
 import { applyFrames, defaultPins } from './signal-catalogue'
 import { formatSignalValue } from './signal-value-format'
 
 const stats: RustSignal = {
-  signal_id: 'btc-2m.current.stats.v1',
+  signal_id: 'btc-5m.current.stats.v1',
   name: 'Round Stats',
   description: '',
   location: 'internal',
-  scope: { kind: 'series', series_id: 'btc-2m' },
+  scope: { kind: 'series', series_id: 'btc-5m' },
   live: true,
   quality: { state: 'ready', reasons: [] },
   ts_ms: 1,
@@ -65,16 +65,16 @@ const rsi: RustSignal = {
 }
 
 const catalogue: RustSignalCatalogue = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   underlying: 'btc',
   signals: [stats, rsi],
 }
 
 describe('signal catalogue', () => {
   it('defaults to volume, open interest in dollars and the two spot prices', () => {
-    expect(defaultPins('btc-2m')).toEqual([
-      'btc-2m.current.stats.v1:volume',
-      'btc-2m.current.stats.v1:collateral',
+    expect(defaultPins('btc-5m')).toEqual([
+      'btc-5m.current.stats.v1:volume',
+      'btc-5m.current.stats.v1:collateral',
       'pyth.btc_usd.spot.v1:last',
       'btc.external.aggressor_flow.v1:signed_notional_usd_10s',
     ])
@@ -109,8 +109,8 @@ describe('signal catalogue', () => {
 
   it('applies streamed frames over the catalogue values', () => {
     const live = applyFrames(catalogue, {
-      'btc-2m.current.stats.v1': {
-        signal_id: 'btc-2m.current.stats.v1',
+      'btc-5m.current.stats.v1': {
+        signal_id: 'btc-5m.current.stats.v1',
         ts_ms: 9,
         quality: { state: 'ready', reasons: [] },
         values: { volume: '90000.000', largest_trade: 250 },

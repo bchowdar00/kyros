@@ -7,13 +7,13 @@ import { LivePublicStrategyWidget } from './live-public-strategy-widget'
 import { PUBLIC_STRATEGY_FIXTURES } from './public-strategies.fixture'
 
 const server = setupServer()
-const api = { apiUrl: 'http://exchange.test', series: 'btc-2m' }
+const api = { apiUrl: 'http://exchange.test', series: 'btc-5m' }
 const loaded = { ...PUBLIC_STRATEGY_FIXTURES[0], templateId: 'fair-value-discount' }
 const fresh = {
   id: 'fair-value-discount',
   title: loaded.title,
-  series: ['btc-2m'],
-  creator: { handle: '@tiny', username: 'Tiny', avatar: null },
+  series: ['btc-5m'],
+  creator: { handle: '@kyros', username: 'Kyros', avatar: null },
   envelope: { loss_budget_fraction: '0.5', max_order_size: '50' },
   primary: {
     name: 'Fair Value Discount',
@@ -43,7 +43,7 @@ describe('live public strategy widget', () => {
   it('shows the loaded card, then the exchange’s answer for the requested series', async () => {
     server.use(
       http.get('*/api/strategies/templates/fair-value-discount', ({ request }) => {
-        expect(new URL(request.url).searchParams.get('series')).toBe('btc-2m')
+        expect(new URL(request.url).searchParams.get('series')).toBe('btc-5m')
         return HttpResponse.json(fresh)
       })
     )
@@ -52,7 +52,7 @@ describe('live public strategy widget', () => {
         api={api}
         strategy={loaded}
         inverse
-        scopeLabel="BTC 2m"
+        scopeLabel="BTC 5m"
         onClose={() => {}}
       />
     )
@@ -76,7 +76,7 @@ describe('live public strategy widget', () => {
         api={api}
         strategy={loaded}
         inverse={false}
-        scopeLabel="BTC 2m"
+        scopeLabel="BTC 5m"
         onClose={() => {}}
       />
     )

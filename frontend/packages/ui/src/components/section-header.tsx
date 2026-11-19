@@ -19,7 +19,9 @@ export function SectionHeader({
 
   return (
     <div {...props} className={cn('flex items-center justify-between gap-lg', className)}>
-      <Heading className="text-heading-sm font-regular text-foreground">{title}</Heading>
+      <Heading className="font-display text-display-sm font-bold tracking-heading text-foreground">
+        {title}
+      </Heading>
       {action}
     </div>
   )

@@ -13,13 +13,17 @@ function sourceFiles(directory: string): string[] {
     .map(entry => join(entry.parentPath, entry.name))
 }
 
-// The Tiny Roobert proportional cut inverts `tnum` into narrow proportional figures, so
-// `tabular-nums` CAUSES the width jitter it is meant to prevent (AGENTS.md §5). Updating
-// numbers render in the mono cut (`font-mono`) instead.
+// Tabular figures have one home: `font-variant-numeric` on <body> in globals.css, so every
+// number keeps its width as it updates. A `tabular-nums` utility on a component would be a
+// second home for the same rule.
+const TABULAR_HOME = join(import.meta.dirname, '../app/globals.css')
+
 describe('typography guard', () => {
-  it('never reintroduces tabular-nums', () => {
+  it('sets tabular figures once, on the body', () => {
+    expect(readFileSync(TABULAR_HOME, 'utf8')).toContain('font-variant-numeric: tabular-nums')
+
     const offenders = SOURCE_ROOTS.flatMap(sourceFiles)
-      .filter(file => !file.includes('/test/'))
+      .filter(file => !file.includes('/test/') && file !== TABULAR_HOME)
       .filter(file => readFileSync(file, 'utf8').includes('tabular-nums'))
 
     expect(offenders).toEqual([])

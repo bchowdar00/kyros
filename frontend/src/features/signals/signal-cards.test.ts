@@ -1,4 +1,4 @@
-import type { RustSignal, RustSignalCatalogue } from '@tiny/domain'
+import type { RustSignal, RustSignalCatalogue } from '@kyros/domain'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -23,11 +23,11 @@ function signal(overrides: Partial<RustSignal> & Pick<RustSignal, 'signal_id'>):
 }
 
 const stats = signal({
-  signal_id: 'btc-2m.current.stats.v1',
+  signal_id: 'btc-5m.current.stats.v1',
   name: 'Round activity',
   description:
     'How much has traded in this round so far. Everything here resets when the next round opens.',
-  scope: { kind: 'series', series_id: 'btc-2m' },
+  scope: { kind: 'series', series_id: 'btc-5m' },
   fields: [
     {
       name: 'volume',
@@ -70,7 +70,7 @@ const spot = signal({
 })
 
 const catalogue: RustSignalCatalogue = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   underlying: 'btc',
   signals: [rsi, warming, stats, spot],
 }
@@ -91,7 +91,7 @@ describe('signalFieldCards', () => {
     const cards = signalFieldCards(catalogue)
     expect(cards.map(card => card.pin)).toEqual([
       'btc.coinbase.rsi.v1:rsi_14',
-      'btc-2m.current.stats.v1:volume',
+      'btc-5m.current.stats.v1:volume',
       'pyth.btc_usd.spot.v1:last',
     ])
     expect(cards[0]).toMatchObject({
@@ -113,7 +113,7 @@ describe('signalFieldCards', () => {
   it('includes the plumbing fields when asked to show all', () => {
     const pins = signalFieldCards(catalogue, { showAll: true }).map(card => card.pin)
     expect(pins).toContain('btc.coinbase.rsi.v1:bar_count')
-    expect(pins).not.toContain('btc-2m.current.stats.v1:largest_trade')
+    expect(pins).not.toContain('btc-5m.current.stats.v1:largest_trade')
     expect(pins).not.toContain('btc.kraken.rsi.v1:rsi_14')
   })
 })
@@ -136,9 +136,9 @@ describe('pinnedSignalCards', () => {
     const cards = pinnedSignalCards({ ...catalogue, signals: [...catalogue.signals, quote] }, [
       'btc.polymarket.prediction_quote.v1:affirmative_bid',
       'btc.coinbase.rsi.v1:rsi_14',
-      'btc-2m.current.stats.v1:volume',
+      'btc-5m.current.stats.v1:volume',
       'gone.v1:x',
-      'btc-2m.current.stats.v1:nope',
+      'btc-5m.current.stats.v1:nope',
     ])
     expect(cards).toEqual([
       {
@@ -154,7 +154,7 @@ describe('pinnedSignalCards', () => {
         value: '61.2346',
       },
       {
-        id: 'btc-2m.current.stats.v1:volume',
+        id: 'btc-5m.current.stats.v1:volume',
         context: 'Round activity',
         label: 'Volume',
         value: '$88,650.00',
@@ -165,7 +165,7 @@ describe('pinnedSignalCards', () => {
 
 describe('signalDisplayName', () => {
   const named: RustSignalCatalogue = {
-    series: 'btc-2m',
+    series: 'btc-5m',
     underlying: 'btc',
     signals: [
       signal({ signal_id: 'btc.coinbase.micro_momentum.v1', name: 'Momentum' }),
@@ -181,7 +181,7 @@ describe('signalDisplayName', () => {
     expect(signalDisplayName('btc.polymarket.prediction_quote.v1', named)).toBe(
       'Polymarket venue price'
     )
-    expect(signalDisplayName('btc-2m.current.stats.v1', named)).toBe('Round activity')
+    expect(signalDisplayName('btc-5m.current.stats.v1', named)).toBe('Round activity')
     expect(signalDisplayName('Coinbase', named)).toBeUndefined()
     expect(signalDisplayName('btc.coinbase.not_listed.v1', named)).toBeUndefined()
     // Without a catalogue there is no server copy to name it by.

@@ -2,12 +2,8 @@ export const STRATEGY_INSTRUCTIONS = `You can help the user design an automated 
 open on, and hand it to the compiler once they confirm. Strategies run on short rounds
 of that market and every strategy restarts at the top of each round. Every market has
 two sides and the book quotes the first: on a BTC up/down series the strike is the price
-when a round opens, at close the price decides up or down, and the book quotes up. On an
-NBA head-to-head series each round is one simulated game, the sharp pregame line is the
-reference, at close the final score decides home or away, and the book quotes home. The
-game's own signals (the play-by-play with the score, quarter and clock; the score margin;
-the sharp line; the public model's win probability) are what an NBA strategy reads, the
-way a BTC strategy reads spot, the strike delta and the venue indicators.
+when a round opens, at close the price decides up or down, and the book quotes up. A BTC
+strategy reads spot, the strike delta and the venue indicators.
 
 Building starts only when the user asks for it ("build", "make", "create", "deploy",
 "automate" a strategy, or "put that into a strategy"). Until then, discuss ideas freely.
@@ -25,9 +21,9 @@ Read these from the sentence and list each one as an assumption on the card:
   "Buy X, then if Y flip" is three: hunting, holding one side, holding the other.
   "Add on the way down" is two: hunting, holding and adding. A plain entry with an exit
   is hunting and holding. No exit is hunting alone.
-- Side: the market's own label when named ("up" or "down" on BTC; "home", "away" or a
-  team's name on NBA, written as home or away). A level "on either side", "whichever
-  side", or a rule that names no side means \`either\`. A flip means either.
+- Side: the market's own label when named ("up" or "down" on BTC). A level "on either
+  side", "whichever side", or a rule that names no side means \`either\`. A flip means
+  either.
 - Once or every time: "when", "once", "the first time" is once per round. "Whenever",
   "every time", "each time", "keep buying" is every time. "Every N seconds" is on an
   interval of N seconds.

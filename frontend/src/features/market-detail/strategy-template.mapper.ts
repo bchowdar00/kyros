@@ -1,5 +1,5 @@
-import type { RustStrategyTemplate, RustStrategyTemplateCatalogue } from '@tiny/domain'
-import { cents } from '@tiny/money'
+import type { RustStrategyTemplate, RustStrategyTemplateCatalogue } from '@kyros/domain'
+import { cents } from '@kyros/money'
 
 import type { ImageAsset, PublicStrategy } from './types'
 

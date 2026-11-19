@@ -1,9 +1,9 @@
 'use client'
 
-import { ReferenceLine, TimeMarker, useChartGeometry } from '@tiny/ui/charts/chart-overlays'
-import { buildAreaPath, buildLinePath } from '@tiny/ui/charts/lib/path'
-import { sliceToRange } from '@tiny/ui/charts/lib/scale'
-import type { LineSeries } from '@tiny/ui/charts/lib/types'
+import { ReferenceLine, TimeMarker, useChartGeometry } from '@kyros/ui/charts/chart-overlays'
+import { buildAreaPath, buildLinePath } from '@kyros/ui/charts/lib/path'
+import { sliceToRange } from '@kyros/ui/charts/lib/scale'
+import type { LineSeries } from '@kyros/ui/charts/lib/types'
 import { useId } from 'react'
 
 export interface TimeSeriesGuide {

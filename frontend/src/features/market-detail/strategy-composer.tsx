@@ -1,9 +1,9 @@
 'use client'
 
-import { cn } from '@tiny/ui/lib/cn'
-import { IconButton } from '@tiny/ui/components/icon-button'
-import { MiniXIcon } from '@tiny/ui/icons/mini-x-icon'
-import { PlusIcon } from '@tiny/ui/icons/plus-icon'
+import { cn } from '@kyros/ui/lib/cn'
+import { IconButton } from '@kyros/ui/components/icon-button'
+import { MiniXIcon } from '@kyros/ui/icons/mini-x-icon'
+import { PlusIcon } from '@kyros/ui/icons/plus-icon'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 
 import type { StrategyComposerData } from './types'
@@ -31,7 +31,7 @@ export function StrategyComposer({
   inputLabel = 'Strategy instructions',
   onAddContext,
   onSubmit,
-  placeholder = 'Create a new strategy....',
+  placeholder = 'Write your own sentence…',
   submitLabel = 'Create strategy',
   tipLinkLabel = 'signals',
   tipPrefix = 'Tip: your strategy can reference available',
@@ -60,16 +60,15 @@ export function StrategyComposer({
     <form
       aria-label="Strategy composer"
       className={cn('pointer-events-auto relative w-full overflow-clip', {
-        'rounded-composer border-[0.5px] border-highlight bg-surface-subtle backdrop-blur-composer':
-          !embedded,
+        'rounded-composer border-2 border-foreground bg-background': !embedded,
       })}
       onSubmit={handleSubmit}
     >
       <div className="relative p-xs">
-        <div className="flex min-h-app-nav items-center gap-md rounded-md border-[0.5px] border-foreground/50 bg-surface-raised bg-composer-sheen px-sm has-[:focus-visible]:border-foreground">
+        <div className="flex min-h-app-nav items-center gap-md rounded-md border-[1.5px] border-foreground bg-background px-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring">
           <IconButton
             aria-label={addContextLabel}
-            className="relative bg-highlight text-foreground hover:bg-border disabled:opacity-100 after:absolute after:-inset-copy after:content-['']"
+            className="relative border-transparent bg-surface text-foreground hover:bg-surface-raised disabled:border-transparent after:absolute after:-inset-copy after:content-['']"
             disabled={onAddContext === undefined}
             onClick={onAddContext}
             size="medium"
@@ -81,7 +80,7 @@ export function StrategyComposer({
           <input
             ref={input}
             aria-label={inputLabel}
-            className="min-w-0 flex-1 bg-transparent text-heading-sm font-regular text-foreground outline-none placeholder:text-muted-foreground"
+            className="min-w-0 flex-1 bg-transparent text-heading-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
             onChange={event => setPrompt(event.currentTarget.value)}
             placeholder={placeholder}
             type="text"
@@ -90,7 +89,7 @@ export function StrategyComposer({
 
           <IconButton
             aria-label={busy ? 'Stop response' : submitLabel}
-            className="relative bg-foreground text-background hover:bg-foreground/80 disabled:opacity-100 after:absolute after:-inset-copy after:content-['']"
+            className="relative border-foreground bg-foreground text-background hover:border-action hover:bg-action hover:text-on-action after:absolute after:-inset-copy after:content-['']"
             disabled={busy ? onStop === undefined : !canSubmit}
             size="medium"
             type={busy ? 'button' : 'submit'}

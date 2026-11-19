@@ -1,6 +1,6 @@
 'use client'
 
-import { createLinearScale, niceDomain } from '@tiny/ui/charts/lib/scale'
+import { createLinearScale, niceDomain } from '@kyros/ui/charts/lib/scale'
 import type { ReactNode } from 'react'
 
 import { ChartShell } from './chart-shell'

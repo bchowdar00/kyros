@@ -1,4 +1,4 @@
-import type { RustPositionFrame, RustSignalFrame } from '@tiny/domain'
+import type { RustPositionFrame, RustSignalFrame } from '@kyros/domain'
 import { describe, expect, it } from 'vitest'
 
 import { resolveMarketCard, resolvePositionCard, resolveStats } from './cards'
@@ -13,16 +13,16 @@ const address = `0x${'ab'.repeat(20)}`
 
 describe('card resolvers', () => {
   it('builds the market card from the series internals and the spot feed', () => {
-    const card = resolveMarketCard('btc-2m', {
-      strike: frame('btc-2m.current.strike.v1', { price: '72754.14' }),
-      price: frame('btc-2m.current.price.v1', { up: '0.62', bid: '0.61', ask: '0.63' }),
-      window: frame('btc-2m.current.window.v1', { remaining: 47_000 }),
-      stats: frame('btc-2m.current.stats.v1', { volume: '2365.000', open_interest: 1512 }),
+    const card = resolveMarketCard('btc-5m', {
+      strike: frame('btc-5m.current.strike.v1', { price: '72754.14' }),
+      price: frame('btc-5m.current.price.v1', { up: '0.62', bid: '0.61', ask: '0.63' }),
+      window: frame('btc-5m.current.window.v1', { remaining: 47_000 }),
+      stats: frame('btc-5m.current.stats.v1', { volume: '2365.000', open_interest: 1512 }),
       spot: frame('pyth.btc_usd.spot.v1', { last: '72783.05' }),
     })
     expect(card).toMatchObject({
-      label: 'btc-2m market',
-      eyebrow: 'btc-2m binary',
+      label: 'btc-5m market',
+      eyebrow: 'btc-5m binary',
       eyebrowMeta: 'T−0:47',
       hero: { value: '$72,783.05', delta: '+$28.91' },
     })
@@ -38,10 +38,10 @@ describe('card resolvers', () => {
 
   it('needs both the strike and the spot, and shows unknowns as unknown', () => {
     expect(
-      resolveMarketCard('btc-2m', { spot: frame('pyth.btc_usd.spot.v1', { last: '1' }) })
+      resolveMarketCard('btc-5m', { spot: frame('pyth.btc_usd.spot.v1', { last: '1' }) })
     ).toBeUndefined()
-    const sparse = resolveMarketCard('btc-2m', {
-      strike: frame('btc-2m.current.strike.v1', { price: '100.00' }),
+    const sparse = resolveMarketCard('btc-5m', {
+      strike: frame('btc-5m.current.strike.v1', { price: '100.00' }),
       spot: frame('pyth.btc_usd.spot.v1', { last: '99.50' }),
     })
     expect(sparse?.hero.delta).toBe('-$0.50')
@@ -51,8 +51,8 @@ describe('card resolvers', () => {
 
   it('lays out the round stats in three columns', () => {
     const grid = resolveStats(
-      'btc-2m',
-      frame('btc-2m.current.stats.v1', {
+      'btc-5m',
+      frame('btc-5m.current.stats.v1', {
         volume: '2365.000',
         open_interest: 1512,
         collateral: '1512.000',
@@ -76,7 +76,7 @@ describe('card resolvers', () => {
     const snapshot: RustPositionFrame = {
       type: 'position_snapshot',
       as_of_unix_ms: 9,
-      series: 'btc-2m',
+      series: 'btc-5m',
       market_id: 3,
       address,
       side: 'no',
@@ -105,8 +105,8 @@ describe('card resolvers', () => {
         },
       ],
     }
-    expect(resolvePositionCard('btc-2m', snapshot, 47_000)).toEqual({
-      series: 'btc-2m',
+    expect(resolvePositionCard('btc-5m', snapshot, 47_000)).toEqual({
+      series: 'btc-5m',
       contracts: -4,
       entryCents: 58,
       markCents: 62,

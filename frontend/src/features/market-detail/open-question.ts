@@ -26,8 +26,8 @@ export function questionsIn(message: UIMessage): AskedQuestion[] {
 }
 
 /**
- * The question Teeny is waiting on: the newest one in the last message, which must be
- * Teeny's (a later user message is the answer). Dismissed questions are typed answers.
+ * The question Kyros is waiting on: the newest one in the last message, which must be
+ * Kyros's (a later user message is the answer). Dismissed questions are typed answers.
  */
 export function openQuestion(messages: readonly UIMessage[], dismissed: ReadonlySet<string>) {
   const last = messages.at(-1)

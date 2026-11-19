@@ -91,7 +91,7 @@ fail validation.
 
 ### 2. Add typed read clients
 
-- Extend `@tiny/api` with checked cursor traversal and focused Silk Road/Price Feeds functions.
+- Extend `@kyros/api` with checked cursor traversal and focused Silk Road/Price Feeds functions.
 - Use one retry budget, return `ApiResult`, propagate cancellation and reject non-advancing cursors.
 - Add MSW tests for pagination, 404, 422, 429, 5xx, timeout and invalid JSON/schema responses.
 
@@ -139,7 +139,7 @@ Exit: request count is bounded per page, cursor pagination is complete and route
 
 - Require authoritative quotes, depth, order admission, balances, positions, fills, idempotent money
   mutations and authenticated sessions.
-- Map integer cents/basis points through `@tiny/money`; fail closed on stale depth or admission.
+- Map integer cents/basis points through `@kyros/money`; fail closed on stale depth or admission.
 - Restore order book, strategy and trade controls only as their real owners land.
 
 Exit: the displayed executable quote is the quote the backend will honor, or the action is disabled

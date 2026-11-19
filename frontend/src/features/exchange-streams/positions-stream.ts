@@ -1,4 +1,4 @@
-import { type RustPositionFrame, RustPositionFrameSchema } from '@tiny/domain'
+import { type RustPositionFrame, RustPositionFrameSchema } from '@kyros/domain'
 
 import { createSharedStream, createStreamRegistry, type SharedStream } from './shared-stream'
 import { openDemoSocket } from './socket'

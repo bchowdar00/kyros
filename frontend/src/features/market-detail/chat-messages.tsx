@@ -22,7 +22,7 @@ interface ChatMessagesProps {
   onWidgetEvent?: ((text: string) => void) | undefined
 }
 
-/** What Teeny is doing while a tool runs, by the tool's map key. */
+/** What Kyros is doing while a tool runs, by the tool's map key. */
 const TOOL_ACTIVITY: Record<string, string> = {
   getLivePrice: 'Checking price feeds…',
   getPriceHistory: 'Checking price feeds…',
@@ -53,7 +53,7 @@ function activityLabel(pendingTools: readonly MessagePart[]) {
   if (pendingTools.length === 0) return undefined
   if (pendingTools.some(isWidgetToolPart)) return 'Preparing a chart…'
   const name = pendingTools.map(toolName).find(candidate => candidate !== undefined)
-  return (name === undefined ? undefined : TOOL_ACTIVITY[name]) ?? 'Teeny is working…'
+  return (name === undefined ? undefined : TOOL_ACTIVITY[name]) ?? 'Kyros is working…'
 }
 
 export function ChatMessages({
@@ -74,7 +74,7 @@ export function ChatMessages({
     if (scrollRegion) scrollRegion.scrollTop = scrollRegion.scrollHeight
   }, [messages, pending, failed])
 
-  /** The user's reply to a question Teeny asked in `message`, once they have answered. */
+  /** The user's reply to a question Kyros asked in `message`, once they have answered. */
   function answerTo(message: UIMessage) {
     const position = messages.indexOf(message)
     const reply = messages.slice(position + 1).find(next => next.role === 'user')
@@ -137,21 +137,21 @@ export function ChatMessages({
     <div ref={content} className="flex flex-col gap-xl">
       <div
         role="log"
-        aria-label="Conversation with Teeny"
+        aria-label="Conversation with Kyros"
         aria-live="polite"
         className="flex flex-col gap-xl"
       >
         {messages.map(message => (
           <article
             key={message.id}
-            aria-label={message.role === 'user' ? 'You' : 'Teeny'}
+            aria-label={message.role === 'user' ? 'You' : 'Kyros'}
             className={
               message.role === 'user'
-                ? 'max-w-full self-end rounded-lg rounded-br-sm border-[0.5px] border-border-subtle/50 bg-action/25 px-lg py-sm text-foreground'
+                ? 'max-w-full self-end rounded-md bg-action-muted px-lg py-sm text-foreground'
                 : 'flex flex-col gap-lg text-foreground'
             }
           >
-            <span className="sr-only">{message.role === 'user' ? 'You' : 'Teeny'}:</span>
+            <span className="sr-only">{message.role === 'user' ? 'You' : 'Kyros'}:</span>
             {message.parts.map((part, index) => renderPart(message, part, index))}
           </article>
         ))}
@@ -159,11 +159,11 @@ export function ChatMessages({
       {activity !== undefined ? (
         <output className="text-label text-muted-foreground">{activity}</output>
       ) : pending ? (
-        <output className="text-label text-muted-foreground">Teeny is thinking…</output>
+        <output className="text-label text-muted-foreground">Kyros is thinking…</output>
       ) : null}
       {failed ? (
         <div role="alert" className="text-body text-foreground">
-          <p>Teeny couldn’t finish this response. Your message is saved here.</p>
+          <p>Kyros couldn’t finish this response. Your message is saved here.</p>
           <button
             type="button"
             onClick={onRetry}

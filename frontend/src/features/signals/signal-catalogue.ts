@@ -1,4 +1,4 @@
-import type { RustSignalCatalogue, RustSignalFrame } from '@tiny/domain'
+import type { RustSignalCatalogue, RustSignalFrame } from '@kyros/domain'
 
 /** A pinned card is one field of one signal. */
 export type PinKey = `${string}:${string}`

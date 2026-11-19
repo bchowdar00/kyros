@@ -1,4 +1,4 @@
-import { cents } from '@tiny/money'
+import { cents } from '@kyros/money'
 
 import type { PublicStrategy } from './types'
 

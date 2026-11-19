@@ -1,4 +1,4 @@
-import type { RustSignal, RustSignalField } from '@tiny/domain'
+import type { RustSignal, RustSignalField } from '@kyros/domain'
 import { describe, expect, it } from 'vitest'
 
 import { formatSignalValue, isNumericField } from './signal-value-format'
@@ -24,7 +24,7 @@ function field(
   return { name, label: name, type, headline: true, value }
 }
 
-const price = signal('btc-2m.current.price.v1')
+const price = signal('btc-5m.current.price.v1')
 const quote = signal('btc.coinbase.spot_quote.v1')
 const flow = signal('btc.coinbase.micro_momentum.v1')
 

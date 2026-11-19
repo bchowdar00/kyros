@@ -1,12 +1,13 @@
 'use client'
 
-import { formatExchangeSpread } from '@tiny/money'
-import { IconButton } from '@tiny/ui/components/icon-button'
-import { ScrollFade } from '@tiny/ui/components/scroll-fade'
-import { SectionHeader } from '@tiny/ui/components/section-header'
-import { CenterOrderBookIcon } from '@tiny/ui/icons/center-order-book-icon'
+import { formatExchangeSpread } from '@kyros/money'
+import { IconButton } from '@kyros/ui/components/icon-button'
+import { ScrollFade } from '@kyros/ui/components/scroll-fade'
+import { SectionHeader } from '@kyros/ui/components/section-header'
+import { CenterOrderBookIcon } from '@kyros/ui/icons/center-order-book-icon'
 import { useLayoutEffect, useRef } from 'react'
 
+import { GeminiBookSource } from './gemini/gemini-book-source'
 import { OrderBookRow } from './order-book-row'
 import type { OrderBookData, OrderBookLevel } from './types'
 
@@ -44,11 +45,24 @@ function centerSpread(
   scrollRegion.scrollTop = top
 }
 
+/** One line in place of a side's levels, said only while the feed is live and the side is empty. */
+function EmptySideRow({ children }: { children: string }) {
+  return (
+    <tr className="table w-full table-fixed">
+      <td className="py-sm pl-sm text-left font-sans font-semibold text-foreground" colSpan={3}>
+        {children}
+      </td>
+    </tr>
+  )
+}
+
 export function OrderBookPanel({
   actionLabel,
   asks,
   bids,
   columnLabels,
+  feedLive = false,
+  geminiBook,
   spreadCents,
   spreadTicks,
   spreadLabel,
@@ -58,6 +72,8 @@ export function OrderBookPanel({
   const scrollRegionRef = useRef<HTMLTableSectionElement>(null)
   const spreadRowRef = useRef<HTMLTableRowElement>(null)
   const followSpreadRef = useRef(true)
+  // Only a series Gemini backs has an empty side that is Gemini's to name.
+  const venue = geminiBook?.gemini === undefined ? '' : ' on Gemini'
   const maximumTotalUsd = Math.max(
     0,
     ...asks.map(level => ('priceTicks' in level ? 0 : level.totalUsd)),
@@ -72,28 +88,31 @@ export function OrderBookPanel({
     <section aria-label={title} className="flex w-full flex-col gap-xl">
       <SectionHeader
         action={
-          <IconButton
-            aria-label={actionLabel}
-            className="size-2xl border-0 p-0 text-foreground"
-            onClick={() => {
-              followSpreadRef.current = true
-              centerSpread(scrollRegionRef.current, spreadRowRef.current)
-            }}
-            size="small"
-            variant="ghost"
-          >
-            <CenterOrderBookIcon />
-          </IconButton>
+          <div className="flex items-center gap-lg">
+            {geminiBook === undefined ? null : <GeminiBookSource {...geminiBook} />}
+            <IconButton
+              aria-label={actionLabel}
+              className="size-2xl border-0 p-0 text-foreground"
+              onClick={() => {
+                followSpreadRef.current = true
+                centerSpread(scrollRegionRef.current, spreadRowRef.current)
+              }}
+              size="small"
+              variant="ghost"
+            >
+              <CenterOrderBookIcon />
+            </IconButton>
+          </div>
         }
         className="h-xl"
         title={title}
       />
 
-      <div className="relative h-[438px] overflow-hidden rounded-md border border-highlight bg-background">
-        <table className="block h-full w-full table-fixed text-label font-medium text-foreground">
+      <div className="relative h-[438px] overflow-hidden border-y border-border-subtle bg-background">
+        <table className="block h-full w-full table-fixed text-body font-medium text-foreground">
           <caption className="sr-only">{title}</caption>
-          <thead className="relative block h-[53px] bg-background/50 px-xl text-caption font-semibold uppercase text-muted-foreground backdrop-blur-glass">
-            <tr className="table h-[53px] w-full table-fixed border-b border-highlight">
+          <thead className="relative block h-[53px] bg-background px-sm text-label font-semibold text-muted-foreground">
+            <tr className="table h-[53px] w-full table-fixed border-b border-border-subtle">
               <th className="w-1/3 text-left font-semibold" scope="col">
                 {columnLabels[0]}
               </th>
@@ -109,7 +128,7 @@ export function OrderBookPanel({
           {/* The scrollable row group needs keyboard focus and scroll intent handlers. */}
           {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <tbody
-            className="block h-[385px] overflow-y-auto px-xl py-lg font-mono overscroll-contain [overflow-anchor:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="block h-[385px] overflow-y-auto py-lg font-mono overscroll-contain [overflow-anchor:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             data-order-book-scroll=""
             ref={scrollRegionRef}
             // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
@@ -130,6 +149,9 @@ export function OrderBookPanel({
                 followSpreadRef.current = false
             }}
           >
+            {feedLive && asks.length === 0 ? (
+              <EmptySideRow>{`No offers${venue} right now`}</EmptySideRow>
+            ) : null}
             {asks.map(level => (
               <OrderBookRow
                 depthPercentage={getDepthPercentage(level, maximumTotalUsd)}
@@ -140,31 +162,30 @@ export function OrderBookPanel({
             ))}
 
             <tr
-              className="mb-xs table h-[28px] w-full table-fixed"
+              className="my-xs table h-3xl w-full table-fixed border-y border-border-subtle text-label text-muted-foreground"
               data-order-book-spread=""
               ref={spreadRowRef}
             >
-              <th className="relative w-1/3 text-right font-medium" scope="row">
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-0 left-0 z-0 w-[300%] rounded-xs border border-border-subtle bg-surface-raised"
-                />
-                <span className="relative z-[1]">{spreadLabel}</span>
+              <th className="w-1/3 pl-sm text-left font-semibold" scope="row">
+                {spreadLabel}
               </th>
-              <td className="relative z-[1] w-1/3 text-center">
+              <td className="w-1/3 text-center font-bold text-foreground">
                 {spreadTicks !== undefined
                   ? spreadTicks === null
                     ? '—'
                     : formatExchangeSpread(spreadTicks)
                   : `${spreadCents ?? '—'}¢`}
               </td>
-              <td className="relative z-[1] w-1/3 text-left">
+              <td className="w-1/3 pr-sm text-right">
                 {spreadPercentage === undefined
                   ? '—'
                   : percentageFormatter.format(spreadPercentage / 100)}
               </td>
             </tr>
 
+            {feedLive && bids.length === 0 ? (
+              <EmptySideRow>{`No bids${venue} right now`}</EmptySideRow>
+            ) : null}
             {bids.map(level => (
               <OrderBookRow
                 depthPercentage={getDepthPercentage(level, maximumTotalUsd)}

@@ -3,7 +3,7 @@
 import { QueryClient, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import * as z from 'zod/mini'
-import { createApiClient } from '@tiny/api'
+import { createApiClient } from '@kyros/api'
 import type { StrategyBrief } from '@/mastra/capabilities/strategy/brief'
 import { BuildStartedSchema, BuildStatusSchema, type BuildStatus } from './strategy-build'
 

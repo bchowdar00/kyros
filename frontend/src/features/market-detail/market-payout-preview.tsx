@@ -5,9 +5,9 @@ import {
   estimateWinningPayout,
   estimateExchangeWinningPayout,
   isCents,
-} from '@tiny/money'
-import { MiniDoubleForwardIcon } from '@tiny/ui/icons/mini-double-forward-icon'
-import { cn } from '@tiny/ui/lib/cn'
+} from '@kyros/money'
+import { MiniDoubleForwardIcon } from '@kyros/ui/icons/mini-double-forward-icon'
+import { cn } from '@kyros/ui/lib/cn'
 import type { ComponentPropsWithRef } from 'react'
 
 interface MarketPayoutPreviewProps extends ComponentPropsWithRef<'output'> {

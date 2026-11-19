@@ -1,7 +1,6 @@
-import { MarketResultTriangleIcon } from '../icons/market-result-triangle-icon'
 import { cn } from '../lib/cn'
 
-const MAX_RECENT_RESULTS = 5
+const MAX_RECENT_RESULTS = 14
 const FALLBACK_RESULTS = ['below', 'above', 'below', 'above', 'below'] as const
 
 export type RecentMarketResult = 'above' | 'below'
@@ -17,7 +16,7 @@ function resolveDisplayedResults(results: readonly RecentMarketResult[] | undefi
   return recentResults?.length ? recentResults : FALLBACK_RESULTS
 }
 
-/** Compact, overlapping markers for the latest resolved price-against-target markets. */
+/** A form line: one square per settled round, oldest first, lettered so colour never stands alone. */
 export function RecentMarketResults({ results }: RecentMarketResultsProps) {
   const displayedResults = resolveDisplayedResults(results)
   const hasResults = results !== undefined && results.length > 0
@@ -26,7 +25,7 @@ export function RecentMarketResults({ results }: RecentMarketResultsProps) {
     : 'Recent market results unavailable'
 
   return (
-    <ol aria-label={listLabel} className="flex items-center">
+    <ol aria-label={listLabel} className="flex flex-wrap items-center gap-px">
       {displayedResults.map((result, index) => {
         const resolvedAboveTarget = result === 'above'
         const markerLabel = hasResults
@@ -37,25 +36,16 @@ export function RecentMarketResults({ results }: RecentMarketResultsProps) {
           <li
             aria-label={markerLabel}
             className={cn(
-              'flex size-avatar-md items-center justify-center rounded-full bg-background p-px',
-              index === 0 ? '' : '-ml-2'
+              'flex size-xl items-center justify-center rounded-xs border-[1.5px] text-caption font-bold',
+              !hasResults
+                ? 'border-border-subtle text-muted-foreground'
+                : resolvedAboveTarget
+                  ? 'border-action bg-action text-on-action'
+                  : 'border-foreground bg-foreground text-background'
             )}
             key={`${result}-${index}`}
           >
-            <span
-              aria-hidden="true"
-              className={cn(
-                'flex size-full items-center justify-center rounded-full',
-                resolvedAboveTarget ? 'bg-positive/25' : 'bg-negative/25'
-              )}
-            >
-              <MarketResultTriangleIcon
-                className={cn(
-                  'size-3',
-                  resolvedAboveTarget ? 'rotate-180 text-positive' : 'text-negative'
-                )}
-              />
-            </span>
+            <span aria-hidden="true">{hasResults ? (resolvedAboveTarget ? 'U' : 'D') : '·'}</span>
           </li>
         )
       })}

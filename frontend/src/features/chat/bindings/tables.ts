@@ -1,8 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { createRustExchangeClient } from '@tiny/api'
-import type { RustMarket } from '@tiny/domain'
+import { createRustExchangeClient } from '@kyros/api'
+import type { RustMarket } from '@kyros/domain'
 
 import { getBookStream, IDLE_BOOK } from '@/features/exchange-streams/book-stream'
 import { getPriceStream, IDLE_PRICE_STREAM } from '@/features/exchange-streams/price-stream'

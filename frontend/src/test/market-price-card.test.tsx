@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getMarketDetailFixture } from '@/features/market-detail/market-detail.fixture'

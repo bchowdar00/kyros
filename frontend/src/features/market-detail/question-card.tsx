@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { cn } from '@tiny/ui/lib/cn'
-import { NanoCheckIcon } from '@tiny/ui/icons/nano-check-icon'
+import { cn } from '@kyros/ui/lib/cn'
+import { NanoCheckIcon } from '@kyros/ui/icons/nano-check-icon'
 import type {
   AskQuestionOutput,
   QuestionKind,
@@ -42,7 +42,7 @@ const TOPIC: Record<QuestionKind, string> = {
 }
 
 /**
- * Teeny's multiple-choice question, pinned above the composer: a decision the agent
+ * Kyros's multiple-choice question, pinned above the composer: a decision the agent
  * should not make alone, answered in one keystroke. It sits in the same dark panel
  * the build card uses, with the choices laid out like the build steps so the whole
  * region reads as one surface. Arrows move between the choices, Enter or a click
@@ -112,15 +112,11 @@ export function QuestionCard({ question, onAnswer, onDismiss }: QuestionCardProp
 
   return (
     <section aria-labelledby={headingId} className="px-sm pt-sm">
-      <div className="relative overflow-clip rounded-md border border-highlight bg-surface text-foreground">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 size-public-strategy-glow -translate-x-1/2 -translate-y-1/2 rounded-pill bg-action opacity-15 blur-public-strategy-glow"
-        />
+      <div className="relative overflow-clip rounded-md border-2 border-foreground bg-background text-foreground">
         <div className="relative flex flex-col gap-md p-lg">
           <div className="flex items-center justify-between gap-md">
-            <h3 id={headingId} className="text-label font-medium text-foreground">
-              Teeny needs a decision
+            <h3 id={headingId} className="font-display text-heading-sm font-bold text-foreground">
+              Kyros needs a decision
             </h3>
             <span className="rounded-pill border border-highlight px-sm py-xs text-caption text-muted-foreground">
               {TOPIC[question.kind]}

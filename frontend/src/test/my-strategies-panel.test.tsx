@@ -1,12 +1,12 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
 import { MARKET_DETAIL_FIXTURES } from '@/features/market-detail/market-detail.fixture'
 import { MyStrategiesPanel } from '@/features/market-detail/my-strategies-panel'
 
-const myStrategies = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].myStrategies
+const myStrategies = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].myStrategies
 
 describe('MyStrategiesPanel', () => {
   it('lets keyboard users reach the scrollable strategy list', async () => {
@@ -27,16 +27,15 @@ describe('MyStrategiesPanel', () => {
     const table = screen.getByRole('table', { name: 'My accounts' })
 
     expect(within(table).getByText('Manual Trades')).toBeInTheDocument()
-    expect(within(table).getByText('40 LAL')).toBeInTheDocument()
-    expect(within(table).getByText('$29.20')).toBeInTheDocument()
-    expect(within(table).getByText('65 BOS')).toBeInTheDocument()
-    expect(within(table).getByText('$88.40')).toBeInTheDocument()
-    expect(within(table).getByText('+$2.00')).toHaveClass('text-positive')
-    expect(within(table).getByText('+$210.84')).toHaveClass('text-positive')
-    expect(within(table).getByText('-$9.10')).toHaveClass('text-negative')
-    expect(within(table).getByText('-$0.10')).toHaveClass('text-negative')
+    expect(within(table).getByText('120 YES')).toBeInTheDocument()
+    expect(within(table).getByText('$78.00')).toBeInTheDocument()
+    expect(within(table).getByText('85 YES')).toBeInTheDocument()
+    expect(within(table).getByText('$55.25')).toBeInTheDocument()
+    expect(within(table).getByText('+$6.20')).toHaveClass('text-positive')
+    expect(within(table).getByText('+$38.12')).toHaveClass('text-positive')
+    expect(within(table).getByText('-$4.05')).toHaveClass('text-negative')
     expect(within(table).getByText('Paused')).toBeInTheDocument()
-    expect(within(table).getAllByText('No Position')).toHaveLength(2)
+    expect(within(table).getAllByText('No Position')).toHaveLength(1)
   })
 
   it('starts on My Accounts with exchange orders available and supports tab switching', async () => {

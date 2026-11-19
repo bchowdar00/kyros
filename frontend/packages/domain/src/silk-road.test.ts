@@ -83,16 +83,16 @@ describe('SeriesListPageSchema', () => {
       items: [
         {
           assetType: 'btc',
-          frequency: '2m',
+          frequency: '5m',
           id: 100_001,
           marketType: 'updown',
-          slug: 'btc-updown-2m',
+          slug: 'btc-updown-5m',
           status: 'SERIES_STATUS_ACTIVE',
-          title: 'BTC 2-minute',
+          title: 'BTC 5-minute',
         },
       ],
     })
 
-    expect(parsed.items[0]?.slug).toBe('btc-updown-2m')
+    expect(parsed.items[0]?.slug).toBe('btc-updown-5m')
   })
 })

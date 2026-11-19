@@ -8,7 +8,9 @@ export interface HomeScreenProps {
 export function HomeScreen({ cards }: HomeScreenProps) {
   return (
     <main className="mx-auto w-full max-w-[90rem] px-4xl py-4xl">
-      <h1 className="sr-only">Markets</h1>
+      <h1 className="mb-xl font-display text-display-lg font-bold tracking-display text-foreground">
+        Markets
+      </h1>
       {cards.length === 0 ? (
         <p className="text-body text-muted-foreground">No live markets right now.</p>
       ) : (

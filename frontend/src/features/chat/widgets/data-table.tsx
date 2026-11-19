@@ -1,7 +1,7 @@
 'use client'
 
-import { NanoChevronIcon } from '@tiny/ui/icons/nano-chevron-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import { NanoChevronIcon } from '@kyros/ui/icons/nano-chevron-icon'
+import { cn } from '@kyros/ui/lib/cn'
 import { type ReactNode, useState } from 'react'
 
 import { cellSortValue, type TableCell, TableCellContent } from './table-cells'

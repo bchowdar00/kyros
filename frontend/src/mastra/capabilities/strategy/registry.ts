@@ -1,5 +1,5 @@
-import { createRustExchangeClient, type ApiResult } from '@tiny/api'
-import type { RustSignal, RustSignalCatalogue } from '@tiny/domain'
+import { createRustExchangeClient, type ApiResult } from '@kyros/api'
+import type { RustSignal, RustSignalCatalogue } from '@kyros/domain'
 
 /**
  * The venue registry as the writer sees it. The exchange's signal catalogue

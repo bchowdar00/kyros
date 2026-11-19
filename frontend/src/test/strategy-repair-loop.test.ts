@@ -28,9 +28,9 @@ const summary = {
   strategy_id: 'Strategy_abc',
   name: authored.name,
   description: authored.description,
-  series: 'btc-2m',
-  subscriptions: ['btc-2m.current.price.v1'],
-  instruments: { market: 'btc-2m.current' },
+  series: 'btc-5m',
+  subscriptions: ['btc-5m.current.price.v1'],
+  instruments: { market: 'btc-5m.current' },
   params: [],
   legs: ['hunting', 'holding', 'done'],
   warnings: [

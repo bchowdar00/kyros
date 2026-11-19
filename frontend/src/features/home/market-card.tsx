@@ -1,4 +1,4 @@
-import { cn } from '@tiny/ui/lib/cn'
+import { cn } from '@kyros/ui/lib/cn'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { ComponentPropsWithRef, ReactNode } from 'react'
@@ -13,6 +13,14 @@ export interface MarketCardProps extends ComponentPropsWithRef<'section'> {
   outcomes: readonly [HomeMarketOutcome, HomeMarketOutcome]
   slug: string
   title: string
+}
+
+/* The exchange names its binary sides in capitals; a card says them as the market page does. */
+const spokenOutcomeLabels: Record<string, string> = {
+  DOWN: 'Down',
+  NO: 'No',
+  UP: 'Up',
+  YES: 'Yes',
 }
 
 function MarketCardArtwork({ artwork }: { artwork: MarketCardArtwork }) {
@@ -38,13 +46,7 @@ function MarketCardArtwork({ artwork }: { artwork: MarketCardArtwork }) {
               className="flex size-avatar-lg shrink-0 items-center justify-center rounded-pill border border-highlight bg-background"
               data-slot="market-card-thumbnail"
             >
-              <div
-                className={cn({
-                  'bg-asset-lakers': marketImage.tone === 'lakers',
-                  'bg-surface-raised': marketImage.tone !== 'lakers',
-                  'flex size-avatar-md items-center justify-center overflow-hidden rounded-pill': true,
-                })}
-              >
+              <div className="flex size-avatar-md items-center justify-center overflow-hidden rounded-pill bg-surface-raised">
                 <Image
                   alt=""
                   className={inset ? 'h-xl w-2xl' : 'size-avatar-md'}
@@ -81,14 +83,14 @@ export function MarketCard({
       {...props}
       aria-label={props['aria-label'] ?? title}
       className={cn({
-        'flex w-full max-w-market-card min-w-0 flex-col gap-3xl rounded-sm border-[0.5px] border-border-subtle bg-surface-subtle p-xl': true,
+        'flex w-full max-w-market-card min-w-0 flex-col gap-2xl rounded-md border-2 border-foreground bg-background p-xl': true,
         [className ?? '']: className !== undefined,
       })}
       data-slot="market-card"
     >
       <header className="flex flex-col gap-md" data-slot="market-card-header">
         {artwork ? <MarketCardArtwork artwork={artwork} /> : null}
-        <h2 className="text-heading-md font-regular">
+        <h2 className="font-display text-heading-md font-extrabold tracking-heading">
           <Link
             className="text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             href={`/market/${slug}`}
@@ -110,17 +112,15 @@ export function MarketCard({
             key={outcome.side}
           >
             <span
-              aria-hidden="true"
               className={cn({
-                'border-market-away bg-market-away/80': outcome.side === 'away',
-                'border-market-home bg-market-home/80': outcome.side === 'home',
-                'size-sm rounded-pill border-[0.5px]': true,
+                'font-mono font-bold': true,
+                'text-foreground': outcome.side === 'away',
+                'text-positive': outcome.side === 'home',
               })}
-            />
-            <span className="font-mono">
+            >
               {outcome.priceCents === undefined
-                ? outcome.label
-                : `${outcome.label} ${outcome.priceCents}¢`}
+                ? (spokenOutcomeLabels[outcome.label] ?? outcome.label)
+                : `${spokenOutcomeLabels[outcome.label] ?? outcome.label} ${outcome.priceCents}¢`}
             </span>
           </li>
         ))}

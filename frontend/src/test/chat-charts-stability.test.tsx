@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import type { ValueFormat } from '@tiny/ui/charts/lib/types'
+import type { ValueFormat } from '@kyros/ui/charts/lib/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { WidgetFreshness, WidgetSkeleton } from '@/features/chat/render/frames'

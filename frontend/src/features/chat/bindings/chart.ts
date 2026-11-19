@@ -1,6 +1,6 @@
 'use client'
 
-import type { RustSignal, RustSignalCatalogue } from '@tiny/domain'
+import type { RustSignal, RustSignalCatalogue } from '@kyros/domain'
 
 import { getPriceStream, IDLE_PRICE_STREAM } from '@/features/exchange-streams/price-stream'
 import { useSignalsStream } from '@/features/exchange-streams/use-signals-stream'

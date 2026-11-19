@@ -7,8 +7,8 @@ small React layers in `internal/`.
 ## Usage
 
 ```tsx
-import { MarketChart } from '@tiny/ui/charts/market-chart'
-import { ReferenceLine, TimeMarker } from '@tiny/ui/charts/chart-overlays'
+import { MarketChart } from '@kyros/ui/charts/market-chart'
+import { ReferenceLine, TimeMarker } from '@kyros/ui/charts/chart-overlays'
 
 <div className="h-[292px]">
   <MarketChart
@@ -52,9 +52,9 @@ The chart measures its container with a `ResizeObserver`; pass `width` and
 
 `children` render inside the plot's SVG group after the series; `overlays`
 render after the axes and outside the plot clip, which is where an axis-gutter
-mark such as `ValueFlag` (`@tiny/ui/charts/value-flag`, the live price label)
+mark such as `ValueFlag` (`@kyros/ui/charts/value-flag`, the live price label)
 belongs. Use
-`useChartGeometry()` from `@tiny/ui/charts/chart-overlays` to read `xScale`,
+`useChartGeometry()` from `@kyros/ui/charts/chart-overlays` to read `xScale`,
 `yScale`, `plot` and formatting and draw anything in pixel space:
 
 ```tsx
@@ -77,14 +77,14 @@ Simulation state and generators are mounted only by the `/charts` playground.
 Two composed cards own everything above the plot, so a market looks the same
 wherever it is rendered — the market screen and /charts import the same file:
 
-- `PriceMarketCard` (`@tiny/ui/charts/price-market-card`): a market that
+- `PriceMarketCard` (`@kyros/ui/charts/price-market-card`): a market that
   resolves on a price against a target. Headline, compact asset-price / probability
   toggle, live price flag, strike line. Given `round`, the run-up before the
   open draws dimmed behind an "Open" marker (`MarketChart`'s `dimBefore`), so a
   new round starts with the move that led into it instead of an empty plot.
   The line ends 12% short of the axis gutter (`MarketChart`'s `trailingSpace`),
   so the tip and its value flag sit apart; ticks continue into the gap.
-- `ProbabilityMarketCard` (`@tiny/ui/charts/probability-market-card`): a
+- `ProbabilityMarketCard` (`@kyros/ui/charts/probability-market-card`): a
   two-outcome market over a scheduled window. Both live probabilities and period markers. The second outcome is the first one's complement,
   because two outcomes always sum to 100.
 
@@ -93,7 +93,7 @@ Both render supplied observations. `chartClassName` sets the plot height (`h-cha
 
 ## Price headline
 
-`PriceHeadline` (`@tiny/ui/charts/price-headline`) is the four-stat block
+`PriceHeadline` (`@kyros/ui/charts/price-headline`) is the four-stat block
 above a price chart: target, current price, change, and time left. The
 market screen and /charts render the same component, so the two cannot drift.
 The app owns the market clock and passes `timeLeft`, or `PriceMarketCard` can
@@ -102,7 +102,7 @@ from the same integer cent amounts. Digit animations share a 180ms transition;
 signs and currency symbols stay outside the reels. Degraded feeds stay visibly
 labelled beside the current delta.
 
-## Data helpers (`@tiny/ui/charts/lib/*`)
+## Data helpers (`@kyros/ui/charts/lib/*`)
 
 - `candles`: `aggregateCandles(points, intervalMs, range?)`, `CANDLE_INTERVALS`.
 - `stroke`: the drawn form of a line. `extendStroke` keeps an append-only

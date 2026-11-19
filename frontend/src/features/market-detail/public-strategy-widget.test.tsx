@@ -1,9 +1,9 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
-import { cents } from '@tiny/money'
+import { cents } from '@kyros/money'
 
 import { ChatPanel } from './chat-panel'
 import type { StrategyDeploy, StrategyDeployRequest } from './exchange/deploy'
@@ -46,7 +46,7 @@ describe('public strategy widget', () => {
       const user = userEvent.setup()
       const { container } = renderStrategies(`strategy-${action}`)
       const strategy = PUBLIC_STRATEGY_FIXTURES[0]
-      const composer = screen.getByRole('textbox', { name: 'Message Teeny' })
+      const composer = screen.getByRole('textbox', { name: 'Message Kyros' })
       await user.type(composer, 'Keep this draft')
       const trigger = screen.getByRole('button', { name: `${action} ${strategy.title}` })
       await user.click(trigger)
@@ -141,7 +141,7 @@ describe('public strategy widget', () => {
     renderStrategies('deploy-blocked', {
       availableBalanceCents: undefined,
       reason: 'Waiting for the exchange account snapshot.',
-      notice: 'Exchange refused: insufficient_balance: insufficient balance',
+      notice: 'Not deployed. Insufficient balance.',
       submit: () => Promise.resolve(false),
     })
     await user.click(
@@ -151,7 +151,7 @@ describe('public strategy widget', () => {
     await waitFor(() =>
       expect(screen.getByText('Waiting for the exchange account snapshot.')).toBeVisible()
     )
-    expect(screen.getByRole('status')).toHaveTextContent('insufficient balance')
+    expect(screen.getByRole('status')).toHaveTextContent('Not deployed. Insufficient balance.')
   })
 
   it('refuses to deploy a strategy whose signals the exchange is still waiting on', async () => {

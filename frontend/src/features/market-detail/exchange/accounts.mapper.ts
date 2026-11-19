@@ -1,5 +1,5 @@
-import type { RustAccountRow } from '@tiny/domain'
-import { type Cents, cents, createMoneyFormatter } from '@tiny/money'
+import type { RustAccountRow } from '@kyros/domain'
+import { type Cents, cents, createMoneyFormatter } from '@kyros/money'
 
 import type { MarketOutcome, MyStrategy, StrategyPosition } from '../types'
 

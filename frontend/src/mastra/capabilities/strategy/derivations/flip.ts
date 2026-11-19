@@ -100,7 +100,7 @@ export const momentumFlip: Derivation = {
   document: {
     name: 'Momentum Flip',
     description:
-      'On the 2-minute BTC up/down: when either side crosses above 70 cents, buy that side with half the round budget. While holding, if the held side falls below 50 cents, sell the whole position at market and buy the other side with the dollars released, then watch that side the same way. Ten seconds before the close, stop and hold to settlement.',
+      'On the 5-minute BTC up/down: when either side crosses above 70 cents, buy that side with half the round budget. While holding, if the held side falls below 50 cents, sell the whole position at market and buy the other side with the dollars released, then watch that side the same way. Ten seconds before the close, stop and hold to settlement.',
     ...bookOnly(),
     ...noExtras(),
     triggers: [

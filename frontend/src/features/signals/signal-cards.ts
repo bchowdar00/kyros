@@ -1,4 +1,4 @@
-import type { RustSignal, RustSignalCatalogue } from '@tiny/domain'
+import type { RustSignal, RustSignalCatalogue } from '@kyros/domain'
 
 import { type PinKey, pinKey } from './signal-catalogue'
 import { formatSignalValue, isNumericField } from './signal-value-format'
@@ -87,7 +87,7 @@ function runOn(venue: string, text: string): string {
   return `${venue} ${lowered}`
 }
 
-/** The shape of a signal id: `btc.coinbase.rsi.v1`, `btc-2m.current.stats.v1`. */
+/** The shape of a signal id: `btc.coinbase.rsi.v1`, `btc-5m.current.stats.v1`. */
 const SIGNAL_ID = /^[a-z0-9-]+\.[a-z0-9_-]+\.[a-z0-9_]+\.v\d+$/
 
 /**

@@ -32,10 +32,10 @@ describe('buildContentSecurityPolicy', () => {
   it('adds the API origin to connect-src', () => {
     const policy = buildContentSecurityPolicy({
       ...production,
-      connectSources: ['https://api.tiny.xyz'],
+      connectSources: ['https://api.kyros.example'],
     })
 
-    expect(policy).toContain("connect-src 'self' https://api.tiny.xyz")
+    expect(policy).toContain("connect-src 'self' https://api.kyros.example")
   })
 })
 

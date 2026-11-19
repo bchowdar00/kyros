@@ -1,6 +1,6 @@
-import { buildLinePath } from '@tiny/ui/charts/lib/path'
-import { createLinearScale } from '@tiny/ui/charts/lib/scale'
-import { cn } from '@tiny/ui/lib/cn'
+import { buildLinePath } from '@kyros/ui/charts/lib/path'
+import { createLinearScale } from '@kyros/ui/charts/lib/scale'
+import { cn } from '@kyros/ui/lib/cn'
 
 export type TableCell =
   | { kind: 'text'; text: string; muted?: boolean }

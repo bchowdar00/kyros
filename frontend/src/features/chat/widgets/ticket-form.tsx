@@ -1,8 +1,8 @@
 'use client'
 
-import { Button } from '@tiny/ui/components/button'
-import { cents, createMoneyFormatter, estimateWinningPayout } from '@tiny/money'
-import { cn } from '@tiny/ui/lib/cn'
+import { Button } from '@kyros/ui/components/button'
+import { cents, createMoneyFormatter, estimateWinningPayout } from '@kyros/money'
+import { cn } from '@kyros/ui/lib/cn'
 import { type FormEvent, useId, useState } from 'react'
 
 import { WidgetFrame } from '../widget-frame'

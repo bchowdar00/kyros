@@ -1,6 +1,6 @@
-import type { EventDetail, MarketRecord } from '@tiny/domain'
-import { CANDLE_INTERVALS } from '@tiny/ui/charts/lib/candles'
-import { MINUTE, SECOND } from '@tiny/ui/charts/lib/time'
+import type { EventDetail, MarketRecord } from '@kyros/domain'
+import { CANDLE_INTERVALS } from '@kyros/ui/charts/lib/candles'
+import { MINUTE, SECOND } from '@kyros/ui/charts/lib/time'
 
 import { decimalToNumber } from './price-tick'
 import type { MarketPriceChartData } from './types'

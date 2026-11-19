@@ -1,4 +1,4 @@
-import { cents, createMoneyFormatter } from '@tiny/money'
+import { cents, createMoneyFormatter } from '@kyros/money'
 
 import { Card } from '../widgets/card'
 

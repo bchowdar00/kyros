@@ -1,4 +1,4 @@
-import { EntityIdSchema } from '@tiny/domain'
+import { EntityIdSchema } from '@kyros/domain'
 import * as z from 'zod/mini'
 
 import { toActiveMarketIdentity } from '@/features/market-detail/active-market.mapper'

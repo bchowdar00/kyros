@@ -1,4 +1,4 @@
-import { cents, type Cents } from '@tiny/money'
+import { cents, type Cents } from '@kyros/money'
 
 import type { AccountState } from './account'
 

@@ -1,4 +1,4 @@
-import { cents, probabilityBps } from '@tiny/money'
+import { cents, probabilityBps } from '@kyros/money'
 import * as z from 'zod/mini'
 
 /** Series, Event, Market and Outcome ids are independent six-digit integers. */
@@ -7,7 +7,7 @@ export const EntityIdSchema = z.int().check(z.minimum(100_001), z.maximum(999_99
 /** Identity strings are stored lowercase by the backend. */
 export const SlugSchema = z.string().check(z.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/))
 
-/** A category is a path: `sports/basketball/nba`, `crypto/bitcoin/up-or-down/5m`. */
+/** A category is a path: `crypto/bitcoin/up-or-down/5m`. */
 export const CategoryPathSchema = z.string().check(z.regex(/^[a-z0-9-]+(?:\/[a-z0-9-]+)*$/))
 
 export const IsoDateTimeSchema = z.iso.datetime()

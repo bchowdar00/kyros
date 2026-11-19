@@ -1,5 +1,5 @@
-import type { RustStrategyTemplate } from '@tiny/domain'
-import { cents } from '@tiny/money'
+import type { RustStrategyTemplate } from '@kyros/domain'
+import { cents } from '@kyros/money'
 import { describe, expect, it } from 'vitest'
 
 import { deployable, toPublicStrategies, toPublicStrategy } from './strategy-template.mapper'
@@ -7,8 +7,8 @@ import { deployable, toPublicStrategies, toPublicStrategy } from './strategy-tem
 const template: RustStrategyTemplate = {
   id: 'fair-value-discount',
   title: 'Buy the side the model says is cheap',
-  series: ['btc-2m', 'btc-15m'],
-  creator: { handle: '@tiny', username: 'Tiny', avatar: 'strategy-01.jpg' },
+  series: ['btc-5m', 'btc-15m'],
+  creator: { handle: '@kyros', username: 'Kyros', avatar: 'strategy-01.jpg' },
   envelope: { loss_budget_fraction: '0.5', max_order_size: '50' },
   primary: {
     name: 'Fair Value Discount',
@@ -48,9 +48,9 @@ describe('strategy template mapper', () => {
     expect(strategy.logic).toBe('Buy Up under fair.')
     expect(strategy.inverseLogic).toBe('Buy Down under fair.')
     expect(strategy.creator).toEqual({
-      handle: '@tiny',
-      username: 'Tiny',
-      avatar: { alt: '@tiny avatar', src: '/assets/market/avatars/strategy-01.jpg' },
+      handle: '@kyros',
+      username: 'Kyros',
+      avatar: { alt: '@kyros avatar', src: '/assets/market/avatars/strategy-01.jpg' },
     })
     expect(strategy.runningCount).toBe(4)
     expect(strategy.deployedCents).toBe(cents(300_001))
@@ -66,7 +66,7 @@ describe('strategy template mapper', () => {
       runners: [],
     })
 
-    expect(strategy.creator).toEqual({ handle: '@tiny', username: 'Tiny' })
+    expect(strategy.creator).toEqual({ handle: '@kyros', username: 'Kyros' })
     expect('avatar' in strategy.creator).toBe(false)
     expect('runners' in strategy).toBe(false)
     expect('waitingOn' in strategy).toBe(false)
@@ -86,7 +86,7 @@ describe('strategy template mapper', () => {
 
   it('keeps catalogue order and hides the cards that cannot deploy yet', () => {
     const list = toPublicStrategies({
-      series: 'btc-2m',
+      series: 'btc-5m',
       templates: [template, waiting, { ...template, id: 'late-closer' }],
     })
 

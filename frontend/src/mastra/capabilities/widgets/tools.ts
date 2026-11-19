@@ -1,6 +1,6 @@
 import { createTool } from '@mastra/core/tools'
-import type { RustExchangeClient, ApiResult } from '@tiny/api'
-import type { RustSeriesInfo, RustSignalCatalogue } from '@tiny/domain'
+import type { RustExchangeClient, ApiResult } from '@kyros/api'
+import type { RustSeriesInfo, RustSignalCatalogue } from '@kyros/domain'
 import * as z from 'zod/mini'
 
 // Server code must never import a `'use client'` module: Next hands it client references,
@@ -232,7 +232,7 @@ export function createWidgetTools(baseUrl: string | undefined) {
   const showChart = createTool({
     id: 'show-chart',
     description:
-      'Draw a live chart in the reply: the default answer to any question about what a signal, a price or a market measure is doing, even when the user did not ask for a chart. kind "chart": one to four references on a time axis over window_ms (default four minutes): a signal field {type:"signal", id, field} from search_signals (on an NBA series that is how you chart the scores, the margin and the model win probability: two fields of one signal are two references), a market measure {type:"market", measure:"up"|"bid"|"ask"|"last"} where "up" is the quoted side whatever the series calls it (Up on BTC, Home on NBA), and on BTC series only the BTC price {type:"spot"} or {type:"strike"}; set show_strike with spot to shade the winning side, mark_open to mark the round open. kind "candles": BTC spot as candles with bucket_ms, BTC series only. The chart keeps updating after you answer; never restate its values as facts you computed.',
+      'Draw a live chart in the reply: the default answer to any question about what a signal, a price or a market measure is doing, even when the user did not ask for a chart. kind "chart": one to four references on a time axis over window_ms (default four minutes): a signal field {type:"signal", id, field} from search_signals, a market measure {type:"market", measure:"up"|"bid"|"ask"|"last"} where "up" is the quoted side whatever the series calls it (Up on BTC), and on BTC series only the BTC price {type:"spot"} or {type:"strike"}; set show_strike with spot to shade the winning side, mark_open to mark the round open. kind "candles": BTC spot as candles with bucket_ms, BTC series only. The chart keeps updating after you answer; never restate its values as facts you computed.',
     inputSchema: ChartInput,
     execute: (input, context) => accept(input, context),
   })
@@ -248,7 +248,7 @@ export function createWidgetTools(baseUrl: string | undefined) {
   const showMarket = createTool({
     id: 'show-market',
     description:
-      'Draw the round at a glance. kind "market": spot against the strike with YES, spread, clock, volume and open interest (BTC series only; on an NBA series chart the scores and the model instead). kind "stats": the round’s volume, open interest, collateral, trades, traders and largest trade, on every series. Both stay live.',
+      'Draw the round at a glance. kind "market": spot against the strike with YES, spread, clock, volume and open interest (BTC series only). kind "stats": the round’s volume, open interest, collateral, trades, traders and largest trade, on every series. Both stay live.',
     inputSchema: MarketInput,
     execute: (input, context) => accept(input, context),
   })

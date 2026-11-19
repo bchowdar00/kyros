@@ -8,11 +8,11 @@ import { ChatPanel } from '@/features/market-detail/chat-panel'
 import { MARKET_DETAIL_FIXTURES } from '@/features/market-detail/market-detail.fixture'
 
 const server = setupServer()
-const panel = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].chatPanel
+const panel = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].chatPanel
 const answer = `${[
   { type: 'start', messageId: 'answer' },
   { type: 'text-start', id: 'text' },
-  { type: 'text-delta', id: 'text', delta: 'Hello from Teeny.' },
+  { type: 'text-delta', id: 'text', delta: 'Hello from Kyros.' },
   { type: 'text-end', id: 'text' },
   { type: 'finish' },
 ]
@@ -23,7 +23,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-describe('Teeny chat', () => {
+describe('Kyros chat', () => {
   it('replaces public strategies with the submitted message and streamed answer', async () => {
     server.use(
       http.post(
@@ -37,10 +37,10 @@ describe('Teeny chat', () => {
     const user = userEvent.setup()
     render(<ChatPanel data={panel} />)
     expect(screen.getByRole('heading', { name: panel.sectionTitle })).toBeVisible()
-    await user.type(screen.getByRole('textbox', { name: 'Message Teeny' }), 'Hello{Enter}')
+    await user.type(screen.getByRole('textbox', { name: 'Message Kyros' }), 'Hello{Enter}')
     expect(screen.queryByRole('heading', { name: panel.sectionTitle })).not.toBeInTheDocument()
     expect(screen.getByRole('article', { name: 'You' })).toHaveTextContent('Hello')
-    expect(await screen.findByText('Hello from Teeny.')).toBeVisible()
+    expect(await screen.findByText('Hello from Kyros.')).toBeVisible()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled())
   })
 
@@ -103,11 +103,11 @@ describe('Teeny chat', () => {
     )
     const user = userEvent.setup()
     render(<ChatPanel data={panel} />)
-    await user.type(screen.getByRole('textbox', { name: 'Message Teeny' }), 'BTC price?{Enter}')
+    await user.type(screen.getByRole('textbox', { name: 'Message Kyros' }), 'BTC price?{Enter}')
     expect(await screen.findByText('Checking price feeds…')).toBeVisible()
     expect(await screen.findByText('The price feed is unavailable.')).toBeVisible()
-    await user.type(screen.getByRole('textbox', { name: 'Message Teeny' }), 'Try again{Enter}')
-    expect(await screen.findByText('Hello from Teeny.')).toBeVisible()
+    await user.type(screen.getByRole('textbox', { name: 'Message Kyros' }), 'Try again{Enter}')
+    expect(await screen.findByText('Hello from Kyros.')).toBeVisible()
     expect(attempts).toBe(2)
   })
 
@@ -128,10 +128,10 @@ describe('Teeny chat', () => {
     )
     const user = userEvent.setup()
     render(<ChatPanel data={panel} />)
-    await user.type(screen.getByRole('textbox', { name: 'Message Teeny' }), 'Hello{Enter}')
+    await user.type(screen.getByRole('textbox', { name: 'Message Kyros' }), 'Hello{Enter}')
     expect(await screen.findByRole('alert')).toHaveTextContent('couldn’t finish')
     await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByText('Hello from Teeny.')).toBeVisible()
+    expect(await screen.findByText('Hello from Kyros.')).toBeVisible()
     expect(screen.getAllByRole('article', { name: 'You' })).toHaveLength(1)
   })
   it('stops a pending response without clearing a new draft', async () => {
@@ -145,8 +145,8 @@ describe('Teeny chat', () => {
     )
     const user = userEvent.setup()
     render(<ChatPanel data={panel} />)
-    await user.type(screen.getByRole('textbox', { name: 'Message Teeny' }), 'Hello{Enter}')
-    const input = screen.getByRole('textbox', { name: 'Message Teeny' })
+    await user.type(screen.getByRole('textbox', { name: 'Message Kyros' }), 'Hello{Enter}')
+    const input = screen.getByRole('textbox', { name: 'Message Kyros' })
     await user.type(input, 'My next question')
     await user.click(screen.getByRole('button', { name: 'Stop response' }))
     await waitFor(() => expect(screen.getByRole('button', { name: 'Send message' })).toBeEnabled())
@@ -154,7 +154,7 @@ describe('Teeny chat', () => {
     expect(screen.getByRole('article', { name: 'You' })).toHaveTextContent('Hello')
   })
 
-  it("renders Teeny's Markdown as prose and keeps the user's asterisks literal", async () => {
+  it("renders Kyros's Markdown as prose and keeps the user's asterisks literal", async () => {
     const reply = `${[
       { type: 'start', messageId: 'formatted' },
       { type: 'text-start', id: 'text' },
@@ -179,10 +179,10 @@ describe('Teeny chat', () => {
     )
     const user = userEvent.setup()
     render(<ChatPanel data={panel} />)
-    await user.type(screen.getByRole('textbox', { name: 'Message Teeny' }), 'what is 2 ** 3{Enter}')
+    await user.type(screen.getByRole('textbox', { name: 'Message Kyros' }), 'what is 2 ** 3{Enter}')
     expect(screen.getByRole('article', { name: 'You' })).toHaveTextContent('what is 2 ** 3')
 
-    const teeny = await screen.findByRole('article', { name: 'Teeny' })
+    const teeny = await screen.findByRole('article', { name: 'Kyros' })
     expect(
       within(teeny)
         .getAllByRole('listitem')

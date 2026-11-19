@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
 import { SignalSparkline } from './signal-sparkline'

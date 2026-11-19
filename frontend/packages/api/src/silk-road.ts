@@ -3,7 +3,7 @@ import {
   SeriesListPageSchema,
   type EventDetail,
   type SeriesListPage,
-} from '@tiny/domain'
+} from '@kyros/domain'
 import * as z from 'zod/mini'
 
 import { type ApiClient, type ApiClientOptions, createApiClient } from './client'

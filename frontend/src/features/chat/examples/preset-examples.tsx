@@ -16,7 +16,7 @@ import { DEMO_START, DEMO_TIME_ZONE, demoWalk } from './demo-series'
 export function MarketCardExample() {
   return (
     <MarketCard
-      series="BTC 2m"
+      series="BTC 5m"
       secondsRemaining={47}
       spotCents={7_278_305}
       strikeCents={7_275_414}
@@ -31,7 +31,7 @@ export function MarketCardExample() {
 export function PositionCardExample() {
   return (
     <PositionCard
-      series="BTC 2m"
+      series="BTC 5m"
       contracts={100}
       entryCents={58}
       markCents={62}
@@ -91,7 +91,7 @@ export function PriceVsStrikeExample() {
 }
 
 export function OrderBookExample() {
-  return <OrderBook series="BTC 2m" asks={DEMO_ASKS} bids={DEMO_BIDS} />
+  return <OrderBook series="BTC 5m" asks={DEMO_ASKS} bids={DEMO_BIDS} />
 }
 
 export function StatusListExample() {
@@ -144,13 +144,13 @@ const RECENT_ROUNDS = [-31, 12, 48, -9, 22, 67, -54, -18, 5, 39, 27, 14].map((mo
 }))
 
 export function RoundResultsExample() {
-  return <RoundResults series="BTC 2m" rounds={RECENT_ROUNDS} />
+  return <RoundResults series="BTC 5m" rounds={RECENT_ROUNDS} />
 }
 
 export function FillLogExample() {
   return (
     <FillLog
-      series="BTC 2m"
+      series="BTC 5m"
       fills={[
         { id: 'f6', side: 'YES', action: 'sell', priceCents: 64, size: 40, time: '2:32:51' },
         { id: 'f5', side: 'YES', action: 'buy', priceCents: 58, size: 60, time: '2:32:04' },
@@ -164,5 +164,5 @@ export function FillLogExample() {
 }
 
 export function EdgeGaugeExample() {
-  return <EdgeGauge series="BTC 2m" fairCents={65} marketCents={62} />
+  return <EdgeGauge series="BTC 5m" fairCents={65} marketCents={62} />
 }

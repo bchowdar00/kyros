@@ -1,5 +1,5 @@
 {
-  "extends": "@tiny/typescript-config/library.json",
+  "extends": "@kyros/typescript-config/library.json",
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
 }

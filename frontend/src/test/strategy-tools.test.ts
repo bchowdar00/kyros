@@ -17,7 +17,7 @@ function chatOn(marketSlug: string) {
   requestContext.set('resourceId', 'r')
   return { requestContext, observe: noopObserve }
 }
-const onMarket = chatOn('btc-2m')
+const onMarket = chatOn('btc-5m')
 const standalone = chatOn('standalone-chat')
 const brief = {
   series: 'whatever',
@@ -43,15 +43,15 @@ describe('strategy tools', () => {
     server.use(
       http.get('http://exchange.test/api/signals', () =>
         HttpResponse.json({
-          series: 'btc-2m',
+          series: 'btc-5m',
           underlying: 'btc',
           signals: [
             {
-              signal_id: 'btc-2m.current.price.v1',
+              signal_id: 'btc-5m.current.price.v1',
               name: 'Market Price',
               description: 'Top of book. Up side.',
               location: 'internal',
-              scope: { kind: 'series', series_id: 'btc-2m' },
+              scope: { kind: 'series', series_id: 'btc-5m' },
               live: true,
               quality: { state: 'ready', reasons: [] },
               fields: [{ name: 'up', label: 'Up', type: 'decimal', headline: true }],
@@ -62,8 +62,8 @@ describe('strategy tools', () => {
       http.get('http://exchange.test/api/series', () =>
         HttpResponse.json([
           {
-            series: 'btc-2m',
-            duration_secs: 120,
+            series: 'btc-5m',
+            duration_secs: 300,
             current_market_id: 1,
             opens_at_ms: 1,
             closes_at_ms: 2,
@@ -73,11 +73,11 @@ describe('strategy tools', () => {
     )
     expect(await tools.listMarketSignals.execute?.({}, onMarket)).toEqual({
       status: 'ok',
-      series: 'btc-2m',
-      roundSeconds: 120,
+      series: 'btc-5m',
+      roundSeconds: 300,
       signals: [
         {
-          id: 'btc-2m.current.price.v1',
+          id: 'btc-5m.current.price.v1',
           name: 'Market Price',
           summary: 'Top of book.',
           fields: 'up:decimal',
@@ -96,9 +96,9 @@ describe('strategy tools', () => {
     const proposal = await tools.proposeCompilation.execute?.(brief, onMarket)
     expect(proposal).toMatchObject({
       status: 'proposed',
-      brief: { ...brief, series: 'btc-2m' },
+      brief: { ...brief, series: 'btc-5m' },
     })
-    expect(proposal).toHaveProperty('summary', expect.stringContaining('Market: btc-2m'))
+    expect(proposal).toHaveProperty('summary', expect.stringContaining('Market: btc-5m'))
     expect(proposal).toHaveProperty(
       'money',
       '$100 in, sees $10 per round, up to $2.50 per order, stops after losing $100'
@@ -120,48 +120,6 @@ describe('strategy tools', () => {
         { label: 'Whichever side qualifies', reason: 'The rule picks the side when it fires' },
       ],
       recommended: 2,
-    })
-  })
-
-  it('offers the NBA market’s own sides and fills them into the brief', async () => {
-    const nba = [
-      {
-        series: 'nba-h2h',
-        duration_secs: 300,
-        underlying: 'nba',
-        outcomes: ['home', 'away'],
-        current_market_id: 1,
-        opens_at_ms: 0,
-        closes_at_ms: 1,
-      },
-    ]
-    server.use(http.get('http://exchange.test/api/series', () => HttpResponse.json(nba)))
-    const onNba = chatOn('nba-h2h')
-    const asked = await tools.askQuestion.execute?.(
-      { kind: 'side', question: '', options: [], recommended: null },
-      onNba
-    )
-    expect(asked).toMatchObject({
-      options: [{ label: 'Home' }, { label: 'Away' }, { label: 'Whichever side qualifies' }],
-    })
-    const proposal = await tools.proposeCompilation.execute?.({ ...brief, outcome: 'away' }, onNba)
-    expect(proposal).toMatchObject({
-      status: 'proposed',
-      brief: { series: 'nba-h2h', outcome: 'away', sides: ['home', 'away'] },
-    })
-    expect(proposal).toHaveProperty(
-      'summary',
-      expect.stringContaining('Market: nba-h2h (sides: home, the quoted side, and away)')
-    )
-    // The quoted frame's names still read (`up` is the quoted side); a team name does not.
-    expect(
-      await tools.proposeCompilation.execute?.({ ...brief, outcome: 'up' }, onNba)
-    ).toMatchObject({ status: 'proposed' })
-    expect(
-      await tools.proposeCompilation.execute?.({ ...brief, outcome: 'lakers' }, onNba)
-    ).toEqual({
-      status: 'side_problem',
-      problem: '`lakers` is not a side of this market; it is home, away or either.',
     })
   })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@tiny/ui/components/button'
+import { Button } from '@kyros/ui/components/button'
 import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 

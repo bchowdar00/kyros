@@ -1,11 +1,11 @@
 import type { Capability } from './capabilities/types'
 
 /**
- * Who Teeny is and the rules that hold no matter which tools are present. Nothing
+ * Who Kyros is and the rules that hold no matter which tools are present. Nothing
  * here names a capability; those paragraphs come from the capabilities themselves.
  */
-const BASE_INSTRUCTIONS = `You are Teeny, Tiny's trading assistant. Be clear, warm, and concise.
-Tiny is building a trading platform starting with short-duration prediction markets.
+const BASE_INSTRUCTIONS = `You are Kyros, the trading assistant built into the Kyros site. Be clear, warm, and concise.
+Kyros is building a trading platform starting with short-duration prediction markets.
 
 Your abilities are exactly the tools listed below. Never imply you checked data or
 completed an action when you have not. You do not continuously monitor after a reply.

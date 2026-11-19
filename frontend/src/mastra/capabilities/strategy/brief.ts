@@ -3,14 +3,14 @@ import { described } from './describe'
 import { type Sides, sidesOf } from './sides'
 
 /**
- * The strategy brief: what Teeny agrees with the user before anything is built. It is
+ * The strategy brief: what Kyros agrees with the user before anything is built. It is
  * written in the user's terms; the writer turns it into a document. Every slot is
  * required so the model states its assumption instead of leaving a hole.
  */
 export const StrategyBriefSchema = z.object({
   series: described(
     z.string(),
-    'The market series slug this chat is open on, e.g. `btc-2m`. Filled in from the page; never asked.'
+    'The market series slug this chat is open on, e.g. `btc-5m`. Filled in from the page; never asked.'
   ),
   summary: described(
     z.string(),
@@ -31,7 +31,7 @@ export const StrategyBriefSchema = z.object({
   ),
   outcome: described(
     z.string(),
-    'Which side to buy, by the market’s own label: `up` or `down` on a BTC series, `home` or `away` on an NBA series; `either` when the rule picks the side at fire time.'
+    'Which side to buy, by the market’s own label: `up` or `down` on a BTC series; `either` when the rule picks the side at fire time.'
   ),
   sides: described(
     z.optional(z.array(z.string())),

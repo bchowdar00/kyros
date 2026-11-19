@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { formatExchangeTicks } from '@tiny/money'
-import { Button } from '@tiny/ui/components/button'
+import { formatExchangeTicks } from '@kyros/money'
+import { Button } from '@kyros/ui/components/button'
 
 import type { MarketOutcome } from '../types'
 import type { AccountState } from './account'

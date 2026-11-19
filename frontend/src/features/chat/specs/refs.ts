@@ -19,7 +19,7 @@ export const SignalRefSchema = z.object({
 export const SpotRefSchema = z.object({ type: z.literal('spot') })
 
 /**
- * The market's own price of the quoted side (`up` on BTC, `home` on NBA): its probability
+ * The market's own price of the quoted side (`up` on BTC): its probability
  * (`up`, whatever the series calls the side), best bid, best ask or last trade.
  */
 export const MarketRefSchema = z.object({

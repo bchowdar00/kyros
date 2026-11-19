@@ -1,9 +1,9 @@
 'use client'
 
-import { useBrowserTimeZone } from '@tiny/ui/lib/use-browser-time-zone'
+import { useBrowserTimeZone } from '@kyros/ui/lib/use-browser-time-zone'
 import { MarketPriceSummary } from './market-price-summary'
 import { MarketCountdown } from './market-countdown'
-import { PriceMarketCard } from '@tiny/ui/charts/price-market-card'
+import { PriceMarketCard } from '@kyros/ui/charts/price-market-card'
 
 import { env } from '@/env'
 

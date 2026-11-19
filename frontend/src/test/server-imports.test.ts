@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * The chat route and Teeny's tools run on the server. A `'use client'` module imported
+ * The chat route and Kyros's tools run on the server. A `'use client'` module imported
  * there is not a module but a bundle of client references, and calling one throws at
  * request time with the route's generic "could not respond" text. This walks the server
  * entry points' value imports and names the first client module reached, so the break

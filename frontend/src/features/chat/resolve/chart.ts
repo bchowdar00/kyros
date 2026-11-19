@@ -1,5 +1,5 @@
-import { MINUTE, SECOND } from '@tiny/ui/charts/lib/time'
-import type { ChartPoint, ValueFormat } from '@tiny/ui/charts/lib/types'
+import { MINUTE, SECOND } from '@kyros/ui/charts/lib/time'
+import type { ChartPoint, ValueFormat } from '@kyros/ui/charts/lib/types'
 
 import { type FieldPresentation, shareAxis } from '@/features/signals/signal-presentation'
 import type { ChartSpec, Ref } from '../specs'

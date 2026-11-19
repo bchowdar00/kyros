@@ -24,7 +24,7 @@ describe('MarketDetailLayout', () => {
   })
 
   it('composes the completed feature sections without placeholders', () => {
-    render(<MarketDetailScreen market={MARKET_DETAIL_FIXTURES['nba-bos-la-083126']} />)
+    render(<MarketDetailScreen market={MARKET_DETAIL_FIXTURES['btc-above-118k-0903']} />)
 
     expect(screen.queryByRole('region', { name: /placeholder$/i })).not.toBeInTheDocument()
   })

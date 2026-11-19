@@ -1,31 +1,19 @@
-import { cents } from '@tiny/money'
+import { cents } from '@kyros/money'
 
-import { CANDLE_INTERVALS } from '@tiny/ui/charts/lib/candles'
+import { CANDLE_INTERVALS } from '@kyros/ui/charts/lib/candles'
 import {
   complementProbabilityPoints,
   createMockPricePoints,
   createMockProbabilityPoints,
-} from '@tiny/ui/charts/lib/mock'
-import { createSeededRandom } from '@tiny/ui/charts/lib/tape'
-import { HOUR, MINUTE, SECOND } from '@tiny/ui/charts/lib/time'
-import type { ChartWindow } from '@tiny/ui/charts/chart-window'
+} from '@kyros/ui/charts/lib/mock'
+import { createSeededRandom } from '@kyros/ui/charts/lib/tape'
+import { HOUR, MINUTE, SECOND } from '@kyros/ui/charts/lib/time'
+import type { ChartWindow } from '@kyros/ui/charts/chart-window'
 
 import type { MarketDetail } from './types'
 import { PUBLIC_STRATEGY_FIXTURES } from './public-strategies.fixture'
 
 const gameTimeZone = 'America/New_York'
-/** 7:00 PM ET on August 31, 2026. */
-const gameStart = Date.UTC(2026, 7, 31, 23, 0)
-const gameEnd = gameStart + 90 * MINUTE
-const latestTick = gameStart + 78 * MINUTE
-const probabilityPointCount = 10_000
-
-const awayProbabilityPoints = createMockProbabilityPoints({
-  count: probabilityPointCount,
-  range: { end: latestTick, start: gameStart },
-  seed: 0x31b05a1,
-})
-
 /** 12:30 PM ET on September 3, 2026; the market resolves five minutes later. */
 const btcWindowStart = Date.UTC(2026, 8, 3, 16, 30)
 const btcWindowEnd = btcWindowStart + 5 * MINUTE
@@ -108,166 +96,6 @@ const btcVolumePoints = createMockPricePoints({
 })
 
 export const MARKET_DETAIL_FIXTURES = {
-  'nba-bos-la-083126': {
-    category: 'NBA',
-    header: {
-      outcomes: [
-        { label: 'BOS', priceCents: 31, probability: 31, side: 'away' },
-        { label: 'LAL', priceCents: 69, probability: 69, side: 'home' },
-      ],
-      surfaceImage: {
-        alt: '',
-        src: '/assets/market/header-surface.png',
-      },
-      subtitle: 'Boston Celtics at Los Angeles Lakers',
-      teams: [
-        {
-          abbreviation: 'BOS',
-          id: 'boston-celtics',
-          logo: {
-            alt: 'Boston Celtics logo',
-            src: '/assets/market/teams/boston-celtics.svg',
-          },
-          name: 'Boston Celtics',
-          side: 'away',
-        },
-        {
-          abbreviation: 'LAL',
-          id: 'los-angeles-lakers',
-          logo: {
-            alt: 'Los Angeles Lakers logo',
-            src: '/assets/market/teams/los-angeles-lakers.svg',
-          },
-          logoInset: true,
-          name: 'Los Angeles Lakers',
-          side: 'home',
-        },
-      ],
-      title: 'Celtics at Lakers',
-    },
-    myStrategies: {
-      rows: [
-        {
-          id: 'manual-trades',
-          name: 'Manual Trades',
-          position: { valueCents: cents(2920), label: '40 LAL', shares: 40, side: 'home' },
-          status: 'active',
-          totalPnlCents: cents(200),
-          trades: 1,
-        },
-        {
-          id: 'momentum-flips',
-          name: 'Buy the leader every time momentum flips',
-          position: { valueCents: cents(8840), label: '65 BOS', shares: 65, side: 'away' },
-          status: 'active',
-          totalPnlCents: cents(21084),
-          trades: 4,
-        },
-        {
-          id: 'halftime-leaders',
-          name: 'Buy halftime leaders, hold to buzzer',
-          status: 'paused',
-          totalPnlCents: cents(-910),
-          trades: 3,
-        },
-        {
-          id: 'final-quarter-dips',
-          name: 'Buy every dip below 30¢ in the final quarter',
-          status: 'active',
-          totalPnlCents: cents(-10),
-          trades: 2,
-        },
-      ],
-      tabs: [
-        { id: 'strategies', label: 'My Accounts' },
-        { id: 'open-orders', label: 'Open Orders' },
-        { id: 'trade-history', label: 'Trade History' },
-      ],
-      title: 'My Accounts',
-    },
-    orderBook: {
-      actionLabel: 'Center order book on spread',
-      asks: [
-        { priceCents: 58, shares: 195.33, totalUsd: 1903.58 },
-        { priceCents: 57, shares: 210.22, totalUsd: 1724.88 },
-        { priceCents: 56, shares: 89.66, totalUsd: 1088.81 },
-        { priceCents: 55, shares: 116.95, totalUsd: 1030.04 },
-        { priceCents: 54, shares: 446.2, totalUsd: 760 },
-        { priceCents: 53, shares: 661, totalUsd: 519.05 },
-        { priceCents: 52, shares: 151.79, totalUsd: 168.72 },
-        { priceCents: 51, shares: 119.78, totalUsd: 89.79 },
-        { priceCents: 50, shares: 57.4, totalUsd: 28.7 },
-      ],
-      bids: [
-        { priceCents: 49, shares: 50, totalUsd: 25.5 },
-        { priceCents: 48, shares: 445.8, totalUsd: 238.58 },
-        { priceCents: 47, shares: 519.38, totalUsd: 482.79 },
-        { priceCents: 46, shares: 420.3, totalUsd: 676.13 },
-        { priceCents: 45, shares: 289.9, totalUsd: 806.37 },
-        { priceCents: 44, shares: 531.51, totalUsd: 1289.66 },
-      ],
-      columnLabels: ['Price', 'Shares', 'Total'],
-      spreadCents: 1,
-      spreadLabel: 'Spread',
-      spreadPercentage: 1,
-      title: 'Order Book',
-    },
-    probabilityChart: {
-      commentary: 'Lebron James scores a 3 pointer from 30 feet.',
-      live: true,
-      range: { end: gameEnd, start: gameStart },
-      series: [
-        { label: 'BOS', points: awayProbabilityPoints, side: 'away' },
-        { label: 'LAL', points: complementProbabilityPoints(awayProbabilityPoints), side: 'home' },
-      ],
-      timeZone: gameTimeZone,
-    },
-    scoreboard: {
-      awayScore: 90,
-      clock: '01:58',
-      homeScore: 95,
-      period: 'Q4',
-    },
-    signals: {
-      browseLabel: 'Browse All',
-      items: [
-        { id: 'market-volume', label: 'Market Volume', value: '$988,463.38' },
-        { id: 'open-interest', label: 'Open Interest', value: '$72,680' },
-        { id: 'active-strategies', label: 'Active Strategies', value: '201' },
-        { id: 'largest-lead', label: 'Largest Lead', side: 'home', value: 'LAL +14' },
-        { id: 'largest-run', label: 'Largest Run', side: 'away', value: 'BOS 6-0' },
-        { id: 'lead-changes', label: 'Lead Changes', value: '11' },
-        { id: 'points-last-five', label: 'Points Last 5m', side: 'home', value: 'LAL +7' },
-        { id: 'lead-duration', label: 'Lead Duration', side: 'home', value: '1:42' },
-      ],
-      title: 'Signals',
-      total: 167,
-    },
-    slug: 'nba-bos-la-083126',
-    chatPanel: {
-      composer: {
-        addContextLabel: 'Add strategy context',
-        dismissTipLabel: 'Dismiss strategy tip',
-        inputLabel: 'Strategy instructions',
-        placeholder: 'Create a new strategy....',
-        submitLabel: 'Create strategy',
-        tipLinkLabel: 'signals',
-        tipPrefix: 'Tip: your strategy can reference all 167 live',
-      },
-      defaultSortId: 'most-running',
-      defaultSortLabel: 'Most Running',
-      publicStrategies: PUBLIC_STRATEGY_FIXTURES,
-      sectionTitle: 'Public Strategies',
-      sortLabel: 'Sort',
-      sortOptions: [
-        { id: 'most-running', label: 'Most Running' },
-        { id: 'most-deployed', label: 'Most Deployed' },
-      ],
-      subtitle: 'Start with a proven one or write your own below',
-      title: 'Deploy an Automated Trading Strategy',
-      view: 'strategies',
-    },
-  },
   'btc-above-118k-0903': {
     category: 'Crypto',
     header: {
@@ -411,7 +239,7 @@ export const MARKET_DETAIL_FIXTURES = {
         addContextLabel: 'Add strategy context',
         dismissTipLabel: 'Dismiss strategy tip',
         inputLabel: 'Strategy instructions',
-        placeholder: 'Create a new strategy....',
+        placeholder: 'Write your own sentence…',
         submitLabel: 'Create strategy',
         tipLinkLabel: 'signals',
         tipPrefix: 'Tip: your strategy can reference all 167 live',

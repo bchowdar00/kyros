@@ -14,9 +14,6 @@ function toFixtureCard(market: MarketDetail): HomeMarketCardModel | undefined {
   return {
     category: market.category,
     live: chart.live,
-    ...(market.scoreboard === undefined
-      ? {}
-      : { marketStatus: `${market.scoreboard.period} ${market.scoreboard.clock}` }),
     outcomes: [
       {
         label: away.label,

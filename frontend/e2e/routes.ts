@@ -21,9 +21,7 @@ export const smokeRoutes = [
 ] as const
 
 /**
- * Destinations the navigation links to before their routes exist (see `plannedRoute` in
- * src/lib/routes.ts). They answer a designed 404 (noindex) by intent. Next prefetches them
- * and logs a 404. Remove each entry when its route lands; the smoke test then fails on
- * that 404 again.
+ * Destinations the navigation links to before their routes exist. There are none: the
+ * masthead links only to screens that are built, so any 404 the smoke test sees is a fault.
  */
-export const plannedDestinations = new Set(['/leaderboard', '/profile', '/rewards', '/strategies'])
+export const plannedDestinations = new Set<string>()

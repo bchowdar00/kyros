@@ -1,5 +1,5 @@
-import { RustPriceFrameSchema } from '@tiny/domain'
-import type { ChartFeed, ChartPoint } from '@tiny/ui/charts/lib/types'
+import { RustPriceFrameSchema } from '@kyros/domain'
+import type { ChartFeed, ChartPoint } from '@kyros/ui/charts/lib/types'
 
 import { createSharedStream, createStreamRegistry, type SharedStream } from './shared-stream'
 import { openDemoSocket } from './socket'
@@ -13,7 +13,7 @@ export interface PriceStreamState {
   feed: ChartFeed
   points: readonly ChartPoint[]
   /** The open round, from the exchange's `/ws/price` snapshot and resets. `strike` is
-   * `undefined` for a series whose rounds have none (an NBA game). */
+   * `undefined` for a series whose rounds have none. */
   round?: { marketId: number; strike?: number; opensAt: number; closesAt: number }
 }
 
@@ -65,7 +65,7 @@ function createPriceStream(
               points: snapshot.points,
               round: {
                 marketId: frame.market_id,
-                // A zero strike is the exchange's "no strike" (an NBA round).
+                // A zero strike is the exchange's "no strike".
                 ...(frame.strike === 0 ? {} : { strike: frame.strike }),
                 opensAt: frame.opens_at_ms,
                 closesAt: frame.closes_at_ms,

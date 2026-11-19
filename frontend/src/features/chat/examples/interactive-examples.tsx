@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { cents, createMoneyFormatter } from '@tiny/money'
+import { cents, createMoneyFormatter } from '@kyros/money'
 
 import { Picker } from '../widgets/picker'
 import { ScenarioSlider } from '../widgets/scenario-slider'
@@ -94,7 +94,7 @@ export function TicketExample() {
   return (
     <TicketForm
       label="Trade ticket"
-      title="Buy on BTC 2m"
+      title="Buy on BTC 5m"
       prices={{ YES: 58, NO: 43 }}
       onSubmit={setLastOrder}
     />

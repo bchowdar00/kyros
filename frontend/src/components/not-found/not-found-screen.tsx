@@ -1,4 +1,4 @@
-import { Button } from '@tiny/ui/components/button'
+import { Button } from '@kyros/ui/components/button'
 import Link from 'next/link'
 
 interface NotFoundScreenProps {

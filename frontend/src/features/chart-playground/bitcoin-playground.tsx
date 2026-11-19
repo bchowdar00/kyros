@@ -1,9 +1,9 @@
 'use client'
 
-import { useBrowserTimeZone } from '@tiny/ui/lib/use-browser-time-zone'
+import { useBrowserTimeZone } from '@kyros/ui/lib/use-browser-time-zone'
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { Button } from '@tiny/ui/components/button'
-import { PriceMarketCard } from '@tiny/ui/charts/price-market-card'
+import { Button } from '@kyros/ui/components/button'
+import { PriceMarketCard } from '@kyros/ui/charts/price-market-card'
 
 import { BITCOIN_SCENARIOS, type BitcoinScenario, createBitcoinDemo } from './bitcoin-demo'
 

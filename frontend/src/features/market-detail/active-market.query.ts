@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { createApiClient, type ApiResult } from '@tiny/api'
+import { createApiClient, type ApiResult } from '@kyros/api'
 
 import { ActiveMarketSchema } from './active-market'
 

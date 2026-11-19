@@ -116,7 +116,7 @@ the executable REST/Connect routes, not that intended contract.
 
 ## Recommended network boundary
 
-- `SILKROAD_API_URL` is server-only. Server loaders call Silk Road through `@tiny/api`; the browser
+- `SILKROAD_API_URL` is server-only. Server loaders call Silk Road through `@kyros/api`; the browser
   does not need direct durable-state access or Silk Road CORS.
 - `NEXT_PUBLIC_PRICE_FEEDS_URL` is the one browser-visible origin required for native `EventSource`.
   Add only its origin to CSP `connect-src` and its exact Tiny origin to Price Feeds CORS.

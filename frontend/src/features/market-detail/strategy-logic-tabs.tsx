@@ -1,10 +1,10 @@
 'use client'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@tiny/ui/components/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kyros/ui/components/tabs'
 import { LayoutGroup, motion, useReducedMotion } from 'motion/react'
 import { useId, useState } from 'react'
 
-import { CardExpansionAnimation } from '@tiny/ui/lib/card-expansion-animation'
+import { CardExpansionAnimation } from '@kyros/ui/lib/card-expansion-animation'
 
 interface StrategyLogicTabsProps {
   logic: string

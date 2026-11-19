@@ -3,7 +3,7 @@ import { described } from './describe'
 import { BTC_SIDES, type Sides, capitalize } from './sides'
 
 /**
- * The questions Teeny may ask while filling a brief, as a catalogue keyed by the brief
+ * The questions Kyros may ask while filling a brief, as a catalogue keyed by the brief
  * slot that is ambiguous. A catalogue kind carries canned short labels so the answers
  * are consistent, one keystroke, and applied to the brief by kind rather than
  * re-interpreted. `custom` is the escape hatch for a genuinely new ambiguity; its

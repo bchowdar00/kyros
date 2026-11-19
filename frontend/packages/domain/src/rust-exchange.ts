@@ -11,36 +11,74 @@ export const RustPriceTicksSchema = z.int().check(z.minimum(1), z.maximum(999))
 const tenths = z.int()
 const unixMs = z.int().check(z.minimum(0))
 
-/** Three-letter NBA team code, as the simulated league carries it. */
-export const RustTeamCodeSchema = z.string().check(z.regex(/^[A-Z]{3}$/))
+/** What a round opened on: a BTC round's strike. */
+export const RustRoundReferenceSchema = z.object({ strike_btc_usd: z.number() })
 
 /**
- * What a round opened on: a BTC round's strike, or an NBA round's matchup with the sharp
- * pregame home win probability captured at open and the world's game number.
+ * What the exchange follows on Gemini for one series. `env` is where the book and the
+ * results come from; `phase` is where the series stands between Gemini's windows; `book`
+ * says whether the mirrored book is being fed (`stale` after ten quiet seconds). The
+ * contract fields are absent between rounds.
  */
-export const RustRoundReferenceSchema = z.union([
-  z.object({ strike_btc_usd: z.number() }),
-  z.object({
-    home_team: RustTeamCodeSchema,
-    away_team: RustTeamCodeSchema,
-    pregame_home_prob: z.number(),
-    game_seq: z.int(),
-  }),
-])
+export const RustGeminiSeriesSchema = z.object({
+  env: z.enum(['production', 'sandbox']),
+  /** Gemini's series code, e.g. `BTC05M`. */
+  series: z.string(),
+  phase: z.enum(['waiting_for_window', 'open', 'waiting_for_result']),
+  book: z.enum(['waiting', 'live', 'stale']),
+  event_ticker: z.optional(z.string()),
+  /** Gemini's instrument symbol for the Up contract. */
+  symbol: z.optional(z.string()),
+  /** A decimal string, exactly as Gemini publishes the strike. */
+  strike: z.optional(z.string()),
+  starts_at_ms: z.optional(unixMs),
+  expires_at_ms: z.optional(unixMs),
+})
 
 export const RustSeriesInfoSchema = z.object({
   series: RustSeriesSlugSchema,
   duration_secs: z.int().check(z.minimum(1)),
-  /** `btc` or `nba`; absent on an exchange that predates NBA series. */
+  /** The series underlying, e.g. `btc`; absent on an older exchange. */
   underlying: z.optional(z.string()),
-  /** Outcome labels, positive side first (`up`/`down`, `home`/`away`). */
+  /** Outcome labels, positive side first (`up`/`down`). */
   outcomes: z.optional(z.array(z.string())),
   current_market_id: z.nullable(z.int()),
   opens_at_ms: z.nullable(unixMs),
   closes_at_ms: z.nullable(unixMs),
   reference: z.optional(RustRoundReferenceSchema),
+  /** Absent when the exchange is not following Gemini. */
+  gemini: z.optional(RustGeminiSeriesSchema),
 })
 export const RustSeriesListSchema = z.array(RustSeriesInfoSchema)
+
+const hash32 = z.string().check(z.regex(/^0x[0-9a-f]{64}$/))
+
+/** One settled round of a deployment. `tx_hash` is null until the seal is on chain. */
+export const RustSealViewSchema = z.object({
+  round_id: z.int().check(z.minimum(0)),
+  won: z.boolean(),
+  pnl_cents: z.int(),
+  journal_hash: hash32,
+  tx_hash: z.nullable(hash32),
+  /** Lines in the round's journal, served at `/api/records/{id}/{round_id}/journal`. */
+  lines: z.int().check(z.minimum(0)),
+})
+
+/**
+ * `GET /api/records/{id}`: a deployment's on-chain record. `{id}` is the deployment id or
+ * the sub-account address. `open_tx` is null until the deployment is recorded on chain.
+ */
+export const RustRecordViewSchema = z.object({
+  deployment_id: hash32,
+  account: RustAddressSchema,
+  series: RustSeriesSlugSchema,
+  deployment: z.string(),
+  strategy_id: z.string(),
+  program_hash: hash32,
+  budget_cents: z.int().check(z.minimum(0)),
+  open_tx: z.nullable(hash32),
+  seals: z.array(RustSealViewSchema),
+})
 
 const RustMarketStatusSchema = z.union([
   z.object({ kind: z.literal('open') }),
@@ -49,24 +87,17 @@ const RustMarketStatusSchema = z.union([
     outcome: z.enum(['yes', 'no']),
     /** BTC rounds only. */
     close_price_btc_usd: z.optional(z.number()),
-    /** NBA rounds only: the final score. */
-    home_score: z.optional(z.int()),
-    away_score: z.optional(z.int()),
   }),
 ])
 
 /**
  * One round, as returned by `GET /api/markets/history`. Timestamps are unix seconds. The
- * reference is flattened: a BTC round carries `strike_btc_usd`, an NBA round its matchup.
+ * reference is flattened: a BTC round carries `strike_btc_usd`.
  */
 export const RustMarketSchema = z.object({
   id: z.int(),
   series: z.optional(RustSeriesSlugSchema),
   strike_btc_usd: z.optional(z.number()),
-  home_team: z.optional(RustTeamCodeSchema),
-  away_team: z.optional(RustTeamCodeSchema),
-  pregame_home_prob: z.optional(z.number()),
-  game_seq: z.optional(z.int()),
   opened_at: z.int(),
   closes_at: z.int(),
   duration_secs: z.optional(z.int()),
@@ -595,6 +626,9 @@ export const RustAccountsFrameSchema = z.object({
 })
 
 export type RustSeriesInfo = z.infer<typeof RustSeriesInfoSchema>
+export type RustGeminiSeries = z.infer<typeof RustGeminiSeriesSchema>
+export type RustSealView = z.infer<typeof RustSealViewSchema>
+export type RustRecordView = z.infer<typeof RustRecordViewSchema>
 export type RustRoundReference = z.infer<typeof RustRoundReferenceSchema>
 export type RustMarket = z.infer<typeof RustMarketSchema>
 export type RustMarketStats = z.infer<typeof RustMarketStatsSchema>

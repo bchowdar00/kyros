@@ -1,8 +1,8 @@
 'use client'
 
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
-import { MiniXIcon } from '@tiny/ui/icons/mini-x-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
+import { MiniXIcon } from '@kyros/ui/icons/mini-x-icon'
+import { cn } from '@kyros/ui/lib/cn'
 import { useEffect, useId, useRef } from 'react'
 
 import type { SignalFieldCard } from '@/features/signals/signal-cards'

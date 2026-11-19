@@ -1,5 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
 import { ChatPlaygroundScreen } from '@/features/chat/chat-playground-screen'

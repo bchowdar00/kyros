@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { MARKET_DETAIL_FIXTURES } from '@/features/market-detail/market-detail.fixture'
 import { SignalsSection } from '@/features/market-detail/signals-section'
 
-const signals = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].signals
+const signals = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].signals
 
 describe('SignalsSection', () => {
   it('renders every fixture-backed signal in a horizontal list', () => {

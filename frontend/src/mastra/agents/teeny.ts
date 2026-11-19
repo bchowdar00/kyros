@@ -16,18 +16,18 @@ export const TEENY_MAX_STEPS = 8
 
 const { enabled, disabled } = partitionCapabilities(env)
 
-/** Every tool Teeny has in this environment, assembled from the capability registry. */
+/** Every tool Kyros has in this environment, assembled from the capability registry. */
 export const teenyTools = collectTools(env, enabled)
 
 /**
- * Teeny knows nothing about individual capabilities. Its prompt and its tool map
+ * Kyros knows nothing about individual capabilities. Its prompt and its tool map
  * are both derived from `capabilities/index.ts`, so a new capability changes this
  * file's behavior without changing this file.
  */
 export const teeny = new Agent({
   id: TEENY_AGENT_ID,
-  name: 'Teeny',
-  description: "Tiny's conversational assistant.",
+  name: 'Kyros',
+  description: "Kyros's conversational assistant.",
   instructions: buildInstructions(enabled, disabled),
   // Claude via Mastra's Anthropic route: tools stay on `auto` choice and no sampling
   // params are set, so the request meets the Opus/Sonnet 5.5 rules. Thinking stays on.

@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { RustOpenOrderRow, RustUserTradeRow } from '@tiny/domain'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import type { RustOpenOrderRow, RustUserTradeRow } from '@kyros/domain'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { MarketOutcome } from '../types'
@@ -22,7 +22,7 @@ const order = (
   id: number,
   side: 'bid' | 'ask'
 ): RustOpenOrderRow => ({
-  series: 'btc-2m',
+  series: 'btc-5m',
   order_id: id,
   market_id: 7,
   account,
@@ -35,7 +35,7 @@ const order = (
 })
 
 const trade = (id: number, strategy?: { id: string; name: string }): RustUserTradeRow => ({
-  series: 'btc-2m',
+  series: 'btc-5m',
   order_id: id,
   ts: id,
   side: strategy === undefined ? 'yes' : 'no',

@@ -1,4 +1,4 @@
-import { type RustTradeRow, RustTradesFrameSchema } from '@tiny/domain'
+import { type RustTradeRow, RustTradesFrameSchema } from '@kyros/domain'
 
 import { createSharedStream, createStreamRegistry, type SharedStream } from './shared-stream'
 import { openDemoSocket } from './socket'

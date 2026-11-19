@@ -1,7 +1,6 @@
-import { formatExchangeTicks } from '@tiny/money'
-import type { TimeRange } from '@tiny/ui/charts/lib/types'
-import { NanoDotIcon } from '@tiny/ui/icons/nano-dot-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import { formatExchangeTicks } from '@kyros/money'
+import type { TimeRange } from '@kyros/ui/charts/lib/types'
+import { cn } from '@kyros/ui/lib/cn'
 import Image from 'next/image'
 
 import { MarketBuyButton } from './market-buy-button'
@@ -22,17 +21,20 @@ const outcomeClasses: Record<MarketSide, string> = {
   home: 'border-market-home bg-market-home/80 hover:bg-market-home',
 }
 
+/* Up is the blue side and Down the ink side, everywhere: outlined at rest, filled on hover. */
+const upClasses =
+  'border-action text-positive hover:border-action hover:bg-action hover:text-on-action'
+const downClasses =
+  'border-foreground text-foreground hover:border-foreground hover:bg-foreground hover:text-background'
+
 const binaryOutcomeClasses = {
-  DOWN: 'border-negative bg-negative/80 hover:bg-negative/80',
-  NO: 'border-negative bg-negative/80 hover:bg-negative/80',
-  UP: 'border-positive bg-positive/80 text-foreground hover:bg-positive hover:text-foreground',
-  YES: 'border-positive bg-positive/80 text-foreground hover:bg-positive hover:text-foreground',
+  DOWN: downClasses,
+  NO: downClasses,
+  UP: upClasses,
+  YES: upClasses,
 } as const
 
-const marketNetwork = {
-  alt: '',
-  src: '/assets/market/bitcoin-network.svg',
-} as const
+const binaryOutcomeNames = { DOWN: 'Down', NO: 'No', UP: 'Up', YES: 'Yes' } as const
 
 function isBinaryOutcomeLabel(label: string): label is keyof typeof binaryOutcomeClasses {
   return label === 'DOWN' || label === 'NO' || label === 'UP' || label === 'YES'
@@ -51,7 +53,6 @@ export function MarketHeader({
   marketKey = marketSlug,
   outcomes,
   range,
-  surfaceImage,
   teams,
   title,
   tradingUnavailableReason,
@@ -78,16 +79,27 @@ export function MarketHeader({
                 aria-description={reason}
                 title={reason}
                 className={cn(
-                  'min-w-touch gap-xs whitespace-nowrap px-xl font-medium',
+                  'h-auto min-w-32 flex-col items-start gap-0 rounded-md border-2 px-lg pb-md pt-sm text-left',
                   getOutcomeClass(outcome, marketSlug)
                 )}
                 key={outcome.side}
                 size="large"
                 variant="secondary"
               >
-                <span>Buy {outcome.label}</span>
-                <NanoDotIcon className="text-muted-foreground" />
-                <span className="font-mono">{price ?? '—'}</span>
+                <span className="font-display text-heading-sm font-bold">
+                  Buy{' '}
+                  {isBinaryOutcomeLabel(outcome.label)
+                    ? binaryOutcomeNames[outcome.label]
+                    : outcome.label}
+                </span>
+                <span className="font-display text-price font-extrabold tracking-display">
+                  {price === undefined ? '—' : price.replace('¢', '')}
+                  {price === undefined ? null : (
+                    <span className="ml-px align-top text-heading-md font-bold tracking-normal">
+                      ¢
+                    </span>
+                  )}
+                </span>
               </MarketBuyButton>
             )
           })}
@@ -117,26 +129,9 @@ export function MarketHeader({
           </div>
         )
       }
-      background={
-        <>
-          <Image
-            alt={surfaceImage.alt}
-            className="object-cover"
-            fill
-            loading="eager"
-            sizes="(min-width: 1024px) 67vw, 100vw"
-            src={surfaceImage.src}
-          />
-          <div className="absolute inset-0 bg-background/50" />
-        </>
-      }
       identity={
         <div className="flex min-w-0 items-start gap-md">
-          {teams === undefined ? (
-            <div className="flex size-avatar-lg shrink-0 items-center justify-center rounded-full border border-border-subtle">
-              <Image alt={marketNetwork.alt} height={36} src={marketNetwork.src} width={36} />
-            </div>
-          ) : (
+          {teams === undefined ? null : (
             // The two sides' marks, away then home, overlapping like the home card's.
             <div className="flex shrink-0 items-center" data-slot="market-header-teams">
               {teams.map((team, index) => (
@@ -160,7 +155,9 @@ export function MarketHeader({
               ))}
             </div>
           )}
-          <h1 className="min-w-0 truncate text-display-md font-light text-foreground">{title}</h1>
+          <h1 className="min-w-0 truncate font-display text-display-md font-bold tracking-display text-foreground">
+            {title}
+          </h1>
         </div>
       }
       subtitle={range ? <MarketHeaderSubtitle marketSlug={marketSlug} range={range} /> : null}

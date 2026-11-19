@@ -21,8 +21,8 @@ describe('event detail mapper', () => {
     const card = toHomeMarketCard(series, detail)
     const market = toMarketDetail(series, detail)
 
-    expect(card?.title).toBe('BTC Up or Down 2m')
-    expect(market?.header.title).toBe('BTC Up or Down 2m')
+    expect(card?.title).toBe('BTC Up or Down 5m')
+    expect(market?.header.title).toBe('BTC Up or Down 5m')
     expect(card?.title).not.toContain('2026-09-05')
     expect(market?.header.title).not.toContain('2026-09-05')
   })

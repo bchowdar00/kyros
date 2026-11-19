@@ -1,7 +1,7 @@
 /**
  * The two sides of a market, as the series labels them. Every exchange book is one
  * canonical book in the quoted side: a BTC round quotes `up` and `down` is its
- * complement; an NBA round quotes `home` and `away` is its complement. The authoring
+ * complement. The authoring
  * machinery reasons in the quoted frame (`take_up` is "take the quoted side", a
  * positive position is the quoted side) and writes the series' own labels into the
  * document, because the compiler checks `outcome` against the registry verbatim.

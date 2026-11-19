@@ -10,6 +10,7 @@ import {
   RustPlaceOutcomeSchema,
   RustPositionFrameSchema,
   RustPriceSnapshotSchema,
+  RustRecordViewSchema,
   RustSeriesListSchema,
   RustSignalCatalogueSchema,
   RustSignalsHistorySchema,
@@ -30,6 +31,7 @@ import {
   type RustPlaceOutcome,
   type RustPositionFrame,
   type RustPriceSnapshot,
+  type RustRecordView,
   type RustSeriesInfo,
   type RustSignalCatalogue,
   type RustSignalsHistory,
@@ -38,7 +40,7 @@ import {
   type RustUserTrades,
   type RustStrategyTemplate,
   type RustStrategyTemplateCatalogue,
-} from '@tiny/domain'
+} from '@kyros/domain'
 import * as z from 'zod/mini'
 
 import { type ApiClientOptions, createApiClient } from './client'
@@ -114,6 +116,11 @@ export interface RustExchangeClient {
     input: RustCreateStrategyRequest
   ): Promise<ApiResult<RustCreateStrategyResponse>>
   getAccount(address: string, signal?: AbortSignal): Promise<ApiResult<RustAccount>>
+  /**
+   * A deployment's on-chain record, by deployment id or by sub-account address. A deployment
+   * the exchange holds no record for answers 404.
+   */
+  getRecord(id: string, signal?: AbortSignal): Promise<ApiResult<RustRecordView>>
   placeOrder(input: RustPlaceOrderInput): Promise<ApiResult<RustPlaceOutcome>>
   cancelOrder(orderId: number, address: string, series: string): Promise<ApiResult<undefined>>
   listStrategies(address: string, signal?: AbortSignal): Promise<ApiResult<RustStrategyList>>
@@ -341,6 +348,12 @@ export function createRustExchangeClient(options: ApiClientOptions): RustExchang
     getAccount(address, signal) {
       return client.get(`api/accounts/${address}`, {
         schema: RustAccountSchema,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+    getRecord(id, signal) {
+      return client.get(`api/records/${id}`, {
+        schema: RustRecordViewSchema,
         ...(signal === undefined ? {} : { signal }),
       })
     },

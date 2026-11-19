@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { PriceMarketCard } from '../charts/price-market-card'

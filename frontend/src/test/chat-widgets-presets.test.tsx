@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -31,7 +31,7 @@ describe('FillLog preset', () => {
   it('lists fills newest first and sorts by price on request', async () => {
     const user = userEvent.setup()
     const { container } = render(<FillLogExample />)
-    const frame = within(screen.getByRole('region', { name: 'BTC 2m fill log' }))
+    const frame = within(screen.getByRole('region', { name: 'BTC 5m fill log' }))
     expect(frame.getByText('6 in this round')).toBeVisible()
     const firstRow = () => frame.getAllByRole('row')[1]?.textContent ?? ''
     expect(firstRow()).toContain('Sell YES')
@@ -46,7 +46,7 @@ describe('FillLog preset', () => {
 describe('RoundResults preset', () => {
   it('names each outcome and reports the streak', async () => {
     const { container } = render(<RoundResultsExample />)
-    const frame = within(screen.getByRole('region', { name: 'BTC 2m recent round results' }))
+    const frame = within(screen.getByRole('region', { name: 'BTC 5m recent round results' }))
     expect(frame.getByText('8 up, 4 down')).toBeVisible()
     expect(frame.getAllByRole('listitem')).toHaveLength(12)
     expect(frame.getByRole('listitem', { name: 'Down 54 dollars' })).toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('StatusList preset', () => {
 describe('OrderBook preset', () => {
   it('derives imbalance and spread from the levels', async () => {
     const { container } = render(<OrderBookExample />)
-    const frame = within(screen.getByRole('region', { name: 'BTC 2m order book' }))
+    const frame = within(screen.getByRole('region', { name: 'BTC 5m order book' }))
     // Bids 7,055 against asks 4,836 over seven levels each.
     expect(frame.getByText(/^Imbalance \+0\.19$/)).toBeVisible()
     expect(frame.getByText('Spread 1¢')).toBeVisible()
@@ -110,7 +110,7 @@ describe('SignalChart preset', () => {
 describe('PositionCard preset', () => {
   it('values the position under both resolutions', async () => {
     const { container } = render(<PositionCardExample />)
-    const frame = within(screen.getByRole('region', { name: 'BTC 2m position' }))
+    const frame = within(screen.getByRole('region', { name: 'BTC 5m position' }))
     expect(frame.getByText('100 YES at 58¢')).toBeVisible()
     expect(frame.getByText('+$4.00')).toBeVisible()
     expect(frame.getByText('+$42.00')).toBeVisible()
@@ -122,7 +122,7 @@ describe('PositionCard preset', () => {
 describe('MarketCard preset', () => {
   it('shows spot, distance from strike, countdown and the six stats', async () => {
     const { container } = render(<MarketCardExample />)
-    const frame = within(screen.getByRole('region', { name: 'BTC 2m market' }))
+    const frame = within(screen.getByRole('region', { name: 'BTC 5m market' }))
     expect(frame.getByText('$72,783.05')).toBeVisible()
     expect(frame.getByText('+$28.91')).toBeVisible()
     expect(frame.getByText('T−0:47')).toBeVisible()

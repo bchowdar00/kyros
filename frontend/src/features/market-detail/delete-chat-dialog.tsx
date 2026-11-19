@@ -1,6 +1,6 @@
 'use client'
 
-import { MiniXIcon } from '@tiny/ui/icons/mini-x-icon'
+import { MiniXIcon } from '@kyros/ui/icons/mini-x-icon'
 import { useEffect, useId, useRef } from 'react'
 import type { SavedChat } from './saved-chat'
 
@@ -64,7 +64,7 @@ export function DeleteChatDialog({
         </header>
 
         <p className="text-body text-foreground">
-          This removes the conversation and everything Teeny said in it. There is no undo.
+          This removes the conversation and everything Kyros said in it. There is no undo.
         </p>
         {failed ? (
           <p role="alert" className="text-label text-muted-foreground">

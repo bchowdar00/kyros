@@ -17,7 +17,7 @@ function card(id: string, waiting: { signal_id: string; name: string }[]) {
     id,
     title: `${id} title`,
     series: ['btc-15m'],
-    creator: { handle: '@tiny', username: 'Tiny', avatar: null },
+    creator: { handle: '@kyros', username: 'Kyros', avatar: null },
     envelope: { loss_budget_fraction: '0.5', max_order_size: '50' },
     primary: { ...side, ready: waiting.length === 0, waiting_on: waiting },
     inverse: { ...side, ready: true, waiting_on: [] },

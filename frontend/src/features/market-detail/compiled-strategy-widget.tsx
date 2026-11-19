@@ -1,8 +1,8 @@
 'use client'
 
-import { Button } from '@tiny/ui/components/button'
-import { NanoChevronIcon } from '@tiny/ui/icons/nano-chevron-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import { Button } from '@kyros/ui/components/button'
+import { NanoChevronIcon } from '@kyros/ui/icons/nano-chevron-icon'
+import { cn } from '@kyros/ui/lib/cn'
 import { useId, useState } from 'react'
 import type { StrategyBrief } from '@/mastra/capabilities/strategy/brief'
 import { deriveEnvelope } from '@/mastra/capabilities/strategy/envelope'
@@ -31,9 +31,9 @@ interface CompiledStrategyWidgetProps {
 }
 
 /**
- * The deploy screen for a strategy Teeny just compiled: the same surface Run opens for a
+ * The deploy screen for a strategy Kyros just compiled: the same surface Run opens for a
  * public strategy, with the account's own tile and colour where a creator's photo would
- * be. The allocation is the one figure everyone sets; the rest of the bankroll Teeny
+ * be. The allocation is the one figure everyone sets; the rest of the bankroll Kyros
  * proposed sits under a disclosure, and the summary line always says what will run.
  */
 export function CompiledStrategyWidget({

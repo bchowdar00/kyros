@@ -67,7 +67,7 @@ packages/config     tsconfig and postcss presets.
 Dependencies point down: the app imports packages, a package never imports the app, `ui`
 never imports a feature. The three pure packages import no React, Next, or DOM and are
 tested in milliseconds. Nothing in `src/` consumes them yet; they exist so the first
-data-bound screen has a typed boundary to land on instead of inventing one. `@tiny/domain`
+data-bound screen has a typed boundary to land on instead of inventing one. `@kyros/domain`
 marks its two assumptions about the wire format and will be corrected against the real
 silk-road contract.
 
@@ -104,7 +104,7 @@ defend, and these rules do the defending:
 - **Server Components by default.** `'use client'` goes on the smallest interactive leaf.
 - **Nothing ships without a consumer.** No provider, store or SDK is mounted before the
   first component that needs it.
-- **Subpath imports only.** `@tiny/ui/components/button`, `radix-ui/tabs`, `zod/mini`. Root
+- **Subpath imports only.** `@kyros/ui/components/button`, `radix-ui/tabs`, `zod/mini`. Root
   barrels and the full `zod` build are banned by lint, along with lodash, axios and moment.
 - **One library per job**, and a written justification for any new dependency: what it
   replaces, its gzip size, alternatives searched. Over 20 KB gets `pnpm analyze` first.
@@ -124,8 +124,8 @@ defend, and these rules do the defending:
   `plannedRoute()`, so the debt is a grep away and disappears route by route.
 - **Branded money.** `Cents` and `Bps` are nominal types. A bare number is not accepted, a
   float cannot be constructed, and `applyBps` rounds half-to-even on `bigint`.
-- **Contracts at the boundary.** `@tiny/domain` mirrors silk-road field names verbatim;
-  renaming happens only in a `*.mapper.ts`. `@tiny/api` validates every response through
+- **Contracts at the boundary.** `@kyros/domain` mirrors silk-road field names verbatim;
+  renaming happens only in a `*.mapper.ts`. `@kyros/api` validates every response through
   a Standard Schema and returns a discriminated `ApiResult`, never a throw.
 - **Typed environment.** `env.ts` is the only reader of `process.env`, enforced by lint,
   validated at startup, public subset inlined at build.
@@ -168,7 +168,7 @@ already has the shape that rebuild needs: one cached server-only loader in
 `src/server`, a segment layout that resolves the market above the streaming
 boundary so an unknown slug is a real 404, and `loading`, `error` and `not-found` files.
 
-Next, in order: point the loader at silk-road through `@tiny/api`; a design-system pass in
+Next, in order: point the loader at silk-road through `@kyros/api`; a design-system pass in
 `packages/ui` for touch-safe sizes, a `Sheet`, `useMediaQuery` and a contrast fix on the
 `--market-away` token; then rebuild the market screen mobile-first on the canvas chart and
 add it to the gated routes.
@@ -191,7 +191,7 @@ Short records of choices that were not obvious.
   the shell, `notFound()` from the page can only produce a 200 with a `noindex` tag.
   Resolving the entity in `market/[slug]/layout.tsx` keeps the status honest. The lookup is
   wrapped in React `cache`, so the page pays nothing.
-- **`zod/mini` everywhere.** Schemas reach the client through `env.ts` and `@tiny/domain`.
+- **`zod/mini` everywhere.** Schemas reach the client through `env.ts` and `@kyros/domain`.
   Mini is a fraction of the full build; the full import is banned by lint.
 - **Budgets are measured in the browser, not from manifests.** Turbopack's output does not
   expose per-route client chunks; encoded bytes on the wire are what a phone pays.

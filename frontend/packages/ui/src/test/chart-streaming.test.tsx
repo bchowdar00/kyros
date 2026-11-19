@@ -1,5 +1,5 @@
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it, vi } from 'vitest'
 
 import { resolveChartData } from '../charts/internal/geometry'

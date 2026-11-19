@@ -1,11 +1,17 @@
-import { createMoneyFormatter } from '@tiny/money'
-import { Badge } from '@tiny/ui/components/badge'
-import { MiniForwardIcon } from '@tiny/ui/icons/mini-forward-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import { createMoneyFormatter } from '@kyros/money'
+import { Badge } from '@kyros/ui/components/badge'
+import { MiniForwardIcon } from '@kyros/ui/icons/mini-forward-icon'
+import { cn } from '@kyros/ui/lib/cn'
 
+import { RecordLine } from './record/record-line'
 import type { MarketSide, MyStrategy } from './types'
 
 export interface MyStrategyRowProps {
+  /**
+   * Exchange origin for this row's on-chain record line. Only a strategy sub-account has a
+   * record (its `id` is the sub-account address); leave it unset on the main account's row.
+   */
+  apiUrl?: string | undefined
   showDivider?: boolean
   strategy: MyStrategy
 }
@@ -17,7 +23,7 @@ const positionDotClasses: Record<MarketSide, string> = {
 
 const money = createMoneyFormatter('en-US')
 
-export function MyStrategyRow({ showDivider = false, strategy }: MyStrategyRowProps) {
+export function MyStrategyRow({ apiUrl, showDivider = false, strategy }: MyStrategyRowProps) {
   const pnlIsPositive = strategy.totalPnlCents >= 0
 
   return (
@@ -26,21 +32,21 @@ export function MyStrategyRow({ showDivider = false, strategy }: MyStrategyRowPr
         className="max-w-[300px] overflow-hidden py-xl pl-xl text-left font-regular align-middle"
         scope="row"
       >
-        <div className="flex min-w-0 items-center gap-sm">
-          <span
-            className="block min-w-0 flex-1 truncate text-body font-regular text-foreground"
-            title={strategy.name}
-          >
-            {strategy.name}
-          </span>
-          {strategy.status === 'paused' ? (
-            <Badge
-              className="h-[14px] shrink-0 border-0 bg-highlight px-[6px] py-0 text-caption font-semibold uppercase"
-              variant="neutral"
+        <div className="flex min-w-0 flex-col gap-xs">
+          <div className="flex min-w-0 items-center gap-sm">
+            <span
+              className="block min-w-0 flex-1 truncate font-display text-heading-sm font-bold text-foreground"
+              title={strategy.name}
             >
-              Paused
-            </Badge>
-          ) : null}
+              {strategy.name}
+            </span>
+            {strategy.status === 'paused' ? (
+              <Badge className="h-lg shrink-0 px-xs py-0 text-caption" variant="neutral">
+                Paused
+              </Badge>
+            ) : null}
+          </div>
+          {apiUrl === undefined ? null : <RecordLine address={strategy.id} apiUrl={apiUrl} />}
         </div>
       </th>
 

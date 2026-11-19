@@ -1,10 +1,10 @@
 'use client'
 
-import { formatValue } from '@tiny/ui/charts/lib/format'
-import type { Candle, ChartHover, ValueFormat } from '@tiny/ui/charts/lib/types'
-import { MarketChart } from '@tiny/ui/charts/market-chart'
-import { useLiveChartWindow } from '@tiny/ui/charts/use-live-chart-window'
-import { useTweenedNumber } from '@tiny/ui/charts/use-tweened-number'
+import { formatValue } from '@kyros/ui/charts/lib/format'
+import type { Candle, ChartHover, ValueFormat } from '@kyros/ui/charts/lib/types'
+import { MarketChart } from '@kyros/ui/charts/market-chart'
+import { useLiveChartWindow } from '@kyros/ui/charts/use-live-chart-window'
+import { useTweenedNumber } from '@kyros/ui/charts/use-tweened-number'
 import { type ReactNode, useState } from 'react'
 
 import { ChartShell } from './chart-shell'

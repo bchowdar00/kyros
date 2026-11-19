@@ -1,7 +1,7 @@
-import type { RustMarket, RustTradeRow } from '@tiny/domain'
-import { cents, createMoneyFormatter } from '@tiny/money'
-import { aggregateCandles } from '@tiny/ui/charts/lib/candles'
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
+import type { RustMarket, RustTradeRow } from '@kyros/domain'
+import { cents, createMoneyFormatter } from '@kyros/money'
+import { aggregateCandles } from '@kyros/ui/charts/lib/candles'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
 
 import type { BookState } from '@/features/exchange-streams/book-stream'
 import type { Fill, FillLogProps } from '../presets/fill-log'

@@ -1,4 +1,4 @@
-import type { ExchangeFeed, ExchangeLevel } from '@tiny/domain'
+import type { ExchangeFeed, ExchangeLevel } from '@kyros/domain'
 
 export interface FeedState {
   status: 'connecting' | 'live' | 'stale' | 'disconnected' | 'paused'

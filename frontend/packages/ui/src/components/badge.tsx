@@ -4,15 +4,15 @@ import type { ComponentPropsWithRef } from 'react'
 import { cn } from '../lib/cn'
 
 export const badgeVariants = cva(
-  'inline-flex h-2xl shrink-0 items-center justify-center rounded-xs border px-md text-label font-regular tracking-label',
+  'inline-flex h-2xl shrink-0 items-center justify-center rounded-sm border-[1.5px] px-md text-label font-bold',
   {
     variants: {
       variant: {
-        neutral: 'border-transparent bg-surface text-muted-foreground',
-        positive: 'border-positive/20 bg-positive-muted text-positive',
-        negative: 'border-negative/50 bg-negative/50 text-foreground',
-        warning: 'border-warning/50 bg-warning/20 text-warning',
-        action: 'border-action bg-action/80 text-foreground',
+        neutral: 'border-border-subtle bg-transparent text-muted-foreground',
+        positive: 'border-positive bg-transparent text-positive',
+        negative: 'border-foreground bg-foreground text-background',
+        warning: 'border-dashed border-muted-foreground bg-transparent text-foreground',
+        action: 'border-action bg-action text-on-action',
       },
     },
     defaultVariants: {

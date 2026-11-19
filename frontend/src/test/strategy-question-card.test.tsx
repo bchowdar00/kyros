@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import type { UIMessage } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { ChatMessages } from '@/features/market-detail/chat-messages'
@@ -50,7 +50,7 @@ describe('QuestionCard', () => {
     const { container } = render(
       <QuestionCard question={question} onAnswer={onAnswer} onDismiss={vi.fn()} />
     )
-    expect(screen.getByRole('heading', { name: 'Teeny needs a decision' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Kyros needs a decision' })).toBeInTheDocument()
     expect(screen.getAllByText('Which side should it buy?').length).toBeGreaterThan(0)
     const buttons = screen.getAllByRole('button')
     expect(buttons[0]).toHaveAccessibleName(/Whichever side qualifies.*Recommended/)

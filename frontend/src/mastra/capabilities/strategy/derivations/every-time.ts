@@ -66,7 +66,7 @@ export const everyTime: Derivation = {
   document: {
     name: 'Every Time Cooldown',
     description:
-      'On the 2-minute BTC up/down: whenever the up price sits under 45 cents, buy up at once with a tenth of the round budget, at most once every 5 seconds. Hold everything to settlement. Ten seconds before the close, stop buying.',
+      'On the 5-minute BTC up/down: whenever the up price sits under 45 cents, buy up at once with a tenth of the round budget, at most once every 5 seconds. Hold everything to settlement. Ten seconds before the close, stop buying.',
     ...bookOnly(),
     ...noExtras(),
     triggers: [

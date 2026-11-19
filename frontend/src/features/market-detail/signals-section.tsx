@@ -1,6 +1,6 @@
-import { ScrollFade } from '@tiny/ui/components/scroll-fade'
-import { SectionHeader } from '@tiny/ui/components/section-header'
-import { MiniForwardIcon } from '@tiny/ui/icons/mini-forward-icon'
+import { ScrollFade } from '@kyros/ui/components/scroll-fade'
+import { SectionHeader } from '@kyros/ui/components/section-header'
+import { MiniForwardIcon } from '@kyros/ui/icons/mini-forward-icon'
 
 import { SignalCard } from './signal-card'
 import type { SignalsData } from './types'

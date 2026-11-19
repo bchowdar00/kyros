@@ -14,7 +14,7 @@ live has nothing to read; say so. A live signal whose quality is degraded or war
 can still be shown; mention the quality. A failed or empty read_signals does not mean a
 live signal cannot be charted: the chart widget streams its own history, so show it and
 say what the read returned. Signal values describe the underlying and the
-venues, not Tiny odds or settlement truth, and a reading is not a prediction.`
+venues, not Kyros odds or settlement truth, and a reading is not a prediction.`
 
 export const SIGNALS_UNAVAILABLE =
   'The signal catalogue is not configured, so you cannot search or read signals right now; say so if asked.'

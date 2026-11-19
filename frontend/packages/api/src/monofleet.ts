@@ -1,4 +1,4 @@
-import { ExchangeAuthSchema } from '@tiny/domain'
+import { ExchangeAuthSchema } from '@kyros/domain'
 import { ApiError, type ApiResult } from './errors'
 
 /** Local development adapter for the token published by monofleet's served UI. */

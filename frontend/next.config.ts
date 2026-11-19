@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   typedRoutes: true,
   poweredByHeader: false,
-  transpilePackages: ['@tiny/ui'],
+  transpilePackages: ['@kyros/ui'],
   images: {
     // Only the widths the layouts use. The default list generates eight srcset candidates.
     deviceSizes: [390, 430, 768, 1024, 1440, 1920],

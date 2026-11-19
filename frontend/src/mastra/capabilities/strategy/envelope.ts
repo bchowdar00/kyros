@@ -51,7 +51,7 @@ export interface MoneySummary {
 
 export type DerivedEnvelope =
   | { ok: true; envelope: Envelope; money: MoneySummary }
-  /** A plain sentence Teeny can say back to the user. */
+  /** A plain sentence Kyros can say back to the user. */
   | { ok: false; problem: string }
 
 type Amount =

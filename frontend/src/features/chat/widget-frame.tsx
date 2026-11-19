@@ -1,4 +1,4 @@
-import { cn } from '@tiny/ui/lib/cn'
+import { cn } from '@kyros/ui/lib/cn'
 import type { ComponentPropsWithRef, ReactNode } from 'react'
 
 export interface WidgetFrameProps extends Omit<ComponentPropsWithRef<'section'>, 'title'> {

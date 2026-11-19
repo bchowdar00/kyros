@@ -1,1 +1,1 @@
-import '@tiny/testing/setup'
+import '@kyros/testing/setup'

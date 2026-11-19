@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
 import { ChatPanel } from './chat-panel'
@@ -45,7 +45,7 @@ describe('composer to buy widget', () => {
         quote: () => undefined,
         submit: () => {},
       })
-      const composer = screen.getByRole('textbox', { name: 'Message Teeny' })
+      const composer = screen.getByRole('textbox', { name: 'Message Kyros' })
       await user.type(composer, 'Keep my strategy draft')
       const trigger = screen.getByRole('button', { name: new RegExp(`Buy ${label} outcome`) })
       await user.click(trigger)
@@ -89,6 +89,6 @@ describe('composer to buy widget', () => {
     await user.click(screen.getByRole('button', { name: /Buy UP outcome/ }))
     await user.click(screen.getByRole('button', { name: 'Close buy widget' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(screen.getByRole('textbox', { name: 'Message Teeny' })).toBeVisible()
+    expect(screen.getByRole('textbox', { name: 'Message Kyros' })).toBeVisible()
   })
 })

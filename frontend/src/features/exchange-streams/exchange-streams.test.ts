@@ -8,7 +8,7 @@ import { MAX_TRADES, getTradesStream } from './trades-stream'
 const address = `0x${'ab'.repeat(20)}`
 const identity = { address, root_address: address }
 const trade = (ts: number, price = 500) => ({
-  series: 'btc-2m',
+  series: 'btc-5m',
   price,
   qty: 1,
   ts,
@@ -37,10 +37,10 @@ describe('book, trades and positions streams', () => {
     stream.subscribe(() => undefined)
     const socket = FakeWebSocket.instances[0]
     expect(socket?.url).toBe(`ws://localhost:8080/ws/book?series=s${run}`)
-    socket?.emit({ type: 'snapshot', series: 'btc-2m', bids: [{ price: 500, qty: 3 }], asks: [] })
+    socket?.emit({ type: 'snapshot', series: 'btc-5m', bids: [{ price: 500, qty: 3 }], asks: [] })
     socket?.emit({
       type: 'snapshot',
-      series: 'btc-2m',
+      series: 'btc-5m',
       bids: [{ price: 510, qty: 1 }],
       asks: [{ price: 520, qty: 2 }],
     })
@@ -59,7 +59,7 @@ describe('book, trades and positions streams', () => {
     const stream = getBookStream('http://localhost:8080', `s${run}`)
     stream.subscribe(() => undefined)
     const socket = FakeWebSocket.instances[0]
-    const book = { type: 'snapshot', series: 'btc-2m', bids: [], asks: [] }
+    const book = { type: 'snapshot', series: 'btc-5m', bids: [], asks: [] }
     socket?.emit({
       ...book,
       market_id: 3,
@@ -113,7 +113,7 @@ describe('book, trades and positions streams', () => {
     socket?.emit({
       type: 'position_snapshot',
       as_of_unix_ms: 9,
-      series: 'btc-2m',
+      series: 'btc-5m',
       market_id: 3,
       address,
       side: 'yes',

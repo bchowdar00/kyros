@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -113,7 +113,7 @@ describe('CodeBlock widget', () => {
     const { container } = render(<CodeExample />)
     await user.click(screen.getByRole('button', { name: 'Copy code' }))
     expect(await screen.findByRole('button', { name: 'Copied' })).toBeVisible()
-    expect(await navigator.clipboard.readText()).toContain('"series": "btc-2m"')
+    expect(await navigator.clipboard.readText()).toContain('"series": "btc-5m"')
     await expectNoA11yViolations(container)
   })
 })

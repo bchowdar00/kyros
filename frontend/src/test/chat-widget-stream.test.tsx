@@ -14,7 +14,7 @@ const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
-const panel = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].chatPanel
+const panel = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].chatPanel
 
 const sse = (chunks: object[]) =>
   `${chunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join('')}data: [DONE]\n\n`
@@ -85,7 +85,7 @@ describe('widgets in the transcript', () => {
     )
     const user = userEvent.setup()
     render(<ChatPanel data={panel} />)
-    await user.type(screen.getByRole('textbox', { name: 'Message Teeny' }), 'Show me RSI{Enter}')
+    await user.type(screen.getByRole('textbox', { name: 'Message Kyros' }), 'Show me RSI{Enter}')
     expect(await screen.findByText('Preparing a chart…')).toBeVisible()
     expect(await screen.findByRole('region', { name: 'The read' })).toBeVisible()
     expect(screen.getByText('low')).toBeVisible()

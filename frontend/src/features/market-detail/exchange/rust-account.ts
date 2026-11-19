@@ -3,7 +3,7 @@ import {
   type RustAccountsFrame,
   type RustPositionFrame,
   tenthsToMicros,
-} from '@tiny/domain'
+} from '@kyros/domain'
 
 import type { AccountState } from './account'
 

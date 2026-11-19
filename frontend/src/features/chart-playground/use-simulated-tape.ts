@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createSeededRandom } from '@tiny/ui/charts/lib/tape'
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
+import { createSeededRandom } from '@kyros/ui/charts/lib/tape'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
 
 const MAX_TICKS = 4_000
 

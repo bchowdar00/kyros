@@ -1,9 +1,9 @@
-import { cents, createMoneyFormatter } from '@tiny/money'
+import { cents, createMoneyFormatter } from '@kyros/money'
 
 import { Card } from '../widgets/card'
 
 export interface MarketCardProps {
-  /** Series name as the eyebrow, for example `BTC 2m`. */
+  /** Series name as the eyebrow, for example `BTC 5m`. */
   series: string
   /** Seconds until the round resolves. */
   secondsRemaining: number
@@ -26,7 +26,7 @@ function signedCents(value: number) {
   return `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value)}¢`
 }
 
-/** The whole round at a glance: what the agent shows for "tell me about the BTC 2m". */
+/** The whole round at a glance: what the agent shows for "tell me about the BTC 5m". */
 export function MarketCard({
   series,
   secondsRemaining,

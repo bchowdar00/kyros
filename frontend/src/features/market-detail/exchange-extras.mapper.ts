@@ -1,6 +1,6 @@
-import type { RustMarket, RustMarketStats } from '@tiny/domain'
-import { cents, createMoneyFormatter } from '@tiny/money'
-import type { RecentMarketResult } from '@tiny/ui/charts/recent-market-results'
+import type { RustMarket, RustMarketStats } from '@kyros/domain'
+import { cents, createMoneyFormatter } from '@kyros/money'
+import type { RecentMarketResult } from '@kyros/ui/charts/recent-market-results'
 
 import type { SignalsData } from './types'
 

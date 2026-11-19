@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Button } from '@tiny/ui/components/button'
+import { Button } from '@kyros/ui/components/button'
 import { BitcoinPlayground } from './bitcoin-playground'
 
 const ComparisonCharts = dynamic(

@@ -134,8 +134,7 @@ to the holding leg and is pulled by a timer.
 ## Sides: up and down are the quoted side and its complement
 
 Every market has two sides and the book quotes the first. This rulebook calls them up and
-down because the BTC series do; an NBA series calls them home and away, and its book's
-fields are \`home\`, \`away\`, \`bid\`, \`ask\` and \`last\` in the home frame. The prompt tells
+down because the BTC series do. The prompt tells
 you the labels of the market you are writing for. Read every up in these rules as the
 quoted side and every down as its complement, and write the market's own labels in
 \`outcome\`: the compiler checks them against the registry verbatim and refuses \`up\` on a
@@ -172,7 +171,7 @@ nothing to close on that side. Therefore:
 - Every order carries a \`tag\`; \`cancel\` and \`cancel_replace\` act on a tag. A
   cancel-replace is the maker's requote and is self-limiting; it needs no pacing.
 - \`instrument\` is always \`market\`; \`outcome\` is the quoted side or its complement in the
-  market's own labels (\`up\` or \`down\` on BTC, \`home\` or \`away\` on NBA).
+  market's own labels (\`up\` or \`down\` on BTC).
 
 ## Money
 
@@ -200,7 +199,7 @@ budget re-arms at settlement.
 - Declare every signal you read under a nickname and refer to it as
   \`signal.<nick>.<field>\`. Only listed fields exist. Use the ids exactly as given.
 - \`<series>.current.price.v1\` is the book: the quoted side and its complement under
-  their own names (up, down on BTC; home, away on NBA), then bid, ask, last (quoted side).
+  their own names (up, down on BTC), then bid, ask, last (quoted side).
 - \`<series>.current.window.v1\` is the round clock; wake on it only as a bare leaf.
 - One instrument, nicknamed \`market\`, id \`<series>.current\`. Prices are probabilities
   from 0.01 to 0.99; a contract pays 1 on the winning side.

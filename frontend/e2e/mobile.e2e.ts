@@ -10,7 +10,7 @@ test('a small viewport sees the coming-soon screen instead of the app', async ({
   const response = await page.goto('/')
 
   expect(response?.status()).toBe(200)
-  await expect(page.getByRole('heading', { name: 'Tiny is on desktop for now' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Kyros is on desktop for now' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeHidden()
 
   const results = await new AxeBuilder({ page })

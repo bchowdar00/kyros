@@ -1,4 +1,4 @@
-import type { RustBookFrame } from '@tiny/domain'
+import type { RustBookFrame } from '@kyros/domain'
 
 import type { FeedState } from './feed'
 

@@ -18,11 +18,11 @@ describe('rust exchange client', () => {
       http.get(`${baseUrl}/api/series`, () =>
         HttpResponse.json([
           {
-            series: 'btc-2m',
-            duration_secs: 120,
+            series: 'btc-5m',
+            duration_secs: 300,
             current_market_id: 7,
             opens_at_ms: 10,
-            closes_at_ms: 120_010,
+            closes_at_ms: 300_010,
           },
         ])
       ),
@@ -57,6 +57,41 @@ describe('rust exchange client', () => {
     })
   })
 
+  it('reads a deployment record by sub-account address and reports a missing one as 404', async () => {
+    const record = {
+      deployment_id: `0x${'a1'.repeat(32)}`,
+      account: address,
+      series: 'btc-5m',
+      deployment: 'Strategy_2b60ed4a0cfd:3',
+      strategy_id: 'Strategy_2b60ed4a0cfd',
+      program_hash: `0x${'2b'.repeat(32)}`,
+      budget_cents: 4000,
+      open_tx: `0x${'0f'.repeat(32)}`,
+      seals: [
+        {
+          round_id: 8,
+          won: true,
+          pnl_cents: 310,
+          journal_hash: `0x${'c3'.repeat(32)}`,
+          tx_hash: `0x${'d4'.repeat(32)}`,
+          lines: 14,
+        },
+      ],
+    }
+    const missing = `0x${'34'.repeat(20)}`
+    server.use(
+      http.get(`${baseUrl}/api/records/${address}`, () => HttpResponse.json(record)),
+      http.get(`${baseUrl}/api/records/${missing}`, () =>
+        HttpResponse.json({ error: 'record_not_found' }, { status: 404 })
+      )
+    )
+    const client = createRustExchangeClient({ baseUrl, retry: { attempts: 1 } })
+    expect(await client.getRecord(address)).toEqual({ ok: true, data: record })
+    const absent = await client.getRecord(missing)
+    expect(absent.ok).toBe(false)
+    expect(!absent.ok && absent.error.status).toBe(404)
+  })
+
   it('surfaces the exchange error code on a rejected order and cancels with query params', async () => {
     server.use(
       http.post(`${baseUrl}/api/orders`, () =>
@@ -68,18 +103,18 @@ describe('rust exchange client', () => {
       http.delete(`${baseUrl}/api/orders/5`, ({ request }) => {
         const query = new URL(request.url).searchParams
         expect(query.get('address')).toBe(address)
-        expect(query.get('series')).toBe('btc-2m')
+        expect(query.get('series')).toBe('btc-5m')
         return new HttpResponse(null, { status: 204 })
       })
     )
     const client = createRustExchangeClient({ baseUrl, retry: { attempts: 1 } })
-    const order = await client.placeOrder({ address, series: 'btc-2m', side: 'ask', qty: 1 })
+    const order = await client.placeOrder({ address, series: 'btc-5m', side: 'ask', qty: 1 })
     expect(order.ok).toBe(false)
     if (!order.ok) {
       expect(order.error.status).toBe(400)
       expect(order.error.message).toBe('insufficient_balance: insufficient balance')
     }
-    expect(await client.cancelOrder(5, address, 'btc-2m')).toEqual({ ok: true, data: undefined })
+    expect(await client.cancelOrder(5, address, 'btc-5m')).toEqual({ ok: true, data: undefined })
   })
 
   it('reads signal history, price history, the book, fills and positions with wire query names', async () => {
@@ -92,12 +127,12 @@ describe('rust exchange client', () => {
     server.use(
       http.get(`${baseUrl}/api/signals/history`, ({ request }) => {
         const query = new URL(request.url).searchParams
-        expect(query.get('series')).toBe('btc-2m')
+        expect(query.get('series')).toBe('btc-5m')
         expect(query.get('ids')).toBe('btc.coinbase.rsi.v1,pyth.btc_usd.spot.v1')
         expect(query.get('history_ms')).toBe('240000')
         expect(query.get('max_points')).toBe('50')
         return HttpResponse.json({
-          series: 'btc-2m',
+          series: 'btc-5m',
           since_ms: 0,
           signals: [{ signal_id: 'btc.coinbase.rsi.v1', frames: [frame] }],
         })
@@ -106,12 +141,12 @@ describe('rust exchange client', () => {
         expect(new URL(request.url).searchParams.get('max_points')).toBe('100')
         return HttpResponse.json({
           type: 'snapshot',
-          series: 'btc-2m',
-          duration_secs: 120,
+          series: 'btc-5m',
+          duration_secs: 300,
           market_id: 3,
           strike: 79_650.5,
           opens_at_ms: 1,
-          closes_at_ms: 120_001,
+          closes_at_ms: 300_001,
           ticks: [{ ts_ms: 2, price: 79_651 }],
         })
       }),
@@ -159,17 +194,17 @@ describe('rust exchange client', () => {
     )
     const client = createRustExchangeClient({ baseUrl, retry: { attempts: 1 } })
     const history = await client.getSignalsHistory({
-      series: 'btc-2m',
+      series: 'btc-5m',
       ids: ['btc.coinbase.rsi.v1', 'pyth.btc_usd.spot.v1'],
       historyMs: 240_000,
       maxPoints: 50,
     })
     expect(history.ok && history.data.signals[0]?.frames[0]?.values['rsi_14']).toBe('38.2')
-    const price = await client.getPriceHistory('btc-2m', 100)
+    const price = await client.getPriceHistory('btc-5m', 100)
     expect(price.ok && price.data.ticks).toEqual([{ ts_ms: 2, price: 79_651 }])
-    const book = await client.getBook('btc-2m', 15)
+    const book = await client.getBook('btc-5m', 15)
     expect(book.ok && book.data.bids[0]?.price).toBe(500)
-    const fills = await client.getTrades('btc-2m')
+    const fills = await client.getTrades('btc-5m')
     expect(fills.ok && fills.data[0]?.kind).toBe('open')
     expect(await client.getUserTrades(address)).toEqual({ ok: true, data: { trades: [] } })
     const positions = await client.getPositions(address, 'btc-15m')
@@ -180,8 +215,8 @@ describe('rust exchange client', () => {
     const template = {
       id: 'fair-value-discount',
       title: 'Buy the side the model says is cheap',
-      series: ['btc-2m', 'btc-15m'],
-      creator: { handle: '@tiny', username: 'Tiny', avatar: 'strategy-01.jpg' },
+      series: ['btc-5m', 'btc-15m'],
+      creator: { handle: '@kyros', username: 'Kyros', avatar: 'strategy-01.jpg' },
       envelope: { loss_budget_fraction: '0.5', max_order_size: '50' },
       primary: {
         name: 'Fair Value Discount',
@@ -197,13 +232,13 @@ describe('rust exchange client', () => {
         running: 0,
         deployed_tenths: 0,
         ready: false,
-        waiting_on: [{ signal_id: 'btc-2m.current.window.v1', name: 'Round Clock' }],
+        waiting_on: [{ signal_id: 'btc-5m.current.window.v1', name: 'Round Clock' }],
       },
       running: 0,
       deployed_tenths: 0,
       runners: [],
       ready: false,
-      waiting_on: [{ signal_id: 'btc-2m.current.window.v1', name: 'Round Clock' }],
+      waiting_on: [{ signal_id: 'btc-5m.current.window.v1', name: 'Round Clock' }],
     }
     server.use(
       http.get(`${baseUrl}/api/strategies/templates`, ({ request }) => {
@@ -211,7 +246,7 @@ describe('rust exchange client', () => {
         return HttpResponse.json({ series: 'btc-15m', templates: [template] })
       }),
       http.get(`${baseUrl}/api/strategies/templates/fair-value-discount`, ({ request }) => {
-        expect(new URL(request.url).searchParams.get('series')).toBe('btc-2m')
+        expect(new URL(request.url).searchParams.get('series')).toBe('btc-5m')
         return HttpResponse.json(template)
       }),
       http.get(`${baseUrl}/api/strategies/templates/trend-rider`, () =>
@@ -220,12 +255,12 @@ describe('rust exchange client', () => {
     )
     const client = createRustExchangeClient({ baseUrl, retry: { attempts: 1 } })
     const list = await client.getStrategyTemplates('btc-15m')
-    expect(list.ok && list.data.templates[0]?.creator.username).toBe('Tiny')
-    const one = await client.getStrategyTemplate('fair-value-discount', 'btc-2m')
+    expect(list.ok && list.data.templates[0]?.creator.username).toBe('Kyros')
+    const one = await client.getStrategyTemplate('fair-value-discount', 'btc-5m')
     expect(one.ok && one.data.inverse.logic).toBe('Buy Down.')
     expect(one.ok && one.data.ready).toBe(false)
     expect(one.ok && one.data.waiting_on?.map(signal => signal.name)).toEqual(['Round Clock'])
-    const missing = await client.getStrategyTemplate('trend-rider', 'btc-2m')
+    const missing = await client.getStrategyTemplate('trend-rider', 'btc-5m')
     expect(!missing.ok && missing.error.status).toBe(404)
   })
 
@@ -321,11 +356,11 @@ describe('rust exchange client', () => {
               name: 'Momentum Rider',
               status: 'paused',
               created_at_ms: 1,
-              home_series: 'btc-2m',
+              home_series: 'btc-5m',
               trades_this_market: 2,
               series_positions: [
                 {
-                  series: 'btc-2m',
+                  series: 'btc-5m',
                   market_id: 9,
                   side: 'no',
                   size_shares: 28,
@@ -351,7 +386,7 @@ describe('rust exchange client', () => {
     const refused = await client.deployTemplate(
       address,
       'nope',
-      { allocation_tenths: 50_000, inverse: true, series: 'btc-2m' },
+      { allocation_tenths: 50_000, inverse: true, series: 'btc-5m' },
       'deploy-2'
     )
     expect(deploys).toBe(1)
@@ -369,9 +404,9 @@ describe('rust exchange client', () => {
       kind: 'strategy',
       name: 'Threshold Entry',
       status: 'active',
-      home_series: 'btc-2m',
+      home_series: 'btc-5m',
       trades_this_market: 0,
-      strategy: { series: 'btc-2m', strategy_id: 'Strategy_abc', deployment_id: 'Strategy_abc:1' },
+      strategy: { series: 'btc-5m', strategy_id: 'Strategy_abc', deployment_id: 'Strategy_abc:1' },
       runtime: { current_leg: 'hunting' },
     }
     let calls = 0

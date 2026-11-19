@@ -1,4 +1,4 @@
-import { exchangeMarketKey, type RustAccountsFrame } from '@tiny/domain'
+import { exchangeMarketKey, type RustAccountsFrame } from '@kyros/domain'
 import { describe, expect, it } from 'vitest'
 
 import { initialAccount } from './account'
@@ -10,7 +10,7 @@ const child = `0x${'cc'.repeat(20)}`
 const snapshot = {
   type: 'position_snapshot' as const,
   as_of_unix_ms: 5,
-  series: 'btc-2m',
+  series: 'btc-5m',
   market_id: 7,
   address: me,
   side: 'no' as const,
@@ -31,7 +31,7 @@ const row = (id: string, kind: 'main' | 'strategy'): RustAccountsFrame['main'] =
   kind,
   name: kind === 'main' ? 'jet' : 'Momentum',
   status: kind === 'main' ? null : 'active',
-  home_series: kind === 'main' ? null : 'btc-2m',
+  home_series: kind === 'main' ? null : 'btc-5m',
   trades_this_market: 0,
   series_positions: [],
   balance_tenths: 500_000,
@@ -48,7 +48,7 @@ const accounts: RustAccountsFrame = {
   strategies: [row(child, 'strategy')],
   open_orders: [
     {
-      series: 'btc-2m',
+      series: 'btc-5m',
       order_id: 9,
       market_id: 7,
       account: child,
@@ -62,7 +62,7 @@ const accounts: RustAccountsFrame = {
   ],
   trades: [
     {
-      series: 'btc-2m',
+      series: 'btc-5m',
       order_id: 8,
       ts: 2,
       side: 'yes',
@@ -93,7 +93,7 @@ describe('rust account adapter', () => {
   })
 
   it('replaces the account list, open orders and trade log from each accounts frame', () => {
-    const account = applyRustAccounts(initialAccount, accounts, 'btc-2m')
+    const account = applyRustAccounts(initialAccount, accounts, 'btc-5m')
     expect(account.accounts.map(item => item.id)).toEqual([me, child])
     expect(account.openOrders).toHaveLength(1)
     expect(account.openOrders[0]?.account).toBe(child)
@@ -107,7 +107,7 @@ describe('rust account adapter', () => {
         open_orders: [],
         trades: accounts.trades.map(trade => ({ ...trade, settled: true })),
       },
-      'btc-2m'
+      'btc-5m'
     )
     expect(settled.openOrders).toEqual([])
     expect(settled.trades[0]?.settled).toBe(true)
@@ -131,7 +131,7 @@ describe('rust account adapter', () => {
       trades: [trade, { ...trade, order_id: 11, series: 'btc-15m' }],
     }
 
-    const fast = applyRustAccounts(initialAccount, twoSeries, 'btc-2m')
+    const fast = applyRustAccounts(initialAccount, twoSeries, 'btc-5m')
     expect(fast.accounts.map(item => item.id)).toEqual([me, child])
     expect(fast.openOrders.map(item => item.order_id)).toEqual([9])
     expect(fast.trades.map(item => item.order_id)).toEqual([8])
@@ -145,7 +145,7 @@ describe('rust account adapter', () => {
 
   it('leaves the accounts lists alone when only the position frame changes', () => {
     const account = applyRustPosition(
-      applyRustAccounts(initialAccount, accounts, 'btc-2m'),
+      applyRustAccounts(initialAccount, accounts, 'btc-5m'),
       snapshot
     )
     expect(account.openOrders).toHaveLength(1)

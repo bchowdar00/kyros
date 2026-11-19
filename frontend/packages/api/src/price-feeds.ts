@@ -1,4 +1,4 @@
-import { FeedAssetsSchema, FeedHistorySchema, FeedTickSchema, type FeedTick } from '@tiny/domain'
+import { FeedAssetsSchema, FeedHistorySchema, FeedTickSchema, type FeedTick } from '@kyros/domain'
 import { createApiClient, type ApiClientOptions } from './client'
 import { ApiError, type ApiResult } from './errors'
 

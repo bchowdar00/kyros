@@ -89,7 +89,7 @@ export const quoter: Derivation = {
   document: {
     name: 'Two-Sided Quoter',
     description:
-      'On the 2-minute BTC up/down: when the up spread is at least 4 cents wide, rest a bid one cent above the best bid and an ask one cent below the best ask, each spending a quarter of the round budget. Re-quote both every 2 seconds to follow the book; a filled side is simply not re-quoted. Ten seconds before the close, pull both and stop.',
+      'On the 5-minute BTC up/down: when the up spread is at least 4 cents wide, rest a bid one cent above the best bid and an ask one cent below the best ask, each spending a quarter of the round budget. Re-quote both every 2 seconds to follow the book; a filled side is simply not re-quoted. Ten seconds before the close, pull both and stop.',
     ...bookOnly(),
     ...noExtras(),
     triggers: [

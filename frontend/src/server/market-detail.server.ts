@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { createRustExchangeClient } from '@tiny/api'
+import { createRustExchangeClient } from '@kyros/api'
 import { cache } from 'react'
 
 import { env } from '@/env'
@@ -72,5 +72,8 @@ export const loadMarketDetail = cache(async (slug: string): Promise<MarketDetail
   const market = toMarketDetail(live.series, live.detail)
 
   // History comes with the `/ws/price` snapshot in the browser; nothing to preload here.
-  return market === undefined ? undefined : withExchangeExtras(market)
+  // The Gemini block seeds the browser's poll of where the book comes from.
+  return market === undefined
+    ? undefined
+    : withExchangeExtras(live.gemini === undefined ? market : { ...market, gemini: live.gemini })
 })

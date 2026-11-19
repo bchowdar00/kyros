@@ -1,5 +1,5 @@
-import { type RustSignalFrame, RustSignalsMessageSchema } from '@tiny/domain'
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
+import { type RustSignalFrame, RustSignalsMessageSchema } from '@kyros/domain'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
 
 import type { SignalFrames } from '@/features/signals/signal-catalogue'
 import { appendHistory, type SignalHistory } from '@/features/signals/signal-history'

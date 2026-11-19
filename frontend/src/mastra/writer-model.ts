@@ -4,7 +4,7 @@ import { env } from '@/env'
 import type { WriterModel } from './writer-models'
 
 /**
- * The strategy writer's model calls. Teeny's chat runs through Mastra's Anthropic route,
+ * The strategy writer's model calls. Kyros's chat runs through Mastra's Anthropic route,
  * but the compile workflow needs the exact request shape Claude Opus 5.5 / Sonnet 5.5 /
  * Haiku 5.5 require, so it calls the official SDK directly:
  *

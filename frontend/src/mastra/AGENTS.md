@@ -29,8 +29,8 @@ The full layout and the add-a-capability recipe are in the header of `index.ts`.
 
 ## Price Feeds
 
-- Price Feeds owns feed state and its public REST/SSE contracts. `@tiny/domain`
-  validates those wire shapes; `@tiny/api` owns HTTP and bounded stream reads.
+- Price Feeds owns feed state and its public REST/SSE contracts. `@kyros/domain`
+  validates those wire shapes; `@kyros/api` owns HTTP and bounded stream reads.
 - Agent tools are read-only. Preserve integer mantissa/exponent values and observation
   timestamps; never equate a live tick with settlement truth or Tiny market odds.
 - Missing configuration, failed reads, and stale live observations return unavailable.

@@ -27,6 +27,11 @@ export {
   type SignDisplay,
   type UsdFormatOptions,
 } from './format'
-export { formatExchangeTicks, formatExchangeSpread, formatExchangeBalance } from './exchange'
+export {
+  formatExchangeBalance,
+  formatExchangeDollars,
+  formatExchangeSpread,
+  formatExchangeTicks,
+} from './exchange'
 export { exchangeBudgetMicros, exchangeBuyReserve } from './exchange'
 export { estimateExchangeWinningPayout } from './exchange'

@@ -1,11 +1,11 @@
 'use client'
 
-import { createMoneyFormatter } from '@tiny/money'
-import { Avatar } from '@tiny/ui/components/avatar'
-import { AvatarGroup } from '@tiny/ui/components/avatar-group'
-import { Button } from '@tiny/ui/components/button'
-import { IconButton } from '@tiny/ui/components/icon-button'
-import { ShareIcon } from '@tiny/ui/icons/share-icon'
+import { createMoneyFormatter } from '@kyros/money'
+import { Avatar } from '@kyros/ui/components/avatar'
+import { AvatarGroup } from '@kyros/ui/components/avatar-group'
+import { Button } from '@kyros/ui/components/button'
+import { IconButton } from '@kyros/ui/components/icon-button'
+import { ShareIcon } from '@kyros/ui/icons/share-icon'
 import Image from 'next/image'
 import { useState } from 'react'
 

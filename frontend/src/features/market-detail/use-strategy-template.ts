@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { createRustExchangeClient } from '@tiny/api'
+import { createRustExchangeClient } from '@kyros/api'
 
 import { toPublicStrategy } from './strategy-template.mapper'
 import type { PublicStrategy } from './types'

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import * as z from 'zod/mini'
-import { Button } from '@tiny/ui/components/button'
+import { Button } from '@kyros/ui/components/button'
 import { StrategyBriefSchema, type StrategyBrief } from '@/mastra/capabilities/strategy/brief'
 import { describeMoney } from '@/mastra/capabilities/strategy/envelope'
 import type { BuildStatus } from './strategy-build'
@@ -36,7 +36,7 @@ type Phase =
 
 /**
  * The confirmation gate: the plan in the user's terms, and nothing compiles until they
- * press Compile. Keep talking hides the card; Teeny proposes again when the brief changes.
+ * press Compile. Keep talking hides the card; Kyros proposes again when the brief changes.
  */
 export function CompileProposalCard({
   brief,

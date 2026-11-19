@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@tiny/ui/lib/cn'
+import { cn } from '@kyros/ui/lib/cn'
 import { useState } from 'react'
 
 export interface ValueSlotProps {

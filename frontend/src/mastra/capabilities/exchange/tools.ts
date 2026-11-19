@@ -1,5 +1,5 @@
 import { createTool } from '@mastra/core/tools'
-import type { RustMarket } from '@tiny/domain'
+import type { RustMarket } from '@kyros/domain'
 import * as z from 'zod/mini'
 
 import { readChatContext } from '../../request-context'
@@ -81,7 +81,7 @@ export function createExchangeTools(baseUrl: string | undefined) {
       const ask = book.data.asks[0]?.price
       return {
         status: 'ok',
-        source: 'Tiny exchange',
+        source: 'Kyros',
         retrievedAt: RETRIEVED(),
         series,
         round: roundOf(price.data),
@@ -120,7 +120,7 @@ export function createExchangeTools(baseUrl: string | undefined) {
       const ask = book.data.asks[0]?.price
       return {
         status: 'ok',
-        source: 'Tiny exchange',
+        source: 'Kyros',
         retrievedAt: RETRIEVED(),
         series,
         bids: book.data.bids.map(level),
@@ -154,7 +154,7 @@ export function createExchangeTools(baseUrl: string | undefined) {
       const snapshot = positions.data
       return {
         status: 'ok',
-        source: 'Tiny exchange',
+        source: 'Kyros',
         retrievedAt: RETRIEVED(),
         balance_cents: tenthsToCents(snapshot.balance_tenths),
         locked_cents: tenthsToCents(snapshot.locked_tenths),
@@ -191,7 +191,7 @@ export function createExchangeTools(baseUrl: string | undefined) {
         if (!fills.ok) return failed('Recent trades could not be read.', series)
         return {
           status: 'ok',
-          source: 'Tiny exchange',
+          source: 'Kyros',
           retrievedAt: RETRIEVED(),
           series,
           trades: fills.data.slice(0, limit).map(fill => ({
@@ -210,7 +210,7 @@ export function createExchangeTools(baseUrl: string | undefined) {
       if (!mine.ok) return failed('Your orders could not be read.')
       return {
         status: 'ok',
-        source: 'Tiny exchange',
+        source: 'Kyros',
         retrievedAt: RETRIEVED(),
         orders: mine.data.trades.slice(0, limit).map(row => ({
           series: row.series,
@@ -251,7 +251,7 @@ export function createExchangeTools(baseUrl: string | undefined) {
       }
       return {
         status: 'ok',
-        source: 'Tiny exchange',
+        source: 'Kyros',
         retrievedAt: RETRIEVED(),
         series,
         up: ups,
@@ -279,7 +279,7 @@ export function createExchangeTools(baseUrl: string | undefined) {
       if (prices.length === 0) return failed('No price has been observed yet.', series)
       return {
         status: 'ok',
-        source: 'Tiny exchange',
+        source: 'Kyros',
         retrievedAt: RETRIEVED(),
         series,
         round: roundOf(price.data),

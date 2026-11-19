@@ -1,20 +1,21 @@
-import localFont from 'next/font/local'
+import { Bricolage_Grotesque, DM_Sans } from 'next/font/google'
 
-// Self-hosted variable fonts served from the app origin (CSP `font-src 'self'`), preloaded,
-// with a metric-matched fallback so text does not reflow when the file arrives.
-export const roobert = localFont({
-  adjustFontFallback: 'Arial',
+// Both families are open-licensed variable fonts. next/font downloads them at build time and
+// serves them from the app origin (CSP `font-src 'self'`), preloaded, with a metric-matched
+// fallback so text does not reflow when the file arrives.
+
+/** Body text, labels and every number that updates (tabular figures are set on <body>). */
+export const bodyFont = DM_Sans({
+  axes: ['opsz'],
   display: 'swap',
-  src: '../../packages/ui/src/assets/fonts/TinyRoobertProportionalVF.woff2',
-  variable: '--font-roobert',
-  weight: '300 900',
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
 })
 
-export const roobertMono = localFont({
-  adjustFontFallback: false,
+/** Headings, prices and the wordmark. */
+export const displayFont = Bricolage_Grotesque({
+  axes: ['opsz'],
   display: 'swap',
-  preload: false,
-  src: '../../packages/ui/src/assets/fonts/TinyRoobertMonoVF.woff2',
-  variable: '--font-roobert-mono',
-  weight: '300 900',
+  subsets: ['latin'],
+  variable: '--font-bricolage',
 })

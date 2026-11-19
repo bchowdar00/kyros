@@ -48,7 +48,7 @@
           },
           {
             "name": "zod",
-            "message": "Import from zod/mini. The full build is several times larger and reaches the client through env.ts and @tiny/domain."
+            "message": "Import from zod/mini. The full build is several times larger and reaches the client through env.ts and @kyros/domain."
           },
           {
             "name": "lodash",
@@ -60,7 +60,7 @@
           },
           {
             "name": "axios",
-            "message": "Use @tiny/api, which wraps fetch with parsing, retries and typed results."
+            "message": "Use @kyros/api, which wraps fetch with parsing, retries and typed results."
           },
           {
             "name": "moment",
@@ -68,7 +68,7 @@
           },
           {
             "name": "react-icons",
-            "message": "Icons are generated into @tiny/ui/icons from supplied SVG assets."
+            "message": "Icons are generated into @kyros/ui/icons from supplied SVG assets."
           }
         ],
         "patterns": [

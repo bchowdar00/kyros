@@ -7,14 +7,17 @@ import { MARKET_DETAIL_FIXTURES } from '@/features/market-detail/market-detail.f
 import { StrategyComposer } from '@/features/market-detail/strategy-composer'
 import { ChatPanel } from '@/features/market-detail/chat-panel'
 
-const market = MARKET_DETAIL_FIXTURES['nba-bos-la-083126']
+const market = MARKET_DETAIL_FIXTURES['btc-above-118k-0903']
 
 describe('ChatPanel', () => {
   it('composes its header, public-strategy list and composer without a close control', () => {
     render(<ChatPanel data={market.chatPanel} />)
 
-    expect(screen.getByRole('heading', { name: market.chatPanel.title })).toBeInTheDocument()
-    expect(screen.getByText(market.chatPanel.subtitle)).toBeInTheDocument()
+    // The rail opens on the strategy sentence, not a title.
+    expect(
+      screen.getByRole('heading', { name: /^Buy Up when BTC is 10 basis points above the strike/ })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Build this strategy' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: market.chatPanel.sectionTitle })).toBeInTheDocument()
     expect(screen.getByRole('form', { name: 'Strategy composer' })).toBeInTheDocument()
 

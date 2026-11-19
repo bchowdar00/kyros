@@ -6,7 +6,7 @@ const decimal = (name: string) => ({ name, type: 'decimal' as const })
 
 describe('fieldPresentation', () => {
   it('plots book probabilities as cents on a fixed 0–100 axis', () => {
-    const up = fieldPresentation('btc-2m.current.price.v1', decimal('up'))
+    const up = fieldPresentation('btc-5m.current.price.v1', decimal('up'))
     expect(up.unit).toBe('cents')
     expect(up.scale).toBe(100)
     expect(up.domain).toEqual([0, 100])
@@ -16,7 +16,7 @@ describe('fieldPresentation', () => {
 
   it('plots spot and strike in dollars, sharing one axis', () => {
     const spot = fieldPresentation('pyth.btc_usd.spot.v1', decimal('last'))
-    const strike = fieldPresentation('btc-2m.current.strike.v1', decimal('price'))
+    const strike = fieldPresentation('btc-5m.current.strike.v1', decimal('price'))
     const ema = fieldPresentation('btc.coinbase.ema_cross.v1', decimal('ema_9'))
     expect(spot.unit).toBe('usd')
     expect(strike.unit).toBe('usd')
@@ -87,12 +87,12 @@ describe('fieldPresentation', () => {
   })
 
   it('handles the round stats, counts, durations and dollar notionals', () => {
-    const volume = fieldPresentation('btc-2m.current.stats.v1', decimal('volume'))
-    const lots = fieldPresentation('btc-2m.current.stats.v1', {
+    const volume = fieldPresentation('btc-5m.current.stats.v1', decimal('volume'))
+    const lots = fieldPresentation('btc-5m.current.stats.v1', {
       name: 'open_interest',
       type: 'u64',
     })
-    const remaining = fieldPresentation('btc-2m.current.window.v1', {
+    const remaining = fieldPresentation('btc-5m.current.window.v1', {
       name: 'remaining',
       type: 'duration_ms',
     })

@@ -1,5 +1,5 @@
-import { cents, createMoneyFormatter } from '@tiny/money'
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
+import { cents, createMoneyFormatter } from '@kyros/money'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
 
 import { TimeSeries } from '../widgets/time-series'
 

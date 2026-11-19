@@ -1,5 +1,5 @@
-import type { RustSignal, RustSignalField } from '@tiny/domain'
-import { bps, type Cents, cents, createMoneyFormatter } from '@tiny/money'
+import type { RustSignal, RustSignalField } from '@kyros/domain'
+import { bps, type Cents, cents, createMoneyFormatter } from '@kyros/money'
 
 const money = createMoneyFormatter('en-US')
 const clock = new Intl.DateTimeFormat('en-US', {

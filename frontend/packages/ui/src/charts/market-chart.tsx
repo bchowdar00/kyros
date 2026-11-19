@@ -176,9 +176,9 @@ export function MarketChart({
   const width = fixedWidth ?? measured?.width ?? 0
   const height = fixedHeight ?? measured?.height ?? 0
   const rawId = useId().replaceAll(/[^a-zA-Z0-9_-]/g, '')
-  const glowFilterId = `tiny-chart-glow-${rawId}`
-  const revealClipId = `tiny-chart-reveal-${rawId}`
-  const plotClipId = `tiny-chart-plot-${rawId}`
+  const glowFilterId = `kyros-chart-glow-${rawId}`
+  const revealClipId = `kyros-chart-reveal-${rawId}`
+  const plotClipId = `kyros-chart-plot-${rawId}`
   const [hover] = useState(createHoverStore)
   const data = useMemo(
     () =>

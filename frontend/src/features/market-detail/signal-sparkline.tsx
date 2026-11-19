@@ -1,6 +1,6 @@
 'use client'
 
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
 import { useEffect, useRef } from 'react'
 
 export interface SignalSparklineProps {

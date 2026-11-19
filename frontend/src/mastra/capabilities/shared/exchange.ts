@@ -1,12 +1,12 @@
-import { createRustExchangeClient, type RustExchangeClient } from '@tiny/api'
-import { RustSeriesSlugSchema } from '@tiny/domain'
+import { createRustExchangeClient, type RustExchangeClient } from '@kyros/api'
+import { RustSeriesSlugSchema } from '@kyros/domain'
 import * as z from 'zod/mini'
 
 import type { CapabilityEnv } from '../types'
 import { readChatContext, STANDALONE_CHAT } from '../../request-context'
 
 /** The series every tool falls back to when neither the input nor the page names one. */
-export const DEFAULT_SERIES = 'btc-2m'
+export const DEFAULT_SERIES = 'btc-5m'
 const REQUEST_TIMEOUT_MS = 5_000
 const TENTHS_PER_CENT = 10
 

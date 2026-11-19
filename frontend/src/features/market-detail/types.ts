@@ -1,7 +1,8 @@
-import type { Cents } from '@tiny/money'
-import type { ChartPoint, TimeRange } from '@tiny/ui/charts/lib/types'
-import type { ChartWindow } from '@tiny/ui/charts/chart-window'
-import type { RecentMarketResult } from '@tiny/ui/charts/recent-market-results'
+import type { RustGeminiSeries } from '@kyros/domain'
+import type { Cents } from '@kyros/money'
+import type { ChartPoint, TimeRange } from '@kyros/ui/charts/lib/types'
+import type { ChartWindow } from '@kyros/ui/charts/chart-window'
+import type { RecentMarketResult } from '@kyros/ui/charts/recent-market-results'
 
 export type MarketSide = 'away' | 'home'
 
@@ -40,13 +41,6 @@ export interface MarketHeaderData {
   /** Sports markets only; crypto and other markets have no team identities. */
   teams?: readonly [MarketTeam, MarketTeam]
   title: string
-}
-
-export interface MarketScoreboardData {
-  awayScore: number
-  clock: string
-  homeScore: number
-  period: string
 }
 
 export interface ProbabilitySeries {
@@ -121,11 +115,23 @@ export type OrderBookLevel =
       depthPercentage: number
     }
 
+/**
+ * The series' Gemini block as last polled. A failed poll keeps the last answer but marks it
+ * `poll-failed`, so the book's state reads as unknown rather than as the last thing heard.
+ */
+export type GeminiBookState =
+  | { status: 'polled'; gemini: RustGeminiSeries | undefined }
+  | { status: 'poll-failed'; gemini: RustGeminiSeries | undefined }
+
 export interface OrderBookData {
   actionLabel: string
   asks: readonly OrderBookLevel[]
   bids: readonly OrderBookLevel[]
   columnLabels: readonly [string, string, string]
+  /** True while the exchange feed is live, so an empty side is known to be empty. */
+  feedLive?: boolean
+  /** Where the mirrored book comes from; absent without a live exchange. */
+  geminiBook?: GeminiBookState
   spreadCents?: number
   spreadTicks?: number | null
   spreadLabel: string
@@ -241,6 +247,8 @@ export interface ChatPanelData {
 
 export interface MarketDetail {
   liveEvent?: { eventId: number; seriesId: number }
+  /** The series' Gemini block at load time; the browser polls it from there. */
+  gemini?: RustGeminiSeries
   category: string
   header: MarketHeaderData
   myStrategies?: MyStrategiesData
@@ -248,8 +256,6 @@ export interface MarketDetail {
   /** Strike markets show price against the strike as the hero chart instead of probability. */
   priceChart?: MarketPriceChartData
   probabilityChart?: MarketProbabilityChartData
-  /** Sports markets only; a market without a live game has no scoreboard strip. */
-  scoreboard?: MarketScoreboardData
   signals?: SignalsData
   slug: string
   chatPanel?: ChatPanelData

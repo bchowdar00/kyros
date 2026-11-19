@@ -17,10 +17,6 @@ function withBlocks(
   return { ...document, blocks: patch(document.blocks) }
 }
 
-/** The BTC labels a derivation is written in, as an NBA market would name them. */
-const relabel = (outcome: string | null) =>
-  outcome === 'up' ? 'home' : outcome === 'down' ? 'away' : outcome
-
 describe('checkDocumentAgainstPlan', () => {
   it.each(DERIVATIONS.map(d => [d.id, d] as const))('%s matches its own plan', (_id, d) => {
     expect(
@@ -31,19 +27,6 @@ describe('checkDocumentAgainstPlan', () => {
         briefSides(d.brief)
       )
     ).toEqual([])
-  })
-
-  it('matches a document written in the market’s own labels when told the sides', () => {
-    const { plan, document } = derivation('threshold-entry-exit')
-    const nba = withBlocks(document, blocks =>
-      blocks.map(b => ({ ...b, items: b.items.map(i => ({ ...i, outcome: relabel(i.outcome) })) }))
-    )
-    const sides = { quoted: 'home', other: 'away' }
-    expect(checkDocumentAgainstPlan(plan, nba, undefined, sides)).toEqual([])
-    // In BTC's labels the same document does not do what the plan says.
-    expect(checkDocumentAgainstPlan(plan, nba)).toContainEqual(
-      expect.stringContaining('`hunting` has no block that does `take_up`')
-    )
   })
 
   it('catches a three-state plan written as two states', () => {

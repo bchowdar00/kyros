@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { MARKET_DETAIL_FIXTURES } from '@/features/market-detail/market-detail.fixture'
 import { OrderBookPanel } from '@/features/market-detail/order-book-panel'
 
-const orderBook = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].orderBook
+const orderBook = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].orderBook
 
 describe('OrderBookPanel', () => {
   it('follows arriving depth until manually scrolled and resumes with the center button', () => {
@@ -53,13 +53,13 @@ describe('OrderBookPanel', () => {
       orderBook.bids.length
     )
     expect(within(table).getByText('58¢')).toBeInTheDocument()
-    expect(within(table).getByText('195.33')).toBeInTheDocument()
-    expect(within(table).getByText('$1,903.58')).toBeInTheDocument()
+    expect(within(table).getByText('240.11')).toBeInTheDocument()
+    expect(within(table).getByText('$1,633.75')).toBeInTheDocument()
     expect(
       within(table).getByRole('rowheader', { name: orderBook.spreadLabel })
     ).toBeInTheDocument()
     expect(within(table).getByText('1¢')).toBeInTheDocument()
-    expect(within(table).getByText('1.00%')).toBeInTheDocument()
+    expect(within(table).getByText('1.60%')).toBeInTheDocument()
     expect(container.querySelector('[data-order-book-scroll]')).toBeInTheDocument()
   })
 

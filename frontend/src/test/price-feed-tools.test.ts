@@ -25,11 +25,11 @@ async function live(ageMs: number) {
   return tools.getLivePrice.execute?.({ symbol }, { observe: noopObserve })
 }
 
-describe('Teeny price tools', () => {
+describe('Kyros price tools', () => {
   it('includes observation provenance while preserving the exact price', async () => {
     expect(await live(100)).toMatchObject({
       status: 'ok',
-      source: 'Tiny Price Feeds',
+      source: 'Kyros Price Feeds',
       provider: 'PYTH_LAZER',
       mantissa: '9007199254740993',
       expo: -8,

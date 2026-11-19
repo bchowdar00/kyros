@@ -1,7 +1,7 @@
 'use client'
 
-import { buildLinePath } from '@tiny/ui/charts/lib/path'
-import { createLinearScale } from '@tiny/ui/charts/lib/scale'
+import { buildLinePath } from '@kyros/ui/charts/lib/path'
+import { createLinearScale } from '@kyros/ui/charts/lib/scale'
 import type { ReactNode } from 'react'
 
 import { ChartShell } from './chart-shell'

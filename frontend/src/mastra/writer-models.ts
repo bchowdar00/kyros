@@ -9,7 +9,7 @@ export const WRITER_MODELS = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-ha
 
 export type WriterModel = (typeof WRITER_MODELS)[number]
 
-/** The Mastra model-router string for a writer model (Teeny's chat agent). */
+/** The Mastra model-router string for a writer model (Kyros's chat agent). */
 export function writerModelRouter(model: WriterModel): `anthropic/${WriterModel}` {
   return `anthropic/${model}`
 }

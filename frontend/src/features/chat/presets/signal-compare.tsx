@@ -1,5 +1,5 @@
-import { MINUTE } from '@tiny/ui/charts/lib/time'
-import type { ChartPoint, ValueFormat } from '@tiny/ui/charts/lib/types'
+import { MINUTE } from '@kyros/ui/charts/lib/time'
+import type { ChartPoint, ValueFormat } from '@kyros/ui/charts/lib/types'
 
 import { TimeSeries, type TimeSeriesMarker } from '../widgets/time-series'
 

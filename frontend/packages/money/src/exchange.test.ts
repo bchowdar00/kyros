@@ -1,7 +1,12 @@
 import { expect, it } from 'vitest'
 import { cents } from './cents'
 import { estimateExchangeWinningPayout } from './exchange'
-import { formatExchangeBalance, formatExchangeSpread, formatExchangeTicks } from './exchange'
+import {
+  formatExchangeBalance,
+  formatExchangeDollars,
+  formatExchangeSpread,
+  formatExchangeTicks,
+} from './exchange'
 it('estimates returns without rounding sub-cent quotes to cents', () => {
   expect(estimateExchangeWinningPayout(cents(10000), 501)).toBe(19960)
   expect(estimateExchangeWinningPayout(cents(10000), 625)).toBe(16000)
@@ -31,4 +36,14 @@ it('parses USD without float rounding and budgets the gateway fee reserve', () =
   expect(exchangeBuyReserve(500, 400)).toBe(510000n)
   expect(exchangeBuyReserve(999, 400)).toBe(1009000n)
   expect(exchangeBuyReserve(1, 400)).toBe(1040n)
+})
+
+it('reads a balance out in dollars and cents, rounding half a cent up, with no float', () => {
+  expect(formatExchangeDollars('5000000')).toBe('$5.00')
+  expect(formatExchangeDollars('600000')).toBe('$0.60')
+  expect(formatExchangeDollars('1185000')).toBe('$1.19')
+  expect(formatExchangeDollars('1184999')).toBe('$1.18')
+  expect(formatExchangeDollars('999995000')).toBe('$1,000.00')
+  expect(formatExchangeDollars('9007199254740993')).toBe('$9,007,199,254.74')
+  expect(() => formatExchangeDollars('-1')).toThrow(RangeError)
 })

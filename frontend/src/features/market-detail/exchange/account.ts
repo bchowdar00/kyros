@@ -3,7 +3,7 @@ import type {
   RustAccountRow,
   RustOpenOrderRow,
   RustUserTradeRow,
-} from '@tiny/domain'
+} from '@kyros/domain'
 
 export interface DemoOrder {
   order_id: string

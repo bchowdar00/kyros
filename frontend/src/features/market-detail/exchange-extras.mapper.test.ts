@@ -27,11 +27,11 @@ describe('exchange extras mapper', () => {
 
   it('formats round stats as signal cards', () => {
     const signals = toStatsSignals({
-      series: 'btc-2m',
-      duration_secs: 120,
+      series: 'btc-5m',
+      duration_secs: 300,
       market_id: 3,
       opened_at_ms: 0,
-      closes_at_ms: 120_000,
+      closes_at_ms: 300_000,
       total_volume_tenths: 1_234_560,
       open_interest_contracts: 420,
       total_locked_tenths: 420_000,

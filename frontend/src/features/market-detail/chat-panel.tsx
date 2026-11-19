@@ -10,7 +10,7 @@ import type { MarketTrading } from './exchange/buy'
 import type { StrategyDeploy } from './exchange/deploy'
 import { ChatMessages } from './chat-messages'
 import type { ComponentPropsWithRef } from 'react'
-import { cn } from '@tiny/ui/lib/cn'
+import { cn } from '@kyros/ui/lib/cn'
 
 import { LivePublicStrategiesList } from './live-public-strategies-list'
 import { PublicStrategiesList, type PublicStrategiesListProps } from './public-strategies-list'
@@ -100,7 +100,7 @@ export function ChatPanel({
       {...props}
       className={cn(
         // Border and padding are the chat-rail tokens: a widget on /chat measures against them.
-        '@container relative flex h-full min-h-0 flex-col overflow-clip rounded-lg border-[0.5px] border-border-subtle/50 bg-surface-subtle px-xl',
+        '@container relative flex h-full min-h-0 flex-col overflow-clip rounded-md border-2 border-foreground bg-background px-xl',
         className
       )}
     >
@@ -133,16 +133,18 @@ export function ChatPanel({
             showTip={!chatting}
             placeholder={
               chatting
-                ? 'Message Teeny…'
-                : (panel.composer?.placeholder ?? 'Create a new strategy....')
+                ? 'Message Kyros…'
+                : (panel.composer?.placeholder ?? 'Write your own sentence…')
             }
-            inputLabel="Message Teeny"
+            inputLabel="Message Kyros"
             submitLabel="Send message"
           />
         }
       >
         <ChatPanelHeader
-          {...(chatting ? { title: chat.title, onBack: () => void chat.back() } : {})}
+          {...(chatting
+            ? { title: chat.title, onBack: () => void chat.back() }
+            : { busy: status === 'submitted', onBuild: submit })}
         />
         <section
           aria-label="Chat content"

@@ -7,6 +7,7 @@ declare global {
     interface ProcessEnv {
       readonly NEXT_PUBLIC_API_URL?: string
       readonly NEXT_PUBLIC_ERROR_REPORT_URL?: string
+      readonly NEXT_PUBLIC_EXPLORER_URL?: string
       readonly NEXT_PUBLIC_PRICE_FEEDS_URL?: string
       readonly NEXT_PUBLIC_SITE_URL?: string
       readonly NEXT_PUBLIC_VITALS_URL?: string
@@ -36,7 +37,7 @@ export const env = createEnv({
     EXCHANGE_DEMO_GATEWAY_URL: z.optional(z.url()),
     EXCHANGE_DEMO_FEED_URL: z.optional(z.url()),
     /**
-     * Server-only Claude key (from the host environment) for Teeny chat and the strategy
+     * Server-only Claude key (from the host environment) for Kyros chat and the strategy
      * writer. Both agents run on `WRITER_MODEL`. Unset disables the chat and build routes.
      */
     ANTHROPIC_API_KEY: z.optional(z.string()),
@@ -51,13 +52,13 @@ export const env = createEnv({
      */
     WRITER_METER_TOKEN: z.optional(z.string()),
     /**
-     * `1` serves the Teeny chat routes outside development. Chat identity is an anonymous
+     * `1` serves the Kyros chat routes outside development. Chat identity is an anonymous
      * browser cookie, not account authorization, so this exposes the Claude key's spend to
      * every visitor; enable it only on a demo deployment.
      */
     CHAT_ENABLED: z.optional(z.string()),
     /**
-     * Comma-separated underlyings (`nba`, `btc`) whose series the site hides: they are
+     * Comma-separated underlyings (`btc`) whose series the site hides: they are
      * dropped from the catalog loader, so the home grid, market pages and the active-market
      * route behave as if the exchange did not run them. The backend is unchanged. Used by
      * the BTC-only demo deployment.
@@ -85,6 +86,8 @@ export const env = createEnv({
     NEXT_PUBLIC_PRICE_FEEDS_URL: z.optional(z.url()),
     /** Where client-side errors are beaconed. Unset means errors stay in the console. */
     NEXT_PUBLIC_ERROR_REPORT_URL: z.optional(z.url()),
+    /** Block explorer for sealed strategy records (Arc Testnet). */
+    NEXT_PUBLIC_EXPLORER_URL: z._default(z.url(), 'https://explorer.testnet.arc.io'),
     /** Canonical origin for metadata. */
     NEXT_PUBLIC_SITE_URL: z._default(z.url(), 'http://localhost:3000'),
     /** Where Web Vitals are beaconed. Unset means they are not reported. */
@@ -93,6 +96,7 @@ export const env = createEnv({
   experimental__runtimeEnv: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_ERROR_REPORT_URL: process.env.NEXT_PUBLIC_ERROR_REPORT_URL,
+    NEXT_PUBLIC_EXPLORER_URL: process.env.NEXT_PUBLIC_EXPLORER_URL,
     NEXT_PUBLIC_PRICE_FEEDS_URL: process.env.NEXT_PUBLIC_PRICE_FEEDS_URL,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_VITALS_URL: process.env.NEXT_PUBLIC_VITALS_URL,

@@ -1,7 +1,7 @@
 'use client'
 
-import { useBrowserTimeZone } from '@tiny/ui/lib/use-browser-time-zone'
-import type { TimeRange } from '@tiny/ui/charts/lib/types'
+import { useBrowserTimeZone } from '@kyros/ui/lib/use-browser-time-zone'
+import type { TimeRange } from '@kyros/ui/charts/lib/types'
 
 import { MarketHeaderActions } from './market-header-actions'
 

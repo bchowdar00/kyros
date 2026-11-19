@@ -9,7 +9,7 @@ import {
 } from '@/mastra/capabilities/strategy/envelope'
 
 const base: StrategyBrief = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   summary: 'Buys up once the price crosses 60 cents and sells at a 5 cent gain.',
   goal: 'Buy the dip',
   entry: 'up under 0.4',

@@ -1,1 +1,1 @@
-export { default } from '@tiny/postcss-config/postcss.config'
+export { default } from '@kyros/postcss-config/postcss.config'

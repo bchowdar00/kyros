@@ -1,11 +1,10 @@
 'use client'
 
-import { formatExchangeTicks } from '@tiny/money'
+import { formatExchangeTicks } from '@kyros/money'
 import type { MarketTrading } from './exchange/buy'
-import { Button } from '@tiny/ui/components/button'
-import { NanoDotIcon } from '@tiny/ui/icons/nano-dot-icon'
-import { NanoChevronIcon } from '@tiny/ui/icons/nano-chevron-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import { Button } from '@kyros/ui/components/button'
+import { NanoChevronIcon } from '@kyros/ui/icons/nano-chevron-icon'
+import { cn } from '@kyros/ui/lib/cn'
 
 import { BuyPayoutSummary } from './buy-payout-summary'
 import { BuyAmountInput } from './buy-amount-input'
@@ -39,9 +38,11 @@ export function BuyWidget({
       className="relative m-0 flex w-full max-w-none flex-col gap-xl border-0 bg-transparent p-xl text-foreground"
     >
       <WidgetBackButton onClose={onClose} />
-      <div className="flex items-center justify-between text-heading-sm">
+      <div className="flex items-center justify-between text-label font-semibold text-muted-foreground">
         <div className="flex items-center gap-xl">
-          <span className="text-foreground">Buy</span>
+          <span className="font-display text-display-sm font-bold tracking-heading text-foreground">
+            Buy by hand
+          </span>
           <button type="button" disabled className="-my-sort-hit min-h-touch text-muted-foreground">
             Sell
           </button>
@@ -62,27 +63,28 @@ export function BuyWidget({
               onClick={() => onSelect(outcome.side)}
               variant="ghost"
               className={cn(
-                'min-h-app-nav min-w-0 flex-1 gap-0 rounded-sm px-xl text-body font-medium',
+                'h-auto min-w-0 flex-1 flex-col items-start gap-0 rounded-md border-2 px-lg pb-md pt-sm text-left',
                 {
-                  'border-positive bg-positive/80 text-foreground hover:bg-positive hover:text-foreground':
+                  'border-action bg-action text-on-action hover:bg-action hover:text-on-action':
                     selected && positive,
-                  'border-negative bg-negative/80 text-foreground hover:bg-negative/80':
+                  'border-foreground bg-foreground text-background hover:bg-foreground hover:text-background':
                     selected && !positive,
-                  'border-positive/10 bg-positive/25 hover:bg-positive/30': !selected && positive,
-                  'border-negative/10 bg-negative/25 hover:bg-negative/30': !selected && !positive,
+                  'border-action bg-transparent text-positive hover:bg-surface hover:text-positive':
+                    !selected && positive,
+                  'border-foreground bg-transparent text-foreground hover:bg-surface':
+                    !selected && !positive,
                 }
               )}
             >
-              <span className={cn('flex items-center gap-0', { 'text-foreground/60': !selected })}>
-                <span className="capitalize">{outcome.label.toLowerCase()}</span>
-                <NanoDotIcon />
-                <span className="font-mono">
-                  {outcome.priceTicks !== undefined
-                    ? formatExchangeTicks(outcome.priceTicks)
-                    : outcome.priceCents === undefined
-                      ? '—'
-                      : `${outcome.priceCents}¢`}
-                </span>
+              <span className="font-display text-heading-sm font-bold capitalize">
+                {outcome.label.toLowerCase()}
+              </span>
+              <span className="font-display text-price font-extrabold tracking-display">
+                {outcome.priceTicks !== undefined
+                  ? formatExchangeTicks(outcome.priceTicks)
+                  : outcome.priceCents === undefined
+                    ? '—'
+                    : `${outcome.priceCents}¢`}
               </span>
             </Button>
           )
@@ -101,7 +103,7 @@ export function BuyWidget({
           : { payoutCents: quote.payoutCents, priceTicks: quote.outcomePrice })}
       />
       {trading && (
-        <p className="text-label text-muted-foreground">
+        <p className="text-label font-medium text-muted-foreground">
           {trading.reason ??
             (quote === undefined
               ? 'Enter an affordable amount with available liquidity.'
@@ -114,7 +116,7 @@ export function BuyWidget({
         onClick={() => {
           if (quote !== undefined) trading?.submit(quote)
         }}
-        className="min-h-app-nav w-full rounded-sm text-body font-medium disabled:opacity-100"
+        className="min-h-app-nav w-full rounded-md border-foreground bg-foreground font-display text-heading-sm font-bold text-background hover:border-action hover:bg-action hover:text-on-action"
       >
         Buy
       </Button>

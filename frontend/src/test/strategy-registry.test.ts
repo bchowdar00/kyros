@@ -17,16 +17,16 @@ afterAll(() => server.close())
 
 const quality = { state: 'ok', reasons: [] }
 const catalogue = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   underlying: 'btc',
   signals: [
     {
-      signal_id: 'btc-2m.current.price.v1',
+      signal_id: 'btc-5m.current.price.v1',
       name: 'Market Price',
       description:
-        'Top of book and last trade for the current btc-2m round, as up-side probabilities; down is the complement.',
+        'Top of book and last trade for the current btc-5m round, as up-side probabilities; down is the complement.',
       location: 'internal',
-      scope: { kind: 'series', series_id: 'btc-2m' },
+      scope: { kind: 'series', series_id: 'btc-5m' },
       live: true,
       quality,
       fields: [
@@ -73,18 +73,18 @@ describe('venue registry', () => {
   it('fetches the catalogue scoped to the series', async () => {
     server.use(
       http.get('http://exchange.test/api/signals', ({ request }) => {
-        expect(new URL(request.url).searchParams.get('series')).toBe('btc-2m')
+        expect(new URL(request.url).searchParams.get('series')).toBe('btc-5m')
         return HttpResponse.json(catalogue)
       })
     )
-    const result = await createVenueRegistry('http://exchange.test').catalogue('btc-2m')
+    const result = await createVenueRegistry('http://exchange.test').catalogue('btc-5m')
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.data.signals).toHaveLength(3)
   })
 
   it('indexes only live signals with a one-sentence summary and typed fields', () => {
     const index = signalIndex(catalogue as never)
-    expect(index.map(entry => entry.id)).toEqual(['btc-2m.current.price.v1', 'btc.kraken.rsi.v1'])
+    expect(index.map(entry => entry.id)).toEqual(['btc-5m.current.price.v1', 'btc.kraken.rsi.v1'])
     expect(index[1]).toEqual({
       id: 'btc.kraken.rsi.v1',
       name: 'Kraken RSI',
@@ -107,6 +107,6 @@ describe('venue registry', () => {
   })
 
   it('names the series instrument the way the registry does', () => {
-    expect(instrumentId('btc-2m')).toBe('btc-2m.current')
+    expect(instrumentId('btc-5m')).toBe('btc-5m.current')
   })
 })

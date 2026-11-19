@@ -1,9 +1,9 @@
 'use client'
 
-import { MINUTE } from '@tiny/ui/charts/lib/time'
-import { cents, createMoneyFormatter } from '@tiny/money'
+import { MINUTE } from '@kyros/ui/charts/lib/time'
+import { cents, createMoneyFormatter } from '@kyros/money'
 
-import { aggregateCandles } from '@tiny/ui/charts/lib/candles'
+import { aggregateCandles } from '@kyros/ui/charts/lib/candles'
 
 import { BarChart } from '../widgets/bar-chart'
 import { CandleChart } from '../widgets/candle-chart'
@@ -260,7 +260,7 @@ export function LadderExample() {
   )
 }
 
-/** Per-round profit and loss in cents, the last twelve rounds of the 2-minute series. */
+/** Per-round profit and loss in cents, the last twelve rounds of the 5-minute series. */
 const ROUND_PNL_CENTS = [1240, -380, 610, 2150, -1120, 90, 1480, -640, 330, 2790, -210, 940]
 
 export function BarChartExample() {

@@ -32,13 +32,13 @@ const up: ResolvedLine = {
   ref: { type: 'market', measure: 'up' },
   label: 'YES',
   points: walk(0.5, 0.01),
-  presentation: fieldPresentation('btc-2m.current.price.v1', { name: 'up', type: 'decimal' }),
+  presentation: fieldPresentation('btc-5m.current.price.v1', { name: 'up', type: 'decimal' }),
 }
 const context = { timeZone: 'UTC' }
 
 describe('resolveChart', () => {
   it('draws one bounded signal on its own axis with its guides and a header value', () => {
-    const props = resolveChart({ kind: 'chart', series: 'btc-2m', refs: [rsi.ref] }, [rsi], context)
+    const props = resolveChart({ kind: 'chart', series: 'btc-5m', refs: [rsi.ref] }, [rsi], context)
     expect(props.title).toBe('Coinbase RSI (14)')
     expect(props.domain).toEqual([0, 100])
     expect(props.guides).toEqual([
@@ -52,7 +52,7 @@ describe('resolveChart', () => {
 
   it('shares one dollar axis for spot and an EMA, colouring spot as BTC', () => {
     const props = resolveChart(
-      { kind: 'chart', series: 'btc-2m', refs: [spot.ref, ema.ref], title: 'Spot vs EMA' },
+      { kind: 'chart', series: 'btc-5m', refs: [spot.ref, ema.ref], title: 'Spot vs EMA' },
       [spot, ema],
       { ...context, strike: 80_020, roundOpenedAt: START + 2_000 }
     )
@@ -66,7 +66,7 @@ describe('resolveChart', () => {
 
   it('normalises unlike units to percent change but keeps real values in the legend', () => {
     const props = resolveChart(
-      { kind: 'chart', series: 'btc-2m', refs: [rsi.ref, up.ref] },
+      { kind: 'chart', series: 'btc-5m', refs: [rsi.ref, up.ref] },
       [rsi, up],
       context
     )
@@ -80,7 +80,7 @@ describe('resolveChart', () => {
 
   it('shades the winning side of the strike and marks the open when asked', () => {
     const props = resolveChart(
-      { kind: 'chart', series: 'btc-2m', refs: [spot.ref], show_strike: true, mark_open: true },
+      { kind: 'chart', series: 'btc-5m', refs: [spot.ref], show_strike: true, mark_open: true },
       [spot],
       { ...context, strike: 80_020, roundOpenedAt: START + 2_000 }
     )
@@ -92,7 +92,7 @@ describe('resolveChart', () => {
   it('passes the buffered points through whole so the widget sees every tick as an append', () => {
     const long = { ...spot, points: walk(80_000, 1, 3_000) }
     const props = resolveChart(
-      { kind: 'chart', series: 'btc-2m', refs: [spot.ref], window_ms: 60_000 },
+      { kind: 'chart', series: 'btc-5m', refs: [spot.ref], window_ms: 60_000 },
       [long],
       context
     )
@@ -103,7 +103,7 @@ describe('resolveChart', () => {
   it('normalises against the first sample inside the window, not the buffer', () => {
     const long = { ...spot, points: walk(80_000, 1, 3_000) }
     const props = resolveChart(
-      { kind: 'chart', series: 'btc-2m', refs: [spot.ref, rsi.ref], window_ms: 60_000 },
+      { kind: 'chart', series: 'btc-5m', refs: [spot.ref, rsi.ref], window_ms: 60_000 },
       [long, rsi],
       context
     )

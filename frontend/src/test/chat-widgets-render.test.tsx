@@ -1,5 +1,5 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import type { UIMessage } from 'ai'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
@@ -17,7 +17,7 @@ const apiUrl = 'http://exchange.test'
 
 /** The catalogue names signals; the table reads the English name from it. */
 const catalogue = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   underlying: 'btc',
   signals: [
     {
@@ -52,12 +52,12 @@ describe('WidgetToolPart', () => {
       <WidgetToolPart
         part={toolPart('output-available', {
           input: {},
-          output: { ok: false, reason: 'nope.v1 is not a signal of btc-2m.' },
+          output: { ok: false, reason: 'nope.v1 is not a signal of btc-5m.' },
         })}
         onEvent={vi.fn()}
       />
     )
-    expect(screen.getByRole('status')).toHaveTextContent('nope.v1 is not a signal of btc-2m.')
+    expect(screen.getByRole('status')).toHaveTextContent('nope.v1 is not a signal of btc-5m.')
 
     rerender(
       <WidgetToolPart
@@ -68,7 +68,7 @@ describe('WidgetToolPart', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Timed out')
   })
 
-  it('draws authored content inline and marks it as written by Teeny', async () => {
+  it('draws authored content inline and marks it as written by Kyros', async () => {
     const { container } = render(
       <WidgetToolPart
         part={toolPart('output-available', {
@@ -83,14 +83,14 @@ describe('WidgetToolPart', () => {
     )
     expect(screen.getByRole('region', { name: 'Read' })).toBeInTheDocument()
     expect(screen.getByText('oversold')).toBeInTheDocument()
-    expect(screen.getByText('Written by Teeny, not live data.')).toBeInTheDocument()
+    expect(screen.getByText('Written by Kyros, not live data.')).toBeInTheDocument()
     await expectNoA11yViolations(container)
   })
 
   it('draws an authored table with each cell under its column', async () => {
     server.use(http.get(`${apiUrl}/api/signals`, () => HttpResponse.json(catalogue)))
     const { container } = render(
-      <ChatDataProvider value={{ apiUrl, series: 'btc-2m', address: null, timeZone: 'UTC' }}>
+      <ChatDataProvider value={{ apiUrl, series: 'btc-5m', address: null, timeZone: 'UTC' }}>
         <WidgetToolPart
           part={toolPart('output-available', {
             input: {},
@@ -149,7 +149,7 @@ describe('WidgetToolPart', () => {
           input: {},
           output: {
             ok: true,
-            spec: { kind: 'chart', series: 'btc-2m', refs: [{ type: 'spot' }], title: 'Spot' },
+            spec: { kind: 'chart', series: 'btc-5m', refs: [{ type: 'spot' }], title: 'Spot' },
           },
         })}
         onEvent={vi.fn()}

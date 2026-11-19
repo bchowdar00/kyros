@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import type { RustUserTradeRow } from '@tiny/domain'
-import { cents, createMoneyFormatter, formatExchangeTicks } from '@tiny/money'
+import type { RustUserTradeRow } from '@kyros/domain'
+import { cents, createMoneyFormatter, formatExchangeTicks } from '@kyros/money'
 
 import type { MarketOutcome } from '../types'
 import type { AccountState } from './account'
@@ -63,7 +63,7 @@ export function ExchangeTradeHistory({
         <table className="w-full text-left text-label">
           <caption className="sr-only">Orders placed by you and your strategies</caption>
           <thead>
-            <tr className="text-caption uppercase text-muted-foreground">
+            <tr className="text-label font-semibold text-muted-foreground">
               <th scope="col">Account</th>
               <th scope="col">Side</th>
               <th scope="col">Filled</th>

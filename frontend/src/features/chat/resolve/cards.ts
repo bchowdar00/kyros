@@ -1,5 +1,5 @@
-import type { RustPositionFrame, RustSignalFrame } from '@tiny/domain'
-import { cents, createMoneyFormatter } from '@tiny/money'
+import type { RustPositionFrame, RustSignalFrame } from '@kyros/domain'
+import { cents, createMoneyFormatter } from '@kyros/money'
 
 import type { CardProps } from '../widgets/card'
 import type { Stat, StatGridProps } from '../widgets/stat-grid'

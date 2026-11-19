@@ -12,7 +12,7 @@ import { type ExchangeApi, LivePublicStrategyWidget } from './live-public-strate
 import { PublicStrategyWidget } from './public-strategy-widget'
 import type { MarketOutcome } from './types'
 import { useTradeTicket } from './use-trade-ticket'
-import { CardExpansionAnimation } from '@tiny/ui/lib/card-expansion-animation'
+import { CardExpansionAnimation } from '@kyros/ui/lib/card-expansion-animation'
 
 interface ChatPanelInteractionProps {
   trading?: MarketTrading | undefined
@@ -21,7 +21,7 @@ interface ChatPanelInteractionProps {
   exchangeApi?: ExchangeApi | undefined
   children: ReactNode
   composer: ReactNode
-  /** Pinned above the composer and scrolls with it, e.g. Teeny's open question. */
+  /** Pinned above the composer and scrolls with it, e.g. Kyros's open question. */
   pinned?: ReactNode
   marketKey: string
   outcomes: readonly MarketOutcome[]
@@ -112,7 +112,7 @@ export function ChatPanelInteraction({
         <motion.div
           layout={!liveBuy}
           transition={transition}
-          className="overflow-clip rounded-composer border-[0.5px] border-highlight bg-composer-surface shadow-trade-widget backdrop-blur-[50px]"
+          className="overflow-clip rounded-composer border border-border-subtle bg-background"
         >
           <motion.div
             inert={active}

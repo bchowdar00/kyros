@@ -1,5 +1,5 @@
 {
-  "name": "@tiny/testing",
+  "name": "@kyros/testing",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -23,7 +23,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
-    "@tiny/typescript-config": "workspace:*",
+    "@kyros/typescript-config": "workspace:*",
     "@types/react": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

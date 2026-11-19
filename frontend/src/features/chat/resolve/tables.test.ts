@@ -1,4 +1,4 @@
-import type { RustMarket, RustTradeRow } from '@tiny/domain'
+import type { RustMarket, RustTradeRow } from '@kyros/domain'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -13,7 +13,7 @@ const me = `0x${'ab'.repeat(20)}`
 const other = `0x${'cd'.repeat(20)}`
 const identity = (address: string) => ({ address, root_address: address })
 const trade = (ts: number, side: 'yes' | 'no', taker: string, maker: string): RustTradeRow => ({
-  series: 'btc-2m',
+  series: 'btc-5m',
   price: 620,
   qty: 5,
   ts,
@@ -38,7 +38,7 @@ const market = (
 describe('table resolvers', () => {
   it('reads the book as cents with the requested depth', () => {
     const props = resolveBook(
-      'btc-2m',
+      'btc-5m',
       {
         status: 'live',
         bids: [
@@ -54,7 +54,7 @@ describe('table resolvers', () => {
       1
     )
     expect(props).toEqual({
-      series: 'btc-2m',
+      series: 'btc-5m',
       asks: [{ price: 63, size: 10 }],
       bids: [{ price: 61, size: 40 }],
       rows: 1,
@@ -67,13 +67,13 @@ describe('table resolvers', () => {
       trade(2_000, 'yes', me, other),
       trade(1_000, 'yes', other, other),
     ]
-    const tape = resolveFills('btc-2m', trades, { kind: 'tape' }, 2, 'UTC')
+    const tape = resolveFills('btc-5m', trades, { kind: 'tape' }, 2, 'UTC')
     expect(tape.fills.map(fill => [fill.side, fill.priceCents])).toEqual([
       ['NO', 38],
       ['YES', 62],
     ])
     expect(tape.fills[0]?.time).toBe('00:00:03')
-    const mine = resolveFills('btc-2m', trades, { kind: 'mine', address: me }, 10, 'UTC')
+    const mine = resolveFills('btc-5m', trades, { kind: 'mine', address: me }, 10, 'UTC')
     // I made the first trade's NO buy, so I bought YES; I took the second as a YES buy.
     expect(mine.fills.map(fill => fill.side)).toEqual(['YES', 'YES'])
   })
@@ -85,12 +85,12 @@ describe('table resolvers', () => {
       market(2, 100, 90, 'no'),
       market(1, 100, 105),
     ]
-    const rounds = resolveRounds('btc-2m', markets, 2)
+    const rounds = resolveRounds('btc-5m', markets, 2)
     expect(rounds.rounds).toEqual([
       { id: 'round-2', outcome: 'down', moveDollars: -10 },
       { id: 'round-3', outcome: 'up', moveDollars: 30 },
     ])
-    const distribution = resolveDistribution('btc-2m', markets, 10, 12)
+    const distribution = resolveDistribution('btc-5m', markets, 10, 12)
     expect(distribution.values).toEqual([5, -10, 30])
     expect(distribution.current).toEqual({ value: 12, label: 'Now' })
     expect(distribution.format(-10)).toBe('-$10.00')

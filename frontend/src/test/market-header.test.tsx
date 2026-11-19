@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { MarketHeader } from '@/features/market-detail/market-header'
 import { MARKET_DETAIL_FIXTURES } from '@/features/market-detail/market-detail.fixture'
 
-const marketHeader = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].header
-const marketSlug = MARKET_DETAIL_FIXTURES['nba-bos-la-083126'].slug
+const marketHeader = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].header
+const marketSlug = MARKET_DETAIL_FIXTURES['btc-above-118k-0903'].slug
 
 describe('MarketHeader', () => {
   it('renders the market identity and fixture-driven outcomes', () => {
@@ -23,7 +23,10 @@ describe('MarketHeader', () => {
         screen.getByRole('button', {
           name: `Buy ${outcome.label} outcome at ${outcome.priceCents} cents`,
         })
-      ).toHaveTextContent(`Buy ${outcome.label}${outcome.priceCents}¢`)
+        // The side is written as a word (Yes, not YES); the accessible name keeps the label.
+      ).toHaveTextContent(
+        `Buy ${outcome.label.charAt(0)}${outcome.label.slice(1).toLowerCase()}${outcome.priceCents}¢`
+      )
     }
   })
 

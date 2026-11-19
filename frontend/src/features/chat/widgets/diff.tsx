@@ -1,4 +1,4 @@
-import { cn } from '@tiny/ui/lib/cn'
+import { cn } from '@kyros/ui/lib/cn'
 import type { ReactNode } from 'react'
 
 import { WidgetFrame } from '../widget-frame'

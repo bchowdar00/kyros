@@ -4,12 +4,12 @@ import {
   AnimatedNumber,
   AnimatedNumberGroup,
   type AnimatedNumberFormat,
-} from '@tiny/ui/components/animated-number'
+} from '@kyros/ui/components/animated-number'
 import type { ReactNode } from 'react'
 
-import { cn } from '@tiny/ui/lib/cn'
-import { CENTS_PER_DOLLAR, createMoneyFormatter, isCents } from '@tiny/money'
-import type { ChartFeed } from '@tiny/ui/charts/lib/types'
+import { cn } from '@kyros/ui/lib/cn'
+import { CENTS_PER_DOLLAR, createMoneyFormatter, isCents } from '@kyros/money'
+import type { ChartFeed } from '@kyros/ui/charts/lib/types'
 
 /** One shape for both renderers, so the rolling digits and the read-aloud value cannot drift. */
 const PRICE_FORMAT = {
@@ -110,7 +110,6 @@ function FlowValue({
         <span>$</span>
         <AnimatedNumber
           {...FLOW_TIMING}
-          className="text-2xl"
           format={DIGIT_FORMAT}
           locales={LOCALE}
           value={Math.abs(value)}
@@ -130,9 +129,14 @@ function Stat({
   valueClassName?: string
 }) {
   return (
-    <div className="min-w-0 flex-1 text-center">
-      <dt className="text-body font-medium text-muted-foreground">{label}</dt>
-      <dd className={cn('m-0 mt-sm text-2xl font-regular font-mono', valueClassName)}>
+    <div className="min-w-0 flex-1 px-lg first:pl-0">
+      <dt className="text-label font-semibold text-muted-foreground">{label}</dt>
+      <dd
+        className={cn(
+          'm-0 mt-xs font-display text-display-md font-extrabold tracking-display',
+          valueClassName
+        )}
+      >
         {children}
       </dd>
     </div>
@@ -161,7 +165,25 @@ export function MarketPriceSummary({
   const feedStatus = getFeedStatus(feed)
 
   return (
-    <header aria-label="Market price summary" className={cn('flex items-center', className)}>
+    <header aria-label="Market price summary" className={cn('flex flex-col gap-lg', className)}>
+      {/* The same four figures as one plain sentence; the stats below stay the exact record.
+          Only a live feed may say "right now": a stopped feed's last price is not the price. */}
+      {Number.isFinite(delta) && feedStatus === undefined ? (
+        <p className="max-w-content font-display text-display-sm font-medium text-foreground">
+          Right now BTC is{' '}
+          <b className="whitespace-nowrap font-extrabold">
+            {delta === 0
+              ? 'level with'
+              : `${formatAmount(Math.abs(priceCents - targetCents))} ${delta > 0 ? 'above' : 'below'}`}
+          </b>{' '}
+          the {targetLabel.toLowerCase()}.{' '}
+          {delta === 0 ? null : (
+            <b className={cn('font-extrabold', directionClass)}>
+              {delta > 0 ? 'Up is ahead.' : 'Down is ahead.'}
+            </b>
+          )}
+        </p>
+      ) : null}
       <AnimatedNumberGroup>
         <dl className="flex min-w-0 flex-1 items-center">
           <Stat label={targetLabel} valueClassName="text-foreground">

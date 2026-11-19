@@ -1,9 +1,9 @@
 'use client'
 
-import { formatValue } from '@tiny/ui/charts/lib/format'
-import type { ChartHover, ChartPoint, ValueFormat } from '@tiny/ui/charts/lib/types'
-import { MarketChart } from '@tiny/ui/charts/market-chart'
-import { useLiveChartWindow } from '@tiny/ui/charts/use-live-chart-window'
+import { formatValue } from '@kyros/ui/charts/lib/format'
+import type { ChartHover, ChartPoint, ValueFormat } from '@kyros/ui/charts/lib/types'
+import { MarketChart } from '@kyros/ui/charts/market-chart'
+import { useLiveChartWindow } from '@kyros/ui/charts/use-live-chart-window'
 import { type ReactNode, useState } from 'react'
 
 import { ChartShell, type ChartShellWindow } from './chart-shell'

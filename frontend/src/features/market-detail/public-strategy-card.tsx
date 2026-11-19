@@ -1,11 +1,9 @@
 'use client'
 
-import { createMoneyFormatter } from '@tiny/money'
-import { Avatar } from '@tiny/ui/components/avatar'
-import { Button } from '@tiny/ui/components/button'
-import Image from 'next/image'
+import { createMoneyFormatter } from '@kyros/money'
+import { Button } from '@kyros/ui/components/button'
 import { useId, type ComponentPropsWithRef } from 'react'
-import { cn } from '@tiny/ui/lib/cn'
+import { cn } from '@kyros/ui/lib/cn'
 
 import type { PublicStrategy } from './types'
 import { useTradeTicket } from './use-trade-ticket'
@@ -37,49 +35,24 @@ export function PublicStrategyCard({
     <article
       {...props}
       aria-labelledby={headingId}
-      className={cn(
-        'relative overflow-clip rounded-md border-[0.5px] border-border-subtle/50 bg-surface-subtle p-xl',
-        className
-      )}
+      className={cn('border-b border-border-subtle py-xl first:pt-0', className)}
       data-public-strategy-id={strategy.id}
     >
-      {strategy.creator.avatar ? (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-0 size-strategy-glow -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-pill opacity-5 blur-strategy-glow"
-        >
-          <Image
-            alt=""
-            className="object-cover"
-            fill
-            sizes="144px"
-            src={strategy.creator.avatar.src}
-          />
-        </div>
-      ) : null}
+      <div className="flex flex-col gap-md">
+        <div className="min-w-0">
+          <h3
+            className="min-w-0 truncate font-display text-heading-md font-extrabold tracking-heading text-foreground"
+            id={headingId}
+          >
+            {strategy.title}
+          </h3>
 
-      <div className="relative flex flex-col gap-xl">
-        <div className="flex items-center gap-md">
-          <Avatar
-            alt={strategy.creator.avatar?.alt ?? `${strategy.creator.handle} avatar`}
-            className="size-avatar-lg bg-background"
-            fallback={strategy.creator.handle.slice(1, 3).toUpperCase()}
-            framed
-            {...(strategy.creator.avatar === undefined ? {} : { src: strategy.creator.avatar.src })}
-          />
+          {/* What Run does, in the template's own words. */}
+          <p className="mt-xs line-clamp-2 text-body text-foreground">{strategy.logic}</p>
 
-          <div className="min-w-0 flex-1">
-            <h3
-              className="min-w-0 truncate text-heading-sm font-regular leading-none text-foreground"
-              id={headingId}
-            >
-              {strategy.title}
-            </h3>
-
-            <p className="mt-copy truncate text-label font-medium text-muted-foreground">
-              By {strategy.creator.handle}
-            </p>
-          </div>
+          <p className="mt-xs truncate text-label text-muted-foreground">
+            A template by {strategy.creator.handle}
+          </p>
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-md">
@@ -103,7 +76,7 @@ export function PublicStrategyCard({
           <div className="flex shrink-0 items-center gap-xs">
             <Button
               aria-label={`Inverse ${strategy.title}`}
-              className="relative border-[0.5px] border-border-subtle/50 bg-surface-subtle px-md hover:bg-surface after:absolute after:inset-x-0 after:-inset-y-sm after:content-['']"
+              className="relative px-md after:absolute after:inset-x-0 after:-inset-y-sm after:content-['']"
               id={`${triggerId}-inverse`}
               onClick={() =>
                 onInverse

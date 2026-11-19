@@ -51,7 +51,7 @@ export const endgame: Derivation = {
   document: {
     name: 'Endgame Sweep',
     description:
-      'On the 2-minute BTC up/down: 20 seconds before the round closes, if either side is trading at 95 cents or more, buy that side at once with a quarter of the round budget and let it settle. Every round.',
+      'On the 5-minute BTC up/down: 20 seconds before the round closes, if either side is trading at 95 cents or more, buy that side at once with a quarter of the round budget and let it settle. Every round.',
     ...bookOnly(),
     ...noExtras(),
     triggers: [stopTimer('last_20s', '20s')],

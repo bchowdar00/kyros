@@ -1,22 +1,22 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
-import type { RustSignalCatalogue } from '@tiny/domain'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
+import type { RustSignalCatalogue } from '@kyros/domain'
 import { describe, expect, it, vi } from 'vitest'
 
 import { SignalsBrowser } from '@/features/market-detail/signals-browser'
 
 const catalogue: RustSignalCatalogue = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   underlying: 'btc',
   signals: [
     {
-      signal_id: 'btc-2m.current.stats.v1',
+      signal_id: 'btc-5m.current.stats.v1',
       name: 'Round activity',
       description:
         'How much has traded in this round so far. Everything here resets when the next round opens.',
       location: 'internal',
-      scope: { kind: 'series', series_id: 'btc-2m' },
+      scope: { kind: 'series', series_id: 'btc-5m' },
       live: true,
       quality: { state: 'ready', reasons: [] },
       fields: [
@@ -77,10 +77,10 @@ function renderBrowser(overrides: Partial<Parameters<typeof SignalsBrowser>[0]> 
 
 describe('SignalsBrowser', () => {
   it('opens the market by default, keeps other venues closed, and hides warming-up signals', async () => {
-    const { container } = renderBrowser({ pins: ['btc-2m.current.stats.v1:trades'] })
+    const { container } = renderBrowser({ pins: ['btc-5m.current.stats.v1:trades'] })
 
     expect(
-      screen.getByText('2 live values for btc-2m. Pinned rows show on the strip.')
+      screen.getByText('2 live values for btc-5m. Pinned rows show on the strip.')
     ).toBeInTheDocument()
     expect(screen.queryByText('Kraken')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Traders/ })).not.toBeInTheDocument()
@@ -139,7 +139,7 @@ describe('SignalsBrowser', () => {
     expect(screen.getByRole('button', { name: 'Close Trades' })).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'Pin to strip' }))
-    expect(onTogglePin).toHaveBeenCalledWith('btc-2m.current.stats.v1:trades')
+    expect(onTogglePin).toHaveBeenCalledWith('btc-5m.current.stats.v1:trades')
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog', { name: 'Trades' })).not.toBeInTheDocument()

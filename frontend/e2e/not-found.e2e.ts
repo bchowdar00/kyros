@@ -20,7 +20,7 @@ test.describe('not found', () => {
   })
 
   test('a planned nav destination answers a designed, unindexed 404', async ({ page }) => {
-    const response = await page.goto('/leaderboard')
+    const response = await page.goto('/rewards')
 
     expect(response?.status()).toBe(404)
     await expect(page.getByRole('heading', { name: 'There is nothing here' })).toBeVisible()

@@ -1,7 +1,7 @@
 'use client'
 
-import { useBrowserTimeZone } from '@tiny/ui/lib/use-browser-time-zone'
-import { ProbabilityMarketCard } from '@tiny/ui/charts/probability-market-card'
+import { useBrowserTimeZone } from '@kyros/ui/lib/use-browser-time-zone'
+import { ProbabilityMarketCard } from '@kyros/ui/charts/probability-market-card'
 
 import type { MarketProbabilityChartData, MarketSide } from './types'
 

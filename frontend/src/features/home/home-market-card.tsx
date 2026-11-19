@@ -1,4 +1,3 @@
-import { getHomeMarketCardVisualConfig } from './market-card.config'
 import { MarketCardChart, type MarketCardChartLine } from './market-card-chart'
 import { MarketCard } from './market-card'
 import type { HomeMarketCardModel } from './types'
@@ -8,7 +7,6 @@ export interface HomeMarketCardProps {
 }
 
 export function HomeMarketCard({ card }: HomeMarketCardProps) {
-  const visualConfig = getHomeMarketCardVisualConfig(card)
   const series: readonly MarketCardChartLine[] = card.priceChart
     ? [
         {
@@ -25,7 +23,6 @@ export function HomeMarketCard({ card }: HomeMarketCardProps) {
 
   return (
     <MarketCard
-      artwork={visualConfig}
       category={card.category}
       chart={<MarketCardChart label={`${card.title} trend`} series={series} />}
       marketStatus={card.marketStatus}

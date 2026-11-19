@@ -1,6 +1,6 @@
 'use client'
 
-import type { RustSignalCatalogue } from '@tiny/domain'
+import type { RustSignalCatalogue } from '@kyros/domain'
 
 import { useSignalCatalogue } from '@/features/market-detail/use-signal-catalogue'
 import { signalDisplayName } from '@/features/signals/signal-cards'

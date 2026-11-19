@@ -1,9 +1,9 @@
 'use client'
 
-import type { RustSignalCatalogue } from '@tiny/domain'
-import { MiniXIcon } from '@tiny/ui/icons/mini-x-icon'
-import { NanoChevronIcon } from '@tiny/ui/icons/nano-chevron-icon'
-import { cn } from '@tiny/ui/lib/cn'
+import type { RustSignalCatalogue } from '@kyros/domain'
+import { MiniXIcon } from '@kyros/ui/icons/mini-x-icon'
+import { NanoChevronIcon } from '@kyros/ui/icons/nano-chevron-icon'
+import { cn } from '@kyros/ui/lib/cn'
 import { useEffect, useId, useState } from 'react'
 
 import {

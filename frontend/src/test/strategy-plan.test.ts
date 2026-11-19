@@ -11,7 +11,7 @@ import {
 import { briefShare, checkPlan } from '@/mastra/capabilities/strategy/plan-check'
 
 const brief: StrategyBrief = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   summary: 'Buys whichever side crosses 70 cents and flips when it falls under 50.',
   goal: 'ride momentum and flip',
   entry: 'either side above 70 cents',

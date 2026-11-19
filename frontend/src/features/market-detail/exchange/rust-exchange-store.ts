@@ -1,16 +1,18 @@
-import { createRustExchangeClient } from '@tiny/api'
+import { createRustExchangeClient } from '@kyros/api'
 import {
   RustAccountsFrameSchema,
   RustBookFrameSchema,
   RustPositionFrameSchema,
   RustPriceFrameSchema,
   type RustOpenOrderRow,
-} from '@tiny/domain'
+} from '@kyros/domain'
 
+import type { GeminiBookState } from '../types'
 import { type AccountState, initialAccount } from './account'
 import { type ExchangeBuyQuote, tradingUnavailable } from './buy'
 import { allocationTenths, deployUnavailable, type StrategyDeployRequest } from './deploy'
 import { type FeedState, initialFeed } from './feed'
+import { cancelFailureNotice, deployFailureNotice, orderFailureNotice } from './order-error.mapper'
 import { applyRustAccounts, applyRustPosition } from './rust-account'
 import { applyRustBook, applyRustRound, type RustRound } from './rust-feed'
 import { openDemoSocket } from '@/features/exchange-streams/socket'
@@ -162,10 +164,11 @@ export function createRustExchangeStore(config: RustExchangeConfig) {
         if (listeners.size === 0) stop()
       }
     },
-    async buy(quote: ExchangeBuyQuote) {
+    /** `geminiBook` is the series' Gemini state as last polled, the same one the screen's reason reads. */
+    async buy(quote: ExchangeBuyQuote, geminiBook?: GeminiBookState) {
       if (
         snapshot.pending ||
-        tradingUnavailable(snapshot.feed, snapshot.account) !== undefined ||
+        tradingUnavailable(snapshot.feed, snapshot.account, geminiBook) !== undefined ||
         snapshot.feed.marketId !== quote.marketId
       )
         return notice('The market changed or is unavailable. Review the current quote.')
@@ -184,10 +187,7 @@ export function createRustExchangeStore(config: RustExchangeConfig) {
         qty: Number(quote.qty),
       })
       if (!placed.ok) {
-        return update({
-          pending: false,
-          notice: `Exchange rejected the order: ${placed.error.message}`,
-        })
+        return update({ pending: false, notice: orderFailureNotice(placed.error) })
       }
       const filled = placed.data.fills.reduce((total, fill) => total + fill.qty, 0)
       const resting = placed.data.resting_qty
@@ -219,7 +219,7 @@ export function createRustExchangeStore(config: RustExchangeConfig) {
         crypto.randomUUID()
       )
       if (!deployed.ok) {
-        update({ deploying: false, deployNotice: `Exchange refused: ${deployed.error.message}` })
+        update({ deploying: false, deployNotice: deployFailureNotice(deployed.error) })
         return false
       }
       // The new sub-account's row arrives on the next accounts frame.
@@ -234,7 +234,7 @@ export function createRustExchangeStore(config: RustExchangeConfig) {
     async cancel(order: RustOpenOrderRow) {
       if (snapshot.account.status !== 'live') return notice('Reconnect before cancelling.')
       const cancelled = await client.cancelOrder(order.order_id, order.account, order.series)
-      if (!cancelled.ok) return notice(`Cancel failed: ${cancelled.error.message}`)
+      if (!cancelled.ok) return notice(cancelFailureNotice(cancelled.error))
       // The accounts frame drops the row on the book broadcast the cancel triggers.
       notice('Order cancelled.')
     },

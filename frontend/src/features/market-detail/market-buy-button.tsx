@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, type ButtonProps } from '@tiny/ui/components/button'
+import { Button, type ButtonProps } from '@kyros/ui/components/button'
 import { useId } from 'react'
 
 import type { MarketSide } from './types'

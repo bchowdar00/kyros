@@ -17,8 +17,8 @@ function mockSeries(currentMarketId: number | null): void {
     http.get('https://exchange.test/api/series', () =>
       HttpResponse.json([
         {
-          series: 'btc-2m',
-          duration_secs: 120,
+          series: 'btc-5m',
+          duration_secs: 300,
           current_market_id: 3,
           opens_at_ms: 1_788_598_800_000,
           closes_at_ms: 1_788_598_920_000,

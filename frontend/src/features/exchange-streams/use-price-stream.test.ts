@@ -37,8 +37,8 @@ class FakeWebSocket {
 
 const snapshot = {
   type: 'snapshot',
-  series: 'btc-2m',
-  duration_secs: 120,
+  series: 'btc-5m',
+  duration_secs: 300,
   market_id: 7,
   strike: 79_650,
   opens_at_ms: 1_788_598_800_000,
@@ -59,10 +59,10 @@ describe('usePriceStream', () => {
   })
 
   it('opens the series price socket and seeds history and the round from the snapshot', () => {
-    const { result, unmount } = renderHook(() => usePriceStream('http://localhost:8080', 'btc-2m'))
+    const { result, unmount } = renderHook(() => usePriceStream('http://localhost:8080', 'btc-5m'))
 
     expect(FakeWebSocket.instances).toHaveLength(1)
-    expect(FakeWebSocket.instances[0]?.url).toBe('ws://localhost:8080/ws/price?series=btc-2m')
+    expect(FakeWebSocket.instances[0]?.url).toBe('ws://localhost:8080/ws/price?series=btc-5m')
 
     act(() => FakeWebSocket.instances[0]?.emit(snapshot))
 
@@ -84,7 +84,7 @@ describe('usePriceStream', () => {
   })
 
   it('keeps the price history and swaps the round on a reset for this series only', () => {
-    const { result, unmount } = renderHook(() => usePriceStream('http://localhost:8080', 'btc-2m'))
+    const { result, unmount } = renderHook(() => usePriceStream('http://localhost:8080', 'btc-5m'))
     const socket = FakeWebSocket.instances[0]
     act(() => socket?.emit(snapshot))
     act(() =>
@@ -102,12 +102,12 @@ describe('usePriceStream', () => {
     act(() =>
       socket?.emit({
         type: 'market_reset',
-        series: 'btc-2m',
+        series: 'btc-5m',
         market_id: 8,
         strike: 79_700,
         opens_at_ms: 1_788_598_920_000,
         closes_at_ms: 1_788_599_040_000,
-        duration_secs: 120,
+        duration_secs: 300,
       })
     )
     expect(result.current.points).toEqual([{ time: 1_788_598_801_000, value: 79_651.5 }])
@@ -117,20 +117,20 @@ describe('usePriceStream', () => {
   })
 
   it('stays idle when the exchange origin is unset', () => {
-    const { result } = renderHook(() => usePriceStream(undefined, 'btc-2m'))
+    const { result } = renderHook(() => usePriceStream(undefined, 'btc-5m'))
 
     expect(FakeWebSocket.instances).toHaveLength(0)
     expect(result.current).toEqual({ feed: { state: 'paused' }, points: [] })
   })
 
   it('keeps the same connection and observed history across a market remount', () => {
-    const firstMarket = renderHook(() => usePriceStream('http://localhost:8080', 'btc-2m'))
+    const firstMarket = renderHook(() => usePriceStream('http://localhost:8080', 'btc-5m'))
     const socket = FakeWebSocket.instances[0]
     act(() => socket?.emit(snapshot))
     const before = firstMarket.result.current.points
     firstMarket.unmount()
     expect(socket?.closed).toBe(false)
-    const nextMarket = renderHook(() => usePriceStream('http://localhost:8080', 'btc-2m'))
+    const nextMarket = renderHook(() => usePriceStream('http://localhost:8080', 'btc-5m'))
     expect(FakeWebSocket.instances).toHaveLength(1)
     expect(nextMarket.result.current.points).toBe(before)
     nextMarket.unmount()

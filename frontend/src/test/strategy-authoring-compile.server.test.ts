@@ -9,7 +9,7 @@ import { projectToIr } from '@/mastra/capabilities/strategy/project-to-ir'
 
 // The worked example: $100 in, $10 per round, $2.50 per order, stop at $100.
 const brief: StrategyBrief = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   summary: 'Buys up once the price crosses 60 cents and sells at a 5 cent gain.',
   goal: 'g',
   entry: 'e',
@@ -68,8 +68,8 @@ async function compile(document: AuthoringStrategy) {
   })
   const body: unknown = await response.json()
   expect(response.status, JSON.stringify(body, null, 2)).toBe(200)
-  // The document names its own series (the NBA derivation trades nba-h2h).
-  const market = document.instruments.find(i => i.nick === 'market')?.id ?? 'btc-2m.current'
+  // The document names its own series.
+  const market = document.instruments.find(i => i.nick === 'market')?.id ?? 'btc-5m.current'
   const series = market.replace(/\.current$/, '')
   expect(body).toMatchObject({ series, instruments: { market } })
   return body as Compiled
@@ -92,7 +92,7 @@ describe.skipIf(EXCHANGE_URL === undefined)('authoring material against the exch
       kind === 'cancel'
         ? [restBid('0.25', 'bid', null), ...FRAGMENTS.cancel.items]
         : FRAGMENTS[kind].items
-    const compiled = await compile(fragmentHost('btc-2m', items))
+    const compiled = await compile(fragmentHost('btc-5m', items))
     expect(compiled.warnings, JSON.stringify(compiled.warnings, null, 2)).toEqual([])
   })
 })

@@ -2,7 +2,7 @@
 
 import { QueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { createApiClient } from '@tiny/api'
+import { createApiClient } from '@kyros/api'
 import { SavedChatsSchema } from './saved-chat'
 
 export function useSavedChats(marketSlug: string | undefined) {

@@ -2,9 +2,9 @@ import type { StrategyBrief } from '@/mastra/capabilities/strategy/brief'
 import { deriveEnvelope } from '@/mastra/capabilities/strategy/envelope'
 
 /**
- * The bankroll the deploy screen edits, in the brief's own money slots. Teeny fills the
+ * The bankroll the deploy screen edits, in the brief's own money slots. Kyros fills the
  * slots when it writes the brief; the user changes dollar figures here. A slot the user has
- * not touched keeps Teeny's share, so the round and order budgets follow the allocation as
+ * not touched keeps Kyros's share, so the round and order budgets follow the allocation as
  * it is retyped; a touched slot is a dollar amount and stays put.
  */
 export interface Bankroll {

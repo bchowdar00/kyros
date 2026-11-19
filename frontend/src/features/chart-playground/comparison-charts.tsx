@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { createPriceTickStep, createProbabilityTickStep } from '@tiny/ui/charts/lib/tape'
-import { SimulationDisclosure } from '@tiny/ui/charts/simulation-disclosure'
+import { createPriceTickStep, createProbabilityTickStep } from '@kyros/ui/charts/lib/tape'
+import { SimulationDisclosure } from '@kyros/ui/charts/simulation-disclosure'
 import { useSimulatedTape } from './use-simulated-tape'
-import { PriceMarketCard } from '@tiny/ui/charts/price-market-card'
-import { ProbabilityMarketCard } from '@tiny/ui/charts/probability-market-card'
+import { PriceMarketCard } from '@kyros/ui/charts/price-market-card'
+import { ProbabilityMarketCard } from '@kyros/ui/charts/probability-market-card'
 import { ETH_MARKET_FIXTURE, SPORTS_MARKET_FIXTURE } from './chart-playground.fixture'
 
 const PRICE_TAPE = { intervalMs: 250, seed: 0x51ee }

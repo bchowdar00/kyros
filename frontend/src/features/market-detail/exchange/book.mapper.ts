@@ -1,4 +1,4 @@
-import type { ExchangeLevel } from '@tiny/domain'
+import type { ExchangeLevel } from '@kyros/domain'
 
 import type { MarketOutcome, OrderBookData, OrderBookLevel } from '../types'
 import type { FeedState } from './feed'
@@ -36,6 +36,7 @@ export function exchangeBook(feed: FeedState): OrderBookData {
     title: 'Order book',
     actionLabel: 'Center order book',
     columnLabels: ['Price (YES)', 'Lots', 'Total'],
+    feedLive: feed.status === 'live',
     // Asks render top-down toward the spread, so the deepest cumulative bar sits on top.
     asks: map(asks).toReversed(),
     bids: map(bids),

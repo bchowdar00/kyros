@@ -1,5 +1,5 @@
 import { createTool } from '@mastra/core/tools'
-import type { RustSignal, RustSignalCatalogue, RustSignalField } from '@tiny/domain'
+import type { RustSignal, RustSignalCatalogue, RustSignalField } from '@kyros/domain'
 import * as z from 'zod/mini'
 
 import { venueOf } from '@/features/signals/signal-cards'
@@ -146,7 +146,7 @@ export function createSignalTools(baseUrl: string | undefined) {
         .filter(signal => signal.fields.length > 0)
       return {
         status: 'ok',
-        source: 'Tiny exchange signals',
+        source: 'Kyros signals',
         retrievedAt: RETRIEVED(),
         series,
         total: found.length,
@@ -219,7 +219,7 @@ export function createSignalTools(baseUrl: string | undefined) {
       })
       return {
         status: 'ok',
-        source: 'Tiny exchange signals',
+        source: 'Kyros signals',
         retrievedAt: RETRIEVED(),
         series,
         window_ms,

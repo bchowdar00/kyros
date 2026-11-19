@@ -1,6 +1,6 @@
-import type { RustSignalField } from '@tiny/domain'
-import { bps, cents, createMoneyFormatter } from '@tiny/money'
-import type { ValueFormat } from '@tiny/ui/charts/lib/types'
+import type { RustSignalField } from '@kyros/domain'
+import { bps, cents, createMoneyFormatter } from '@kyros/money'
+import type { ValueFormat } from '@kyros/ui/charts/lib/types'
 
 const money = createMoneyFormatter('en-US')
 

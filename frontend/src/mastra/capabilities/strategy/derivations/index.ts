@@ -4,7 +4,6 @@ import { BTC_SIDES, type Sides } from '../sides'
 import { endgame } from './endgame'
 import { everyTime } from './every-time'
 import { momentumFlip } from './flip'
-import { modelVsCrowd } from './model-vs-crowd'
 import { quoter } from './quoter'
 import { reEntry } from './re-entry'
 import { scaleIn } from './scale-in'
@@ -24,7 +23,6 @@ export const DERIVATIONS: readonly Derivation[] = [
   everyTime,
   endgame,
   signalFollow,
-  modelVsCrowd,
 ]
 
 function kinds(plan: StrategyPlan): Set<ActionKind> {

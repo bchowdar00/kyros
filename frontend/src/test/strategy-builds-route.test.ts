@@ -21,7 +21,7 @@ import { POST } from '@/app/api/strategy/builds/route'
 import { GET } from '@/app/api/strategy/builds/[id]/route'
 
 const brief = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   summary: 'Buys up once the price crosses 60 cents and sells at a 5 cent gain.',
   goal: 'Buy up when it gets rich',
   entry: 'up price crosses above 60 cents',

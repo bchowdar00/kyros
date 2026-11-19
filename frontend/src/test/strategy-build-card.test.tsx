@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -13,11 +13,11 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 const brief = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   summary: 'Buys up once the price crosses 60 cents and sells at a 5 cent gain.',
   goal: 'Buy up when it gets rich',
   entry: 'the up price crosses above 60 cents',
-  signal_ids: ['btc-2m.current.price.v1'],
+  signal_ids: ['btc-5m.current.price.v1'],
   outcome: 'up' as const,
   recurrence: 'once_per_round' as const,
   interval: null,
@@ -59,9 +59,9 @@ const compiled = {
       strategy_id: 'Strategy_abc',
       name: 'Threshold Entry',
       description: 'x',
-      series: 'btc-2m',
+      series: 'btc-5m',
       legs: ['hunting', 'holding', 'done'],
-      subscriptions: ['btc-2m.current.price.v1'],
+      subscriptions: ['btc-5m.current.price.v1'],
     },
   },
   error: null,
@@ -104,12 +104,12 @@ describe('compile proposal and build cards', () => {
     expect(await screen.findByText('Strategy compiled', undefined, { timeout: 4000 })).toBeVisible()
     expect(screen.getByText(/sells at a 5 cent gain/)).toBeVisible()
     expect(screen.getByRole('button', { name: 'Deploy' })).toBeDisabled()
-    await user.click(screen.getByRole('button', { name: 'Ask Teeny about this' }))
+    await user.click(screen.getByRole('button', { name: 'Ask Kyros about this' }))
     expect(onAsk).toHaveBeenCalledWith(expect.stringContaining('It assumed: Full size per order.'))
     await expectNoA11yViolations(container)
   })
 
-  it('offers to bring compiler problems back to Teeny when the build fails', async () => {
+  it('offers to bring compiler problems back to Kyros when the build fails', async () => {
     server.use(
       http.post('*/api/strategy/builds', () => HttpResponse.json({ id: 'run-2' }, { status: 202 })),
       http.get('*/api/strategy/builds/run-2', () =>
@@ -139,7 +139,7 @@ describe('compile proposal and build cards', () => {
     render(<CompileProposalCard brief={brief} onAsk={onAsk} onKeepTalking={vi.fn()} />)
     await user.click(screen.getByRole('button', { name: 'Compile' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('refused it after 4 attempts')
-    await user.click(screen.getByRole('button', { name: 'Ask Teeny about this' }))
+    await user.click(screen.getByRole('button', { name: 'Ask Kyros about this' }))
     expect(onAsk).toHaveBeenCalledWith(expect.stringContaining('not-clamp-wrapped'))
   })
 

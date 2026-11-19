@@ -20,7 +20,7 @@ describe('saved chat storage', () => {
     expect(chatTitle('  ')).toBe('New chat')
   })
   it('persists titles and messages across connections, scopes users and markets, and preserves history', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'tiny-chat-'))
+    const directory = await mkdtemp(join(tmpdir(), 'kyros-chat-'))
     directories.push(directory)
     const storage = new LibSQLStore({ id: 'test-chat', url: `file:${join(directory, 'test.db')}` })
     const memory = new Memory({ storage })

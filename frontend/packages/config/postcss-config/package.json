@@ -1,5 +1,5 @@
 {
-  "name": "@tiny/postcss-config",
+  "name": "@kyros/postcss-config",
   "version": "0.0.0",
   "private": true,
   "type": "module",

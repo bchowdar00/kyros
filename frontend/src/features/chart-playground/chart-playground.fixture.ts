@@ -1,9 +1,9 @@
-import { CANDLE_INTERVALS } from '@tiny/ui/charts/lib/candles'
-import { createMockPricePoints, createMockProbabilityPoints } from '@tiny/ui/charts/lib/mock'
-import { createSeededRandom } from '@tiny/ui/charts/lib/tape'
-import { HOUR, MINUTE, SECOND } from '@tiny/ui/charts/lib/time'
-import type { ChartPoint, TimeRange } from '@tiny/ui/charts/lib/types'
-import type { ChartWindow } from '@tiny/ui/charts/chart-window'
+import { CANDLE_INTERVALS } from '@kyros/ui/charts/lib/candles'
+import { createMockPricePoints, createMockProbabilityPoints } from '@kyros/ui/charts/lib/mock'
+import { createSeededRandom } from '@kyros/ui/charts/lib/tape'
+import { HOUR, MINUTE, SECOND } from '@kyros/ui/charts/lib/time'
+import type { ChartPoint, TimeRange } from '@kyros/ui/charts/lib/types'
+import type { ChartWindow } from '@kyros/ui/charts/chart-window'
 
 export const ETH_WINDOWS: readonly ChartWindow[] = [
   { candleInterval: 15 * SECOND, durationMs: 15 * MINUTE },
@@ -94,7 +94,7 @@ export const SPORTS_MARKET_FIXTURE: SportsMarketFixture = {
     { label: 'Q4', time: gameStart + 64 * MINUTE },
   ],
   range: { end: gameStart + 90 * MINUTE, start: gameStart },
-  subtitle: 'Boston Celtics at Los Angeles Lakers',
+  subtitle: 'BTC Up or Down, 5 minutes',
   timeZone: 'America/New_York',
   title: 'BOS at LAL',
 }

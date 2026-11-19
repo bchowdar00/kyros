@@ -1,5 +1,5 @@
-import { formatExchangeTicks, formatExchangeBalance } from '@tiny/money'
-import { cn } from '@tiny/ui/lib/cn'
+import { formatExchangeDollars, formatExchangeTicks } from '@kyros/money'
+import { cn } from '@kyros/ui/lib/cn'
 
 import type { MarketSide, OrderBookLevel } from './types'
 
@@ -9,9 +9,15 @@ export interface OrderBookRowProps {
   side: MarketSide
 }
 
+/* Offers sit on the grey wash and bids on the blue one; the bid price is the blue number. */
 const depthClasses: Record<MarketSide, string> = {
-  away: 'border-negative/10 bg-negative/25',
-  home: 'border-positive/10 bg-positive/25',
+  away: 'bg-surface-raised',
+  home: 'bg-action-muted',
+}
+
+const priceClasses: Record<MarketSide, string> = {
+  away: 'text-foreground',
+  home: 'text-positive',
 }
 
 const sharesFormatter = new Intl.NumberFormat('en-US', {
@@ -28,15 +34,15 @@ const usdFormatter = new Intl.NumberFormat('en-US', {
 
 export function OrderBookRow({ depthPercentage, level, side }: OrderBookRowProps) {
   return (
-    <tr className="mb-xs table h-[28px] w-full table-fixed" data-order-book-side={side}>
+    <tr className="table h-3xl w-full table-fixed" data-order-book-side={side}>
       <td className="relative w-1/3 overflow-visible pl-sm text-left">
         <span
           aria-hidden="true"
-          className={cn('absolute inset-y-0 left-0 z-0 rounded-xs border', depthClasses[side])}
+          className={cn('absolute inset-y-px left-0 z-0 rounded-xs', depthClasses[side])}
           data-order-book-depth=""
           style={{ width: `${depthPercentage * 3}%` }}
         />
-        <span className="relative z-[1]">
+        <span className={cn('relative z-[1] font-bold', priceClasses[side])}>
           {'priceTicks' in level ? formatExchangeTicks(level.priceTicks) : `${level.priceCents}¢`}
         </span>
       </td>
@@ -45,7 +51,7 @@ export function OrderBookRow({ depthPercentage, level, side }: OrderBookRowProps
       </td>
       <td className="relative z-[1] w-1/3 pr-sm text-right">
         {'priceTicks' in level
-          ? formatExchangeBalance(level.totalMicros)
+          ? formatExchangeDollars(level.totalMicros)
           : usdFormatter.format(level.totalUsd)}
       </td>
     </tr>

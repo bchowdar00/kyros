@@ -2,7 +2,6 @@
 
 import { env } from '@/env'
 import { usePriceStream } from '@/features/exchange-streams/use-price-stream'
-import { NbaLiveHomeMarketCard } from '@/features/nba-market/nba-live-home-card'
 
 import { HomeMarketCard } from './home-market-card'
 import type { HomeMarketCardModel } from './types'
@@ -12,9 +11,6 @@ import type { HomeMarketCardModel } from './types'
  * market page, so the sparkline and the strike are the exchange's, never a placeholder.
  */
 export function LiveHomeMarketCard({ card }: { card: HomeMarketCardModel }) {
-  if (card.live && card.series !== undefined) {
-    return <NbaLiveHomeMarketCard card={card} />
-  }
   return <LivePriceCard card={card} />
 }
 

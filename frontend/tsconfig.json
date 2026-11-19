@@ -1,5 +1,5 @@
 {
-  "extends": "@tiny/typescript-config/nextjs.json",
+  "extends": "@kyros/typescript-config/nextjs.json",
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]

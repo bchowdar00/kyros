@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
 
 export interface MarketCardChartLine {
   colorToken: string

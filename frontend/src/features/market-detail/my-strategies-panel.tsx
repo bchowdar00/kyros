@@ -1,21 +1,29 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { type ReactNode, useState } from 'react'
 
-import { ScrollFade } from '@tiny/ui/components/scroll-fade'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@tiny/ui/components/tabs'
+import { ScrollFade } from '@kyros/ui/components/scroll-fade'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@kyros/ui/components/tabs'
 
 import { MyStrategyRow } from './my-strategy-row'
 import type { MyStrategiesData, StrategyTab } from './types'
 
 export type MyStrategiesPanelProps = MyStrategiesData & {
+  /** Exchange origin for the strategies' on-chain record lines; unset shows none. */
+  apiUrl?: string | undefined
   openOrders?: ReactNode
   tradeHistory?: ReactNode
 }
 
-function StrategyTable({ rows }: Pick<MyStrategiesData, 'rows'>) {
+function StrategyTable({
+  apiUrl,
+  rows,
+}: Pick<MyStrategiesData, 'rows'> & { apiUrl: string | undefined }) {
+  const [queryClient] = useState(() => new QueryClient())
+
   return (
-    <div className="relative h-[359px] w-full min-w-0 overflow-hidden rounded-md border-[0.5px] border-border-subtle bg-surface-subtle">
+    <div className="relative h-[359px] w-full min-w-0 overflow-hidden rounded-md border-[0.5px] border-border-subtle bg-background">
       {/* Inline tables must let scrolling continue to the page at either end. */}
       <section
         aria-label="Scrollable accounts"
@@ -33,28 +41,28 @@ function StrategyTable({ rows }: Pick<MyStrategiesData, 'rows'>) {
             <col className="w-[112px]" />
             <col className="w-[38px]" />
           </colgroup>
-          <thead className="sticky top-0 z-10 h-[53px] bg-background/80 backdrop-blur-glass">
+          <thead className="sticky top-0 z-10 h-[53px] bg-background">
             <tr className="border-b border-border-subtle">
               <th
-                className="overflow-hidden pl-xl text-left text-caption font-semibold uppercase text-muted-foreground"
+                className="overflow-hidden pl-xl text-left text-label font-semibold text-muted-foreground"
                 scope="col"
               >
                 Account
               </th>
               <th
-                className="overflow-hidden whitespace-nowrap pl-sm text-left text-caption font-semibold uppercase text-muted-foreground"
+                className="overflow-hidden whitespace-nowrap pl-sm text-left text-label font-semibold text-muted-foreground"
                 scope="col"
               >
                 Position
               </th>
               <th
-                className="overflow-hidden whitespace-nowrap text-center text-caption font-semibold uppercase text-muted-foreground"
+                className="overflow-hidden whitespace-nowrap text-center text-label font-semibold text-muted-foreground"
                 scope="col"
               >
                 Trades
               </th>
               <th
-                className="overflow-hidden whitespace-nowrap text-right text-caption font-semibold uppercase text-muted-foreground"
+                className="overflow-hidden whitespace-nowrap text-right text-label font-semibold text-muted-foreground"
                 scope="col"
               >
                 Market P&amp;L
@@ -64,11 +72,19 @@ function StrategyTable({ rows }: Pick<MyStrategiesData, 'rows'>) {
               </th>
             </tr>
           </thead>
-          <tbody>
-            {rows.map((strategy, index) => (
-              <MyStrategyRow key={strategy.id} showDivider={index === 0} strategy={strategy} />
-            ))}
-          </tbody>
+          <QueryClientProvider client={queryClient}>
+            <tbody>
+              {rows.map((strategy, index) => (
+                <MyStrategyRow
+                  // The exchange sends the main account first (`accountRows`); it has no record.
+                  apiUrl={index === 0 ? undefined : apiUrl}
+                  key={strategy.id}
+                  showDivider={index === 0}
+                  strategy={strategy}
+                />
+              ))}
+            </tbody>
+          </QueryClientProvider>
         </table>
       </section>
 
@@ -81,12 +97,13 @@ function PlaceholderTabPanel({ tab }: { tab: StrategyTab }) {
   return (
     <div
       aria-label={tab.label}
-      className="h-[359px] w-full rounded-md border-[0.5px] border-border-subtle bg-surface-subtle"
+      className="h-[359px] w-full rounded-md border-[0.5px] border-border-subtle bg-background"
     />
   )
 }
 
 export function MyStrategiesPanel({
+  apiUrl,
   rows,
   tabs,
   title,
@@ -118,7 +135,7 @@ export function MyStrategiesPanel({
           <TabsContent className="min-h-0 w-full flex-1" key={tab.id} value={tab.id}>
             {tab.id === 'strategies' ? (
               rows.length > 0 ? (
-                <StrategyTable rows={rows} />
+                <StrategyTable apiUrl={apiUrl} rows={rows} />
               ) : (
                 <p className="p-xl text-muted-foreground">Waiting for your accounts.</p>
               )

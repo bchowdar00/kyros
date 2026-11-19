@@ -1,11 +1,11 @@
-import type { EventDetail, SeriesRecord } from '@tiny/domain'
+import type { EventDetail, SeriesRecord } from '@kyros/domain'
 
 export const series: SeriesRecord = {
   assetType: 'btc',
-  frequency: '2m',
+  frequency: '5m',
   id: 100_001,
   marketType: 'updown',
-  slug: 'btc-updown-2m',
+  slug: 'btc-updown-5m',
   status: 'SERIES_STATUS_ACTIVE',
 }
 

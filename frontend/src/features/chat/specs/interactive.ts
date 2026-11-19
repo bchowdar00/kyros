@@ -1,4 +1,4 @@
-import { RustSeriesSlugSchema } from '@tiny/domain'
+import { RustSeriesSlugSchema } from '@kyros/domain'
 import * as z from 'zod/mini'
 
 import { TITLE_MAX } from './bound'

@@ -1,9 +1,9 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { createApiClient } from '@tiny/api'
+import { createApiClient } from '@kyros/api'
 import * as z from 'zod/mini'
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
 
 import { env } from '@/env'
 import { toPriceHistory } from '@/features/market-detail/price-history.mapper'

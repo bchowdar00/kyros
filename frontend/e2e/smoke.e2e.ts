@@ -41,7 +41,7 @@ for (const route of smokeRoutes) {
   })
 }
 
-test('every page carries the Tiny mark as its icon', async ({ page }) => {
+test('every page carries the Kyros mark as its icon', async ({ page }) => {
   await page.goto('/')
 
   const href = await page.locator('link[rel="icon"]').first().getAttribute('href')

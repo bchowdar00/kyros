@@ -3,7 +3,7 @@ import type { StrategyBrief } from '../brief'
 import type { PlanAction, PlanLeg, PlanWake, StrategyPlan } from '../plan'
 
 /**
- * A worked derivation: the user's sentence, the brief Teeny would fill, the seven
+ * A worked derivation: the user's sentence, the brief Kyros would fill, the seven
  * derivation steps written out, the plan they produce, and the document built from
  * fragments. The writer is shown the closest one as reasoning to imitate, never as a
  * template to edit.
@@ -19,7 +19,7 @@ export interface Derivation {
   document: AuthoringStrategy
 }
 
-export const SERIES = 'btc-2m'
+export const SERIES = 'btc-5m'
 export const MARKET = `${SERIES}.current`
 export const BOOK = `${SERIES}.current.price.v1`
 export const RSI = 'btc.kraken.rsi.v1'

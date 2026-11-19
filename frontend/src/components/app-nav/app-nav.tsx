@@ -1,20 +1,16 @@
-import { Avatar } from '@tiny/ui/components/avatar'
-import { TinyMarkIcon } from '@tiny/ui/icons/tiny-mark-icon'
+import { Badge } from '@kyros/ui/components/badge'
 import type { Route } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
+import type { Theme } from '@/components/theme-toggle/theme'
+import { ThemeToggle } from '@/components/theme-toggle/theme-toggle'
+import { Wordmark } from '@/components/wordmark/wordmark'
+import type { SiteMode } from '@/features/mode/mode.mapper'
+
 export interface AppNavItem {
   href: Route
   label: string
-}
-
-export interface AppNavProfile {
-  fallback: string
-  href: Route
-  imageAlt: string
-  imageSrc: string
-  linkLabel: string
 }
 
 export interface AppNavProps {
@@ -22,88 +18,71 @@ export interface AppNavProps {
   balanceLabel: string
   homeHref: Route
   items: readonly AppNavItem[]
-  profile: AppNavProfile
-  /** Replaces the profile link once a trading account exists. */
+  /** Which money and books the site runs on; no badge when the exchange is not configured. */
+  mode?: SiteMode
+  /** The account menu, once a trading account exists. */
   profileMenu?: ReactNode
-  searchLabel: string
-  searchPlaceholder: string
+  /** The visitor's stored palette choice; absent means the system setting decides. */
+  theme?: Theme | undefined
 }
 
 const focusRingClasses =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 
+/** The masthead: the name, the screens that exist, and what money this is. */
 export function AppNav({
   balance,
   balanceLabel,
   homeHref,
   items,
-  profile,
+  mode,
   profileMenu,
-  searchLabel,
-  searchPlaceholder,
+  theme,
 }: AppNavProps) {
   return (
-    <header className="sticky top-0 z-50 h-app-nav shrink-0 border-b border-border-subtle bg-background/95 backdrop-blur-[15px]">
-      <nav
-        aria-label="Primary"
-        className="relative flex h-full items-center justify-between gap-md px-lg lg:px-xl"
-      >
-        <div className="flex min-w-0 flex-1 items-center lg:w-64 lg:flex-none">
-          <Link
-            aria-label="Tiny home"
-            className={`shrink-0 rounded-xs text-foreground ${focusRingClasses}`}
-            href={homeHref}
-          >
-            <TinyMarkIcon />
-          </Link>
+    <header className="sticky top-0 z-50 h-app-nav shrink-0 border-b-2 border-foreground bg-background">
+      <nav aria-label="Primary" className="flex h-full items-center gap-2xl px-4xl">
+        <Link
+          aria-label="Kyros, home"
+          className={`shrink-0 rounded-xs ${focusRingClasses}`}
+          href={homeHref}
+        >
+          <Wordmark aria-hidden="true" />
+        </Link>
 
-          <label className="flex h-4xl min-w-0 flex-1 items-center pl-md focus-within:border-b-2 focus-within:border-focus-ring">
-            <span className="sr-only">{searchLabel}</span>
-            <input
-              aria-label={searchLabel}
-              className="h-full min-w-0 flex-1 bg-transparent text-heading-sm font-medium tracking-label text-foreground placeholder:text-muted-foreground focus:outline-none lg:text-label [&::-webkit-search-cancel-button]:appearance-none"
-              name="site-search"
-              placeholder={searchPlaceholder}
-              type="search"
-            />
-          </label>
-        </div>
-
-        {/* Primary destinations appear at the desktop line; a phone menu comes with the shell rebuild. */}
-        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-4xl lg:flex">
+        <div className="flex items-center gap-xl">
           {items.map(item => (
             <Link
-              className={`rounded-xs text-label font-medium text-foreground transition-colors hover:text-muted-foreground ${focusRingClasses}`}
+              className={`rounded-xs py-xs text-body font-semibold text-muted-foreground transition-colors hover:text-foreground ${focusRingClasses}`}
               href={item.href}
-              key={item.href}
+              key={item.label}
             >
               {item.label}
             </Link>
           ))}
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-md lg:w-64">
-          <span className="inline-flex h-2xl items-center justify-center rounded-xs border border-highlight bg-surface px-md text-label font-medium text-foreground">
+        <div className="ml-auto flex shrink-0 items-center gap-md">
+          {mode === undefined ? null : (
+            <Badge
+              title={mode.description}
+              variant={mode.tone === 'neutral' ? 'positive' : 'warning'}
+            >
+              {mode.label}
+              <span className="sr-only">{mode.description}</span>
+            </Badge>
+          )}
+
+          <span className="px-xs text-body font-semibold text-foreground">
             <span className="sr-only">{balanceLabel}</span>
             <span aria-hidden="true" className="font-mono">
               {balance}
             </span>
           </span>
 
-          {profileMenu ?? (
-            <Link
-              aria-label={profile.linkLabel}
-              className={`inline-flex min-h-touch min-w-touch items-center justify-center rounded-pill ${focusRingClasses}`}
-              href={profile.href}
-            >
-              <Avatar
-                alt={profile.imageAlt}
-                fallback={profile.fallback}
-                size="small"
-                src={profile.imageSrc}
-              />
-            </Link>
-          )}
+          <ThemeToggle initialTheme={theme} />
+
+          {profileMenu}
         </div>
       </nav>
     </header>

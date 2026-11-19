@@ -1,4 +1,4 @@
-import type { RustSignalCatalogue } from '@tiny/domain'
+import type { RustSignalCatalogue } from '@kyros/domain'
 
 import type { Ref } from '../specs'
 
@@ -15,7 +15,7 @@ export const BTC_UNDERLYING = 'btc'
 
 /**
  * The field of the series' price signal that carries the quoted side's probability:
- * `up` on a BTC series, `home` on an NBA one. The registry lists it first.
+ * `up` on a BTC series. The registry lists it first.
  */
 export function quotedField(catalogue: Pick<RustSignalCatalogue, 'signals'>, series: string) {
   const price = catalogue.signals.find(entry => entry.signal_id === seriesSignalId(series, 'price'))

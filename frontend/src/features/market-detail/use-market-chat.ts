@@ -3,7 +3,7 @@
 import { Chat, useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, type UIMessage } from 'ai'
 import { useRef, useState } from 'react'
-import { createApiClient } from '@tiny/api'
+import { createApiClient } from '@kyros/api'
 import { useIdentityStore } from '@/features/identity/identity-store'
 import { chatTitle, SavedChatDetailSchema, type SavedChat } from './saved-chat'
 import { useSavedChats } from './use-saved-chats'

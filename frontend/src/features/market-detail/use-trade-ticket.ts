@@ -20,7 +20,7 @@ interface StrategySelection {
   triggerId: string
 }
 
-/** A strategy Teeny just compiled, on its way to the deploy screen. */
+/** A strategy Kyros just compiled, on its way to the deploy screen. */
 export interface CompiledSelection {
   kind: 'compiled'
   build: BuildStatus

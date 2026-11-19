@@ -8,7 +8,7 @@ import { EntityIdSchema, SlugSchema } from './primitives'
 const moneyline = {
   id: 300_001,
   event_id: 200_001,
-  slug: 'bos-lal-moneyline',
+  slug: 'btc-up-or-down-moneyline',
   question: 'Who wins?',
   rules: null,
   type: 'moneyline',
@@ -18,18 +18,18 @@ const moneyline = {
   subject: null,
   is_main_line: true,
   image: null,
-  settlement_sources: ['https://www.nba.com/'],
+  settlement_sources: ['https://www.espn.com/'],
   outcomes: [
-    { id: 400_001, market_id: 300_001, label: 'Celtics', sort: 0, image: null },
-    { id: 400_002, market_id: 300_001, label: 'Lakers', sort: 1, image: null },
+    { id: 400_001, market_id: 300_001, label: 'Up', sort: 0, image: null },
+    { id: 400_002, market_id: 300_001, label: 'Down', sort: 1, image: null },
   ],
 } satisfies z.input<typeof MarketSchema>
 
 const event = {
   id: 200_001,
-  slug: 'lakers-at-celtics-2026-11-04',
-  title: 'Lakers @ Celtics',
-  category: 'sports/basketball/nba',
+  slug: 'btc-up-or-down-2026-11-04',
+  title: 'BTC Up or Down',
+  category: 'sports/basketball',
   series_id: 100_001,
   source: 'sports',
   image: null,
@@ -44,7 +44,7 @@ const event = {
 describe('catalog contracts', () => {
   it('parses a sports event with an embedded moneyline', () => {
     const parsed = z.parse(EventSchema, event)
-    expect(parsed.markets[0]?.outcomes.map(outcome => outcome.label)).toEqual(['Celtics', 'Lakers'])
+    expect(parsed.markets[0]?.outcomes.map(outcome => outcome.label)).toEqual(['Up', 'Down'])
   })
 
   it('accepts a total with a decimal line and a player subject', () => {
@@ -65,7 +65,7 @@ describe('catalog contracts', () => {
   it('rejects a float line, a five-digit id, and an uppercase slug', () => {
     expect(z.safeParse(MarketSchema, { ...moneyline, line: 27.5 }).success).toBe(false)
     expect(z.safeParse(EntityIdSchema, 99_999).success).toBe(false)
-    expect(z.safeParse(SlugSchema, 'Lakers').success).toBe(false)
+    expect(z.safeParse(SlugSchema, 'Bitcoin').success).toBe(false)
   })
 })
 

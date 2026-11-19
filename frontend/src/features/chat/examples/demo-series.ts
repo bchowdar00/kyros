@@ -1,5 +1,5 @@
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
-import { createSeededRandom } from '@tiny/ui/charts/lib/tape'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
+import { createSeededRandom } from '@kyros/ui/charts/lib/tape'
 
 /** A fixed moment so every gallery render is identical: 2026-09-05 14:30 UTC. */
 export const DEMO_START = Date.UTC(2026, 8, 5, 14, 30)

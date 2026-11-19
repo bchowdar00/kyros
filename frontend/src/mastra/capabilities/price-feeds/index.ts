@@ -6,7 +6,7 @@ function feedsUrl(env: CapabilityEnv) {
   return env.PRICE_FEEDS_API_URL ?? env.NEXT_PUBLIC_PRICE_FEEDS_URL
 }
 
-/** Read-only access to Tiny Price Feeds: asset discovery, live quotes, history. */
+/** Read-only access to the price feeds service: asset discovery, live quotes, history. */
 export const priceFeeds = defineCapability({
   id: 'price-feeds',
   enabled: env => feedsUrl(env) !== undefined,

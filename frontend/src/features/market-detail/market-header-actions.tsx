@@ -1,8 +1,8 @@
 'use client'
 
-import { IconButton } from '@tiny/ui/components/icon-button'
-import { BookmarkIcon } from '@tiny/ui/icons/bookmark-icon'
-import { ShareArrowIcon } from '@tiny/ui/icons/share-arrow-icon'
+import { IconButton } from '@kyros/ui/components/icon-button'
+import { BookmarkIcon } from '@kyros/ui/icons/bookmark-icon'
+import { ShareArrowIcon } from '@kyros/ui/icons/share-arrow-icon'
 import { useState } from 'react'
 
 const iconButtonClasses =

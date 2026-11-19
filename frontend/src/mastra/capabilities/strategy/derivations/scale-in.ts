@@ -74,7 +74,7 @@ export const scaleIn: Derivation = {
   document: {
     name: 'Scale In',
     description:
-      'On the 2-minute BTC up/down: when the up price crosses above 55 cents, buy up at once with a quarter of the round budget and remember the price paid. While holding, every time the ask sits at least 5 cents under the last entry, add another quarter and remember the new price, at most three adds per round. Hold to settlement. Ten seconds before the close, stop adding.',
+      'On the 5-minute BTC up/down: when the up price crosses above 55 cents, buy up at once with a quarter of the round budget and remember the price paid. While holding, every time the ask sits at least 5 cents under the last entry, add another quarter and remember the new price, at most three adds per round. Hold to settlement. Ten seconds before the close, stop adding.',
     ...bookOnly(),
     state: [
       {

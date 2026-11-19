@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,11 +10,11 @@ import { CompiledStrategyWidget } from './compiled-strategy-widget'
 import type { BuildStatus } from './strategy-build'
 
 const brief: StrategyBrief = {
-  series: 'btc-2m',
+  series: 'btc-5m',
   summary: 'Buys up once the price crosses 60 cents and sells at a 5 cent gain.',
   goal: 'Buy up when it gets rich',
   entry: 'the up price crosses above 60 cents',
-  signal_ids: ['btc-2m.current.price.v1'],
+  signal_ids: ['btc-5m.current.price.v1'],
   outcome: 'up',
   recurrence: 'once_per_round',
   interval: null,
@@ -46,15 +46,15 @@ const build: BuildStatus = {
       strategy_id: 'Strategy_abc',
       name: 'Threshold Entry',
       description: 'x',
-      series: 'btc-2m',
+      series: 'btc-5m',
       legs: ['hunting', 'done'],
-      subscriptions: ['btc-2m.current.price.v1'],
+      subscriptions: ['btc-5m.current.price.v1'],
     },
   },
 }
 
 const address = `0x${'ab'.repeat(20)}`
-const exchange = { apiUrl: 'http://exchange.test', series: 'btc-2m' }
+const exchange = { apiUrl: 'http://exchange.test', series: 'btc-5m' }
 const server = setupServer()
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
@@ -71,7 +71,7 @@ function renderWidget(onClose = vi.fn()) {
     <CompiledStrategyWidget
       build={build}
       brief={brief}
-      scopeLabel="BTC Up or Down 2m"
+      scopeLabel="BTC Up or Down 5m"
       exchange={exchange}
       onClose={onClose}
     />
@@ -130,8 +130,8 @@ describe('compiled strategy widget', () => {
             kind: 'strategy',
             name: 'Threshold Entry',
             status: 'active',
-            home_series: 'btc-2m',
-            strategy: { series: 'btc-2m', strategy_id: 'Strategy_abc', deployment_id: 'x:1' },
+            home_series: 'btc-5m',
+            strategy: { series: 'btc-5m', strategy_id: 'Strategy_abc', deployment_id: 'x:1' },
           },
           { status: 201 }
         )
@@ -192,10 +192,24 @@ describe('compiled strategy widget', () => {
     const { widget, onClose } = renderWidget()
     await user.click(within(widget).getByRole('button', { name: 'Deploy strategy' }))
     expect(await within(widget).findByRole('alert')).toHaveTextContent(
-      'insufficient_balance: insufficient balance'
+      'Not deployed. Insufficient balance.'
     )
     expect(within(widget).getByRole('button', { name: 'Deploy strategy' })).toBeEnabled()
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('does not call a deployment refused when the exchange’s answer cannot be read', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post(`${exchange.apiUrl}/api/accounts/${address}/strategies`, () =>
+        HttpResponse.json({ unexpected: true })
+      )
+    )
+    const { widget } = renderWidget()
+    await user.click(within(widget).getByRole('button', { name: 'Deploy strategy' }))
+    expect(await within(widget).findByRole('alert')).toHaveTextContent(
+      'The exchange did not confirm this deployment. Check My Accounts before trying again.'
+    )
   })
 
   it('keeps Deploy inert without an exchange to post to', () => {
@@ -203,7 +217,7 @@ describe('compiled strategy widget', () => {
       <CompiledStrategyWidget
         build={build}
         brief={brief}
-        scopeLabel="BTC Up or Down 2m"
+        scopeLabel="BTC Up or Down 5m"
         onClose={() => {}}
       />
     )

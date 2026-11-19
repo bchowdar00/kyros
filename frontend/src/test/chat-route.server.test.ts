@@ -41,7 +41,7 @@ function post(body: unknown, origin = 'http://localhost') {
 
 const request = {
   id: 'c1',
-  marketSlug: 'btc-2m',
+  marketSlug: 'btc-5m',
   messages: [{ id: 'm1', role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
 }
 

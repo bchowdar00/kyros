@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@tiny/ui/components/button'
+import { Button } from '@kyros/ui/components/button'
 
 interface AppErrorProps {
   error: Error & { digest?: string }

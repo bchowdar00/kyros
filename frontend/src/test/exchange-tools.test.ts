@@ -31,7 +31,7 @@ const round = (id: number, strike: number, close: number, outcome: 'yes' | 'no')
   status: { kind: 'resolved', outcome, close_price_btc_usd: close },
 })
 
-describe('Teeny exchange tools', () => {
+describe('Kyros exchange tools', () => {
   it('reads the round from the market the chat was opened from, in cents', async () => {
     let requested = ''
     server.use(
@@ -84,7 +84,7 @@ describe('Teeny exchange tools', () => {
   it('falls back to the default series off a market page and fails closed without an account', async () => {
     server.use(
       http.get(`${baseUrl}/api/book`, ({ request }) => {
-        expect(new URL(request.url).searchParams.get('series')).toBe('btc-2m')
+        expect(new URL(request.url).searchParams.get('series')).toBe('btc-5m')
         expect(new URL(request.url).searchParams.get('depth')).toBe('2')
         return HttpResponse.json({
           bids: [
@@ -98,7 +98,7 @@ describe('Teeny exchange tools', () => {
     const book = await tools.getBook.execute?.({ depth: 2 }, onMarket('standalone-chat'))
     expect(book).toMatchObject({
       status: 'ok',
-      series: 'btc-2m',
+      series: 'btc-5m',
       spread_cents: 2,
       imbalance: 0.6,
       bids: [
@@ -106,11 +106,11 @@ describe('Teeny exchange tools', () => {
         { price_cents: 60, lots: 4 },
       ],
     })
-    expect(await tools.getPositions.execute?.({}, onMarket('btc-2m'))).toMatchObject({
+    expect(await tools.getPositions.execute?.({}, onMarket('btc-5m'))).toMatchObject({
       status: 'unavailable',
       reason: expect.stringContaining('not signed in'),
     })
-    expect(await tools.getTrades.execute?.({ scope: 'mine' }, onMarket('btc-2m'))).toMatchObject({
+    expect(await tools.getTrades.execute?.({ scope: 'mine' }, onMarket('btc-5m'))).toMatchObject({
       status: 'unavailable',
     })
   })
@@ -128,8 +128,8 @@ describe('Teeny exchange tools', () => {
       http.get(`${baseUrl}/api/price/history`, () =>
         HttpResponse.json({
           type: 'snapshot',
-          series: 'btc-2m',
-          duration_secs: 120,
+          series: 'btc-5m',
+          duration_secs: 300,
           market_id: null,
           strike: null,
           opens_at_ms: null,
@@ -142,14 +142,14 @@ describe('Teeny exchange tools', () => {
         })
       )
     )
-    expect(await tools.getRounds.execute?.({ count: 3 }, onMarket('btc-2m'))).toMatchObject({
+    expect(await tools.getRounds.execute?.({ count: 3 }, onMarket('btc-5m'))).toMatchObject({
       status: 'ok',
       up: 2,
       down: 1,
       streak: { outcome: 'up', length: 2 },
       rounds: [{ market_id: 4, move_usd: 30 }, { market_id: 3 }, { market_id: 2, outcome: 'down' }],
     })
-    expect(await tools.getExchangePriceHistory.execute?.({}, onMarket('btc-2m'))).toMatchObject({
+    expect(await tools.getExchangePriceHistory.execute?.({}, onMarket('btc-5m'))).toMatchObject({
       status: 'ok',
       round: null,
       first_usd: 100,
@@ -165,7 +165,7 @@ describe('Teeny exchange tools', () => {
         HttpResponse.json({
           type: 'position_snapshot',
           as_of_unix_ms: 9,
-          series: 'btc-2m',
+          series: 'btc-5m',
           market_id: 3,
           address,
           side: 'yes',
@@ -180,7 +180,7 @@ describe('Teeny exchange tools', () => {
           locked_tenths: 2320,
           series_positions: [
             {
-              series: 'btc-2m',
+              series: 'btc-5m',
               market_id: 3,
               side: 'yes',
               size_shares: 4,
@@ -199,7 +199,7 @@ describe('Teeny exchange tools', () => {
         HttpResponse.json({
           trades: [
             {
-              series: 'btc-2m',
+              series: 'btc-5m',
               order_id: 9,
               ts: 10,
               side: 'yes',
@@ -217,13 +217,13 @@ describe('Teeny exchange tools', () => {
         })
       )
     )
-    expect(await tools.getPositions.execute?.({}, onMarket('btc-2m', address))).toMatchObject({
+    expect(await tools.getPositions.execute?.({}, onMarket('btc-5m', address))).toMatchObject({
       status: 'ok',
       balance_cents: 99_768,
-      positions: [{ series: 'btc-2m', signed_lots: 4, avg_entry_cents: 58, mark_cents: 62 }],
+      positions: [{ series: 'btc-5m', signed_lots: 4, avg_entry_cents: 58, mark_cents: 62 }],
     })
     expect(
-      await tools.getTrades.execute?.({ scope: 'mine' }, onMarket('btc-2m', address))
+      await tools.getTrades.execute?.({ scope: 'mine' }, onMarket('btc-5m', address))
     ).toMatchObject({
       status: 'ok',
       orders: [{ bought: 'YES', filled_lots: 4, avg_price_cents: 58, status: 'filled' }],
@@ -232,7 +232,7 @@ describe('Teeny exchange tools', () => {
 
   it('fails closed without configuration', async () => {
     expect(
-      await createExchangeTools(undefined).getMarket.execute?.({}, onMarket('btc-2m'))
+      await createExchangeTools(undefined).getMarket.execute?.({}, onMarket('btc-5m'))
     ).toEqual({ status: 'unavailable', reason: 'The exchange is not configured.' })
   })
 })

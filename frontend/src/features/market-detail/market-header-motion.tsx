@@ -6,7 +6,6 @@ import type { ReactNode } from 'react'
 interface MarketHeaderMotionProps {
   actions: ReactNode
   actionSubtitle?: ReactNode
-  background: ReactNode
   identity: ReactNode
   subtitle?: ReactNode
 }
@@ -21,7 +20,6 @@ const SUBTITLE_HEIGHT = '(var(--spacing-lg) + var(--spacing-sm))'
 export function MarketHeaderMotion({
   actions,
   actionSubtitle,
-  background,
   identity,
   subtitle,
 }: MarketHeaderMotionProps) {
@@ -31,7 +29,6 @@ export function MarketHeaderMotion({
     reducedMotion ? Number(offset > 0) : Math.min(1, Math.max(0, offset / SHRINK_DISTANCE))
   )
   const scale = useTransform(progress, [0, 1], [1, COMPACT_SCALE])
-  const backgroundOpacity = useTransform(progress, [0, 1], [1, 0])
   const subtitleOpacity = useTransform(progress, [0, SUBTITLE_FADE_END], [1, 0])
   const subtitleVisibility = useTransform(progress, value =>
     value >= SUBTITLE_FADE_END ? 'hidden' : 'visible'
@@ -55,13 +52,6 @@ export function MarketHeaderMotion({
         className="sticky top-app-nav z-20 bg-background"
         style={{ paddingBlock }}
       >
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 overflow-hidden"
-          style={{ opacity: backgroundOpacity }}
-        >
-          {background}
-        </motion.div>
         <div className="relative flex min-h-touch items-start justify-between gap-sm">
           <div className="min-w-0">
             <motion.div className="origin-left" style={{ scale }}>
@@ -69,7 +59,7 @@ export function MarketHeaderMotion({
             </motion.div>
             {subtitle ? (
               <motion.div
-                className="overflow-hidden pl-[calc(var(--spacing-avatar-lg)+var(--spacing-md))]"
+                className="overflow-hidden"
                 style={{
                   height: subtitleHeight,
                   opacity: subtitleOpacity,
@@ -102,7 +92,7 @@ export function MarketHeaderMotion({
         </div>
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-border-subtle"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-foreground"
         />
       </motion.header>
       <motion.div aria-hidden="true" style={{ height: releasedSpace }} />

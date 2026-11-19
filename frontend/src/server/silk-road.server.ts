@@ -1,7 +1,7 @@
 import 'server-only'
 
-import { createRustExchangeClient, type RustExchangeClient } from '@tiny/api'
-import type { EventDetail, RustSeriesInfo, SeriesRecord } from '@tiny/domain'
+import { createRustExchangeClient, type RustExchangeClient } from '@kyros/api'
+import type { EventDetail, RustGeminiSeries, RustSeriesInfo, SeriesRecord } from '@kyros/domain'
 
 import { env } from '@/env'
 import {
@@ -16,6 +16,8 @@ import {
 
 export interface LiveSeriesEvent {
   detail: EventDetail
+  /** What the exchange follows on Gemini for this series; absent when it follows nothing. */
+  gemini?: RustGeminiSeries
   series: SeriesRecord
 }
 
@@ -34,7 +36,7 @@ function client(): RustExchangeClient | undefined {
   })
 }
 
-/** Underlyings the deployment hides (`HIDDEN_UNDERLYINGS`, e.g. `nba`). */
+/** Underlyings the deployment hides (`HIDDEN_UNDERLYINGS`). */
 function hiddenUnderlyings(): ReadonlySet<string> {
   return new Set(
     (env.HIDDEN_UNDERLYINGS ?? '')
@@ -68,7 +70,7 @@ async function listLive(exchange: RustExchangeClient): Promise<LiveSeriesEvent[]
     const detail = toEventDetail(info, series.id)
 
     if (detail !== undefined) {
-      live.push({ detail, series })
+      live.push({ detail, series, ...(info.gemini === undefined ? {} : { gemini: info.gemini }) })
     }
   }
 

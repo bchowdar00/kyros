@@ -1,5 +1,5 @@
-import { ForwardIcon } from '@tiny/ui/icons/forward-icon'
-import { MiniXIcon } from '@tiny/ui/icons/mini-x-icon'
+import { ForwardIcon } from '@kyros/ui/icons/forward-icon'
+import { MiniXIcon } from '@kyros/ui/icons/mini-x-icon'
 import type { SavedChat } from './saved-chat'
 
 interface SavedChatCardsProps {

@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from 'clsx'
 import { extendTailwindMerge } from 'tailwind-merge'
 
-const twMerge = extendTailwindMerge<'tiny-typography'>({
+const twMerge = extendTailwindMerge<'kyros-typography'>({
   extend: {
     theme: {
       'font-weight': ['light', 'regular'],
@@ -47,11 +47,11 @@ const twMerge = extendTailwindMerge<'tiny-typography'>({
         'safe-bottom',
         'safe-left',
       ],
-      tracking: ['label'],
+      tracking: ['label', 'display', 'heading'],
       leading: ['prose'],
     },
     classGroups: {
-      'tiny-typography': [
+      'kyros-typography': [
         'text-caption',
         'text-label',
         'text-body',
@@ -59,6 +59,11 @@ const twMerge = extendTailwindMerge<'tiny-typography'>({
         'text-heading-md',
         'text-prose',
         'text-trade-amount',
+        'text-wordmark',
+        'text-display-lg',
+        'text-display-md',
+        'text-display-sm',
+        'text-price',
       ],
     },
   },

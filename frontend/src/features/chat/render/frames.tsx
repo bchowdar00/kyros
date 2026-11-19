@@ -1,4 +1,4 @@
-import { cn } from '@tiny/ui/lib/cn'
+import { cn } from '@kyros/ui/lib/cn'
 import type { ReactNode } from 'react'
 
 import { WidgetFrame } from '../widget-frame'
@@ -75,7 +75,7 @@ export function WidgetAuthored({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col gap-xs">
       {children}
-      <p className="px-lg text-caption text-muted-foreground">Written by Teeny, not live data.</p>
+      <p className="px-lg text-caption text-muted-foreground">Written by Kyros, not live data.</p>
     </div>
   )
 }

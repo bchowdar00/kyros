@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { expectNoA11yViolations } from '@tiny/testing/a11y'
+import { expectNoA11yViolations } from '@kyros/testing/a11y'
 import { describe, expect, it } from 'vitest'
 
 import { MarketPriceSummary } from './market-price-summary'
@@ -83,5 +83,51 @@ describe('MarketPriceSummary', () => {
 
     expect(screen.getByText('Change · feed disconnected')).toBeInTheDocument()
     expect(screen.queryByText('Simulated data')).not.toBeInTheDocument()
+  })
+
+  it('says the same figures as one sentence when the price is over the target', () => {
+    render(<MarketPriceSummary {...base} />)
+
+    expect(screen.getByText('Up is ahead.').parentElement).toHaveTextContent(
+      'Right now BTC is $136.42 above the price to beat. Up is ahead.'
+    )
+    expect(screen.queryByText('Down is ahead.')).not.toBeInTheDocument()
+  })
+
+  it('turns the sentence around when the price is under the target', () => {
+    render(<MarketPriceSummary {...base} price={117_800} />)
+
+    expect(screen.getByText('Down is ahead.').parentElement).toHaveTextContent(
+      'Right now BTC is $200.00 below the price to beat. Down is ahead.'
+    )
+    expect(screen.queryByText('Up is ahead.')).not.toBeInTheDocument()
+  })
+
+  it('names no side when the cent amounts are equal', () => {
+    render(<MarketPriceSummary {...base} price={118_000.004} />)
+
+    expect(screen.getByText('level with').parentElement).toHaveTextContent(
+      'Right now BTC is level with the price to beat.'
+    )
+    expect(screen.queryByText(/is ahead/)).not.toBeInTheDocument()
+  })
+
+  it.each(['disconnected', 'paused'] as const)(
+    'does not call the last price from a %s feed "right now"',
+    state => {
+      render(<MarketPriceSummary {...base} feed={{ state }} />)
+
+      expect(screen.queryByText(/Right now/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/is ahead/)).not.toBeInTheDocument()
+      // The stats stay, labelled as stale.
+      expect(screen.getByText('$118,136.42')).toBeInTheDocument()
+    }
+  )
+
+  it('says nothing about a price it does not have', () => {
+    render(<MarketPriceSummary {...base} price={Number.NaN} />)
+
+    expect(screen.queryByText(/Right now/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/is ahead/)).not.toBeInTheDocument()
   })
 })

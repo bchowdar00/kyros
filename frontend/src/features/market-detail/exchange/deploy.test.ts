@@ -1,4 +1,4 @@
-import { cents } from '@tiny/money'
+import { cents } from '@kyros/money'
 import { describe, expect, it } from 'vitest'
 
 import { initialAccount } from './account'

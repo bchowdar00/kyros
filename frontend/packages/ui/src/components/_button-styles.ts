@@ -1,13 +1,16 @@
 import { cva, type VariantProps } from 'class-variance-authority'
 
 const buttonBaseClasses =
-  'inline-flex shrink-0 cursor-pointer items-center justify-center gap-sm rounded-xs border font-regular tracking-label transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:pointer-events-none disabled:opacity-50'
+  'inline-flex shrink-0 cursor-pointer items-center justify-center gap-sm rounded-sm border-[1.5px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:pointer-events-none disabled:border-border-subtle disabled:bg-surface disabled:text-muted-foreground'
 
 const variants = {
   variant: {
-    primary: 'border-action bg-action/80 text-foreground hover:bg-action',
-    secondary: 'border-border bg-surface text-foreground hover:bg-surface-raised',
-    danger: 'border-negative/50 bg-negative/50 text-foreground hover:bg-negative',
+    primary:
+      'border-action bg-action text-on-action hover:border-foreground hover:bg-foreground hover:text-background',
+    secondary:
+      'border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background',
+    danger:
+      'border-foreground bg-foreground text-background hover:border-action hover:bg-action hover:text-on-action',
     ghost:
       'border-transparent bg-transparent text-muted-foreground hover:bg-surface hover:text-foreground',
   },

@@ -1,7 +1,7 @@
 'use client'
 
-import type { ChartPoint } from '@tiny/ui/charts/lib/types'
-import { cn } from '@tiny/ui/lib/cn'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
+import { cn } from '@kyros/ui/lib/cn'
 
 import type { SignalFieldCard } from '@/features/signals/signal-cards'
 import type { PinKey } from '@/features/signals/signal-catalogue'
