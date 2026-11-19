@@ -1,0 +1,26 @@
+# Keep installed modules, build output, local environment files, test output
+# and local chat data out of the build context. The build installs from the
+# lockfile and builds from source.
+node_modules/
+**/node_modules/
+.pnpm-store/
+.next/
+dist/
+out/
+coverage/
+*.tsbuildinfo
+.vercel/
+.env
+.env.*
+*.log
+*.pem
+playwright-report/
+test-results/
+blob-report/
+.mastra/
+.mastra-data/
+.claude/
+.git/
+.gitignore
+Dockerfile
+.dockerignore
