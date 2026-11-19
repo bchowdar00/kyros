@@ -121,9 +121,11 @@ impl Tracker {
                     return Vec::new();
                 }
                 corrected = true;
-            } else if older_play {
+            } else if older_play && is == was {
                 // The game stands where it stood but the last play is one
                 // already passed: an old copy, and nothing in it is news.
+                // A reading that is further on is believed for its score,
+                // however its last play is numbered.
                 return Vec::new();
             }
             self.doubted = None;

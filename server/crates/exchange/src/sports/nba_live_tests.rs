@@ -342,3 +342,17 @@ fn withdrawing_takes_every_game_signal_off_the_bus_and_the_platform() {
     cleared.sort();
     assert_eq!(cleared, vec![NBA_MARGIN_SIGNAL, NBA_PBP_SIGNAL, crate::registry::NBA_POLYMARKET_SIGNAL, NBA_WINPROB_SIGNAL]);
 }
+
+#[test]
+fn a_reading_with_a_newer_score_is_believed_whatever_its_last_play_is_numbered() {
+    let mut t = Tracker::default();
+    t.step(TICKER, 0.5, &with_play(reading(GamePhase::InPlay, 2, 300, 50, 48), "401910015104", "Personal Foul"), 1);
+    // The score has moved on; the play it names carries a lower number
+    // than one already seen. The score is what the game says: an old copy
+    // cannot be ahead.
+    let ahead = with_play(reading(GamePhase::InPlay, 2, 280, 52, 48), "401910015090", "Jump Shot");
+    let frames = t.step(TICKER, 0.5, &ahead, 2);
+    let margin = frames.iter().find(|f| f.signal_id == NBA_MARGIN_SIGNAL).expect("the new score is published");
+    assert_eq!(text(margin, "value"), "4");
+    assert_eq!(t.believed().map(|s| (s.home_score, s.away_score)), Some((52, 48)));
+}
