@@ -1,10 +1,13 @@
 //! `POST /api/accounts/{parent}/templates/{template_id}/deploy` — deploy one
 //! side of a public strategy template.
 //!
-//! The template catalogue compiled every document at boot, so this route
-//! never compiles: it derives the envelope from the user's allocation and
-//! the template's ratios, builds the record over the cached program, and
-//! runs the same fund-and-start path as `POST /strategies`. The body is
+//! The template catalogue compiled every document at boot, which proves
+//! each one clean. This route derives the envelope from the user's
+//! allocation and the template's ratios, compiles the document once more
+//! against that envelope (the compiler writes envelope reads into the
+//! program, so the boot program carries the catalogue's $1,000 reference
+//! and must not be run for anyone else), and runs the same fund-and-start
+//! path as `POST /strategies`. The body is
 //! `{ allocation_tenths, inverse, series? }`; `series` defaults to the
 //! exchange's default series and must be one the template lists.
 //!
@@ -14,6 +17,7 @@
 
 use std::collections::BTreeMap;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use axum::{
     Json,
@@ -22,6 +26,7 @@ use axum::{
 };
 use serde::Deserialize;
 
+use super::compile::compile_for_venue;
 use super::store::{StrategyDetail, fund_and_start, tenths_to_dollars};
 use crate::api::{ApiError, AppState};
 use crate::automation::runtime::next_deploy_epoch;
@@ -79,12 +84,19 @@ pub async fn deploy_template_side_with(
     }
     let template = state.templates.get(template_id).filter(|t| t.lists(series)).ok_or(ApiError::TemplateNotFound)?;
     let compiled = template.compiled(series, side).ok_or(ApiError::TemplateNotFound)?;
+    // The catalogue's program was compiled at boot against a $1,000
+    // reference envelope, and the compiler writes every envelope read into
+    // the program as a value. Run as it is, it would size each order and
+    // gate each risk check as if the deployer had put in $1,000. So the
+    // document is compiled again here against the deployer's own envelope;
+    // the boot compile stays the proof that the document is clean.
+    let (own, _) = compile_for_venue(&state.registry, &compiled.source, &envelope)?;
     let record = DeployedStrategy::new(
         None,
         compiled.source.clone(),
         envelope,
         BTreeMap::new(),
-        compiled.program.clone(),
+        Arc::new(own.artifacts.program),
         series,
         next_deploy_epoch(),
         unix_now_ms(),
@@ -123,7 +135,6 @@ pub async fn deploy_template(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
 
     use crate::api::strategy::store::tests::{MAKER, PARENT};
     use crate::api::strategy::store::{delete_strategy, get_strategy, list_strategies};
@@ -165,7 +176,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn deploys_both_sides_from_the_cached_program_and_records_the_template() {
+    async fn deploys_both_sides_under_the_deployers_own_envelope_and_records_the_template() {
         let state = state_with_templates();
         let primary = deploy(&state, "late-closer", json!({ "allocation_tenths": 50_000, "inverse": false, "series": "btc-15m" }), None).await.unwrap();
         let inverse = deploy(&state, "late-closer", json!({ "allocation_tenths": 25_000, "inverse": true, "series": "btc-15m" }), None).await.unwrap();
@@ -173,7 +184,7 @@ mod tests {
         let template = state.templates.get("late-closer").unwrap();
         for (d, side, tenths) in [(&primary, Side::Primary, 50_000), (&inverse, Side::Inverse, 25_000)] {
             let compiled = template.compiled(SERIES[1].id, side).unwrap();
-            assert_eq!(d.strategy.strategy_id, compiled.program.strategy_id, "the cached program, not a recompile");
+            assert_eq!(d.strategy.strategy_id, compiled.program.strategy_id, "the catalogue's document");
             assert_eq!(d.strategy.template_id.as_deref(), Some("late-closer"));
             assert_eq!(d.strategy.inverse, side.is_inverse());
             assert_eq!(d.strategy.series, SERIES[1].id);
@@ -183,13 +194,15 @@ mod tests {
             assert_eq!(d.strategy.envelope.allocation.as_str(), tenths_to_dollars(tenths).normalize().to_string());
             assert!(d.runtime.as_ref().is_some_and(|r| !r.paused), "deployment resident");
         }
-        // The two documents are two strategies; both share one program Arc
-        // with the catalogue.
+        // The two documents are two strategies, and each runs a program
+        // compiled against its own envelope, not the catalogue's reference.
         assert_ne!(primary.strategy.strategy_id, inverse.strategy.strategy_id);
         {
             let e = state.exchange.lock().unwrap();
             let record = e.account(&primary.summary.id).unwrap().strategy.as_ref().unwrap();
-            assert!(Arc::ptr_eq(&record.program, &template.compiled(SERIES[1].id, Side::Primary).unwrap().program));
+            assert_eq!(record.program.envelope.allocation.as_str(), "50");
+            assert_eq!(record.program.envelope.loss_budget.as_str(), "50");
+            assert_eq!(template.compiled(SERIES[1].id, Side::Primary).unwrap().program.envelope.allocation.as_str(), "1000");
             assert_eq!(e.account(&addr(PARENT)).unwrap().usdc_balance, Tenths(1_000_000 - 75_000));
         }
         let Json(list) = list_strategies(State(state.clone()), Path(PARENT.into())).await.unwrap();
