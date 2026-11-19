@@ -10,6 +10,7 @@ pub mod scheduler;
 pub mod series;
 pub mod signals;
 pub mod signals_retention;
+pub mod sports;
 pub mod templates;
 #[cfg(test)]
 mod template_tests;

@@ -35,6 +35,8 @@ export interface ChatPanelProps extends Omit<ComponentPropsWithRef<'div'>, 'onSu
   exchange?: { apiUrl: string; series: string } | undefined
   /** The exchange the strategy cards read their live template from; absent without one. */
   exchangeApi?: ExchangeApi | undefined
+  /** The assistant only authors Bitcoin strategies; on any other series it is turned off. */
+  authoringUnavailable?: boolean
   outcomes?: readonly MarketOutcome[]
   scopeLabel?: string
   onRunStrategy?: PublicStrategyAction
@@ -52,6 +54,7 @@ export function ChatPanel({
   scopeLabel = 'This market',
   exchange,
   exchangeApi,
+  authoringUnavailable = false,
   className,
   onRunStrategy,
   onInverseStrategy,
@@ -126,6 +129,7 @@ export function ChatPanel({
             embedded
             focusInput={chatting}
             {...panel.composer}
+            authoringUnavailable={authoringUnavailable}
             onSubmit={submit}
             key={chatting ? chat.id : 'new-chat'}
             busy={status === 'submitted' || (chatting && busy)}
@@ -144,7 +148,9 @@ export function ChatPanel({
         <ChatPanelHeader
           {...(chatting
             ? { title: chat.title, onBack: () => void chat.back() }
-            : { busy: status === 'submitted', onBuild: submit })}
+            : authoringUnavailable
+              ? {}
+              : { busy: status === 'submitted', onBuild: submit })}
         />
         <section
           aria-label="Chat content"

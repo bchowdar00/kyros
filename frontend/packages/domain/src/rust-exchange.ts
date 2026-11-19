@@ -11,8 +11,16 @@ export const RustPriceTicksSchema = z.int().check(z.minimum(1), z.maximum(999))
 const tenths = z.int()
 const unixMs = z.int().check(z.minimum(0))
 
-/** What a round opened on: a BTC round's strike. */
-export const RustRoundReferenceSchema = z.object({ strike_btc_usd: z.number() })
+/** What a BTC round opened on: its strike. */
+export const RustBtcRoundReferenceSchema = z.object({ strike_btc_usd: z.number() })
+
+/** What an NBA round opened on: the two teams, the pregame home win probability, the game number. */
+export const RustNbaRoundReferenceSchema = z.object({
+  home_team: z.string(),
+  away_team: z.string(),
+  pregame_home_prob: z.number(),
+  game_seq: z.int(),
+})
 
 /**
  * What the exchange follows on Gemini for one series. `env` is where the book and the
@@ -47,7 +55,12 @@ export const RustSeriesInfoSchema = z.object({
   current_market_id: z.nullable(z.int()),
   opens_at_ms: z.nullable(unixMs),
   closes_at_ms: z.nullable(unixMs),
-  reference: z.optional(RustRoundReferenceSchema),
+  /**
+   * What the round opened on: `RustBtcRoundReferenceSchema` or `RustNbaRoundReferenceSchema`
+   * by underlying. Left unread here so one row with a reference this client cannot read
+   * does not fail the whole list; the mapper parses it and drops only that series.
+   */
+  reference: z.optional(z.unknown()),
   /** Absent when the exchange is not following Gemini. */
   gemini: z.optional(RustGeminiSeriesSchema),
 })
@@ -89,6 +102,9 @@ const RustMarketStatusSchema = z.union([
     outcome: z.enum(['yes', 'no']),
     /** BTC rounds only. */
     close_price_btc_usd: z.optional(z.number()),
+    /** NBA rounds only: the final score. */
+    home_score: z.optional(z.int()),
+    away_score: z.optional(z.int()),
   }),
 ])
 
@@ -100,6 +116,11 @@ export const RustMarketSchema = z.object({
   id: z.int(),
   series: z.optional(RustSeriesSlugSchema),
   strike_btc_usd: z.optional(z.number()),
+  /** NBA rounds carry the matchup flattened at the top level instead of a strike. */
+  home_team: z.optional(z.string()),
+  away_team: z.optional(z.string()),
+  pregame_home_prob: z.optional(z.number()),
+  game_seq: z.optional(z.int()),
   opened_at: z.int(),
   closes_at: z.int(),
   duration_secs: z.optional(z.int()),
@@ -631,7 +652,8 @@ export type RustSeriesInfo = z.infer<typeof RustSeriesInfoSchema>
 export type RustGeminiSeries = z.infer<typeof RustGeminiSeriesSchema>
 export type RustSealView = z.infer<typeof RustSealViewSchema>
 export type RustRecordView = z.infer<typeof RustRecordViewSchema>
-export type RustRoundReference = z.infer<typeof RustRoundReferenceSchema>
+export type RustBtcRoundReference = z.infer<typeof RustBtcRoundReferenceSchema>
+export type RustNbaRoundReference = z.infer<typeof RustNbaRoundReferenceSchema>
 export type RustMarket = z.infer<typeof RustMarketSchema>
 export type RustMarketStats = z.infer<typeof RustMarketStatsSchema>
 export type RustSignal = z.infer<typeof RustSignalSchema>

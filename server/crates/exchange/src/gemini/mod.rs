@@ -10,6 +10,7 @@ pub mod env;
 pub mod index_feed;
 pub mod mirror;
 pub mod mirror_task;
+pub mod nba;
 pub mod rest;
 pub mod state;
 pub mod strikes;

@@ -1,0 +1,18 @@
+{
+  "title": "Polymarket line",
+  "description": "What Polymarket pays for each side of the same game, from the midpoint of its order book. Compare it with the price here to see where the two markets disagree.",
+  "fields": {
+    "home_team": {
+      "label": "Home",
+      "description": "The home side of the game this line is for."
+    },
+    "away_team": {
+      "label": "Away",
+      "description": "The away side of the game this line is for."
+    },
+    "home_prob": {
+      "label": "Home win",
+      "description": "Polymarket's price for the home side, read as a probability. It is a midpoint, so buying there costs a little more."
+    }
+  }
+}

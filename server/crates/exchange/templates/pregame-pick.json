@@ -1,10 +1,10 @@
 {
   "id": "pregame-pick",
   "title": "Pregame Pick",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-04.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-04.jpg" },
   "series": ["nba-h2h"],
-  "logic": "Trades only before tipoff. When the sharp sportsbook makes the home team a clear favourite, 55 percent or better, and our book sells Home at least two cents cheaper than that, it buys Home and holds to the final.",
-  "inverse_logic": "Trades only before tipoff. When the sharp sportsbook gives a team under a 40 percent chance and that side costs 35 cents or less here, it buys the underdog and holds to the final. One in three of these pays out at almost three to one.",
+  "logic": "Trades only before tipoff. When Polymarket makes the home team a clear favourite, 55 percent or better, and our book sells Home at least two cents cheaper than that, it buys Home and holds to the final.",
+  "inverse_logic": "Trades only before tipoff. When Polymarket gives a team under a 40 percent chance and that side costs 35 cents or less here, it buys the underdog and holds to the final. A 35-cent side that wins pays almost three to one.",
   "envelope": {
     "loss_budget_fraction": "1",
     "order_fraction": "0.1",
@@ -13,19 +13,19 @@
     "max_position_per_market": "200"
   },
   "substitutions": {
-    "nba-h2h": { "pregame_left": "240000", "favourite": "0.55", "edge": "0.02", "dog": "0.4", "dog_price": "0.35" }
+    "nba-h2h": { "pregame_left": "14400000", "favourite": "0.55", "edge": "0.02", "dog": "0.4", "dog_price": "0.35" }
   },
   "primary": {
     "meta": {
       "name": "Home Court",
-      "description": "While the round is open with more than the pregame mark of time left, when the sharp line's home probability is at least the favourite level and exceeds our home ask by the edge, take Home with an immediate-or-cancel limit two cents over the ask, once per round, and hold to the final.",
+      "description": "While the round is open with more than the pregame mark of time left, when Polymarket's home price is at least the favourite level and exceeds our home ask by the edge, take Home with an immediate-or-cancel limit two cents over the ask, once per round, and hold to the final.",
       "dsl_version": "0.3"
     },
     "instruments": { "market": "{{series}}.current" },
     "signals": {
       "book": "{{series}}.current.price.v1",
       "clock": "{{series}}.current.window.v1",
-      "sharp": "nba.sim.sharp_line.v1"
+      "sharp": "nba.live.polymarket.v1"
     },
     "state": [],
     "triggers": [
@@ -75,14 +75,14 @@
   "inverse": {
     "meta": {
       "name": "Underdog",
-      "description": "While the round is open with more than the pregame mark of time left, when the sharp line gives Home at most the dog level and our home ask is at most the dog price, take Home; when it gives Away at most the dog level and our away ask is at most the dog price, take Away. Immediate-or-cancel limits two cents over the ask, once per round, held to the final.",
+      "description": "While the round is open with more than the pregame mark of time left, when Polymarket gives Home at most the dog level and our home ask is at most the dog price, take Home; when it gives Away at most the dog level and our away ask is at most the dog price, take Away. Immediate-or-cancel limits two cents over the ask, once per round, held to the final.",
       "dsl_version": "0.3"
     },
     "instruments": { "market": "{{series}}.current" },
     "signals": {
       "book": "{{series}}.current.price.v1",
       "clock": "{{series}}.current.window.v1",
-      "sharp": "nba.sim.sharp_line.v1"
+      "sharp": "nba.live.polymarket.v1"
     },
     "state": [],
     "triggers": [

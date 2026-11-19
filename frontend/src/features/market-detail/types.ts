@@ -57,6 +57,8 @@ export interface MarketProbabilityChartData {
   /** Visible window, usually the scheduled game slot. */
   range: TimeRange
   series: readonly [ProbabilitySeries, ProbabilitySeries]
+  /** The exchange series slug the `/ws/book` midpoint streams from; absent for static fixtures. */
+  seriesSlug?: string
   timeZone: string
 }
 
@@ -256,6 +258,8 @@ export interface MarketDetail {
   /** Strike markets show price against the strike as the hero chart instead of probability. */
   priceChart?: MarketPriceChartData
   probabilityChart?: MarketProbabilityChartData
+  /** A live game's two teams and tipoff; set only for an NBA round, drives the scoreboard strip. */
+  scoreboard?: { home: string; away: string; tipoffMs?: number }
   signals?: SignalsData
   slug: string
   chatPanel?: ChatPanelData

@@ -1,4 +1,9 @@
-import type { EventDetail, RustSeriesInfo, SeriesRecord } from '@kyros/domain'
+import {
+  type EventDetail,
+  RustNbaRoundReferenceSchema,
+  type RustSeriesInfo,
+  type SeriesRecord,
+} from '@kyros/domain'
 
 /**
  * The Rust exchange numbers series 0, 1, … and rounds 1, 2, …; the app's `EntityId`
@@ -32,6 +37,17 @@ function frequencyLabel(durationSecs: number): string {
 }
 
 export function toSeriesRecord(info: RustSeriesInfo, seriesId: number): SeriesRecord {
+  if (info.underlying === 'nba') {
+    return {
+      assetType: 'nba',
+      id: seriesId,
+      marketType: 'h2h',
+      slug: info.series,
+      status: 'SERIES_STATUS_ACTIVE',
+      title: 'NBA game winner',
+    }
+  }
+
   const frequency = frequencyLabel(info.duration_secs)
 
   return {
@@ -58,6 +74,58 @@ export function toEventDetail(info: RustSeriesInfo, seriesId: number): EventDeta
   const startsAt = new Date(info.opens_at_ms).toISOString()
   const endsAt = new Date(info.closes_at_ms).toISOString()
   const slug = `${info.series}-${info.current_market_id}`
+  const reference = {
+    exponent: 0,
+    instant: startsAt,
+    mantissa: '0',
+    publishTimeMicros: String(info.opens_at_ms * 1_000),
+  }
+
+  if (info.underlying === 'nba') {
+    const matchup = RustNbaRoundReferenceSchema.safeParse(info.reference)
+    if (!matchup.success) {
+      return undefined
+    }
+    const { home_team: home, away_team: away } = matchup.data
+    const title = `${away} at ${home}`
+
+    return {
+      endsAt,
+      id: eventId,
+      markets: [
+        {
+          endsAt,
+          eventId,
+          id: eventId,
+          metadata: {
+            automation: {
+              kind: 'nba_h2h',
+              priceSymbol: info.series,
+              reference,
+              seriesId,
+              workflowId: `exchange:${slug}`,
+            },
+          },
+          noLabel: away,
+          question: `Which team wins? ${home} is at home.`,
+          slug: `${slug}-nba-h2h`,
+          startsAt,
+          status: 'MARKET_STATUS_ACTIVE',
+          title,
+          yesLabel: home,
+        },
+      ],
+      seriesId,
+      slug,
+      startsAt,
+      status: 'EVENT_STATUS_ACTIVE',
+      title,
+    }
+  }
+
+  if (info.underlying !== undefined && info.underlying !== 'btc') {
+    return undefined
+  }
 
   return {
     endsAt,
@@ -71,12 +139,7 @@ export function toEventDetail(info: RustSeriesInfo, seriesId: number): EventDeta
           automation: {
             kind: 'btc_updown',
             priceSymbol: info.series,
-            reference: {
-              exponent: 0,
-              instant: startsAt,
-              mantissa: '0',
-              publishTimeMicros: String(info.opens_at_ms * 1_000),
-            },
+            reference,
             seriesId,
             workflowId: `exchange:${slug}`,
           },

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   RustAccountsFrameSchema,
   RustBookFrameSchema,
+  RustMarketsHistorySchema,
+  RustNbaRoundReferenceSchema,
   RustPlaceOutcomeSchema,
   RustPositionFrameSchema,
   RustPriceFrameSchema,
@@ -416,6 +418,115 @@ describe('rust exchange wire', () => {
         templates: [{ ...template, waiting_on: [{ signal_id: 'x' }] }],
       }).success
     ).toBe(false)
+  })
+
+  it('parses an NBA series row alongside a BTC row', () => {
+    const parsed = RustSeriesListSchema.safeParse([
+      {
+        series: 'btc-5m',
+        duration_secs: 300,
+        underlying: 'btc',
+        outcomes: ['up', 'down'],
+        current_market_id: 8,
+        opens_at_ms: 1_795_035_300_000,
+        closes_at_ms: 1_795_035_600_000,
+        reference: { strike_btc_usd: 62_525.42 },
+      },
+      {
+        series: 'nba-h2h',
+        duration_secs: 300,
+        underlying: 'nba',
+        outcomes: ['home', 'away'],
+        current_market_id: 3,
+        opens_at_ms: 1_795_060_472_000,
+        closes_at_ms: 1_795_069_800_000,
+        reference: {
+          home_team: 'DEN',
+          away_team: 'BOS',
+          pregame_home_prob: 0.5,
+          game_seq: 1,
+        },
+        gemini: {
+          env: 'production',
+          series: 'NBA',
+          phase: 'open',
+          book: 'live',
+          event_ticker: 'NBA-2611190230-BOS-DEN-M',
+          symbol: 'GEMI-NBA-2611190230-BOS-DEN-M-DEN',
+          starts_at_ms: 1_795_055_400_000,
+          expires_at_ms: 1_795_069_800_000,
+        },
+      },
+    ])
+    expect(parsed.success).toBe(true)
+    const nba = RustNbaRoundReferenceSchema.safeParse(
+      parsed.success ? parsed.data[1]?.reference : undefined
+    )
+    expect(nba.success && nba.data.home_team).toBe('DEN')
+  })
+
+  it('keeps the series list when one reference has a shape it does not know', () => {
+    const row = {
+      series: 'btc-5m',
+      duration_secs: 300,
+      underlying: 'btc',
+      current_market_id: 8,
+      opens_at_ms: 1_795_035_300_000,
+      closes_at_ms: 1_795_035_600_000,
+    }
+    const parsed = RustSeriesListSchema.safeParse([
+      { ...row, reference: { strike_btc_usd: 62_525.42 } },
+      { ...row, series: 'eth-5m', underlying: 'eth', reference: { strike_eth_usd: 3_000 } },
+      {
+        ...row,
+        series: 'nba-h2h',
+        underlying: 'nba',
+        reference: { home_team: 'DEN', away_team: 'BOS', pregame_home_prob: null, game_seq: 1 },
+      },
+    ])
+    expect(parsed.success).toBe(true)
+    expect(parsed.success && parsed.data.map(item => item.series)).toEqual([
+      'btc-5m',
+      'eth-5m',
+      'nba-h2h',
+    ])
+  })
+
+  it('parses an NBA series row with no open game', () => {
+    const parsed = RustSeriesListSchema.safeParse([
+      {
+        series: 'nba-h2h',
+        duration_secs: 300,
+        underlying: 'nba',
+        outcomes: ['home', 'away'],
+        current_market_id: null,
+        opens_at_ms: null,
+        closes_at_ms: null,
+        gemini: { env: 'production', series: 'NBA', phase: 'waiting_for_window', book: 'waiting' },
+      },
+    ])
+    expect(parsed.success).toBe(true)
+    expect(parsed.success && parsed.data[0]?.reference).toBeUndefined()
+  })
+
+  it('parses an NBA resolved history row and keeps both scores', () => {
+    const parsed = RustMarketsHistorySchema.safeParse([
+      {
+        id: 3,
+        series: 'nba-h2h',
+        home_team: 'DEN',
+        away_team: 'BOS',
+        pregame_home_prob: 0.5,
+        game_seq: 1,
+        opened_at: 1_795_060_472,
+        closes_at: 1_795_074_872,
+        status: { kind: 'resolved', outcome: 'no', home_score: 108, away_score: 121 },
+      },
+    ])
+    expect(parsed.success).toBe(true)
+    const status = parsed.success ? parsed.data[0]?.status : undefined
+    expect(status?.kind === 'resolved' && status.home_score).toBe(108)
+    expect(status?.kind === 'resolved' && status.away_score).toBe(121)
   })
 
   it('converts tenths of a cent to exact micro-dollar strings', () => {

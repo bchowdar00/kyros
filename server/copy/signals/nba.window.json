@@ -1,0 +1,10 @@
+{
+  "title": "Round clock",
+  "description": "Where this round is in its life. A round is one game: it opens when the game is listed, states its close as four hours after tipoff, and settles on Gemini's result for the game, usually well before that.",
+  "fields": {
+    "remaining": {
+      "label": "Time left",
+      "description": "Time until the round's stated close, four hours after tipoff. More than four hours left means the game has not tipped off."
+    }
+  }
+}

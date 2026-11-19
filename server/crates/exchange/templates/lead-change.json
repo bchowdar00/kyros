@@ -1,10 +1,10 @@
 {
   "id": "lead-change",
   "title": "Lead Change",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-01.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-01.jpg" },
   "series": ["nba-h2h"],
   "logic": "Every time the lead changes hands, it sells what it holds and buys the team that just took the lead, a fixed amount each time, so each flip banks the gain on the side it is leaving. Once the fourth quarter starts it makes one last flip to the leader and holds to the final.",
-  "inverse_logic": "Every time the lead changes hands, it buys the team that just fell behind, a fixed amount, and sells it the moment it retakes the lead to buy the new trailer. In the fourth quarter it stops flipping and holds whichever side is leading to the final.",
+  "inverse_logic": "Every time the lead changes hands, it buys the team that just fell behind, a fixed amount, and sells it the moment it retakes the lead to buy the new trailer. In the fourth quarter it stops flipping and holds what it has to the final.",
   "envelope": {
     "loss_budget_fraction": "1",
     "order_fraction": "0.05",
@@ -24,8 +24,8 @@
     "instruments": { "market": "{{series}}.current" },
     "signals": {
       "book": "{{series}}.current.price.v1",
-      "margin": "nba.sim.margin.v1",
-      "pbp": "nba.sim.pbp.v1"
+      "margin": "nba.live.margin.v1",
+      "pbp": "nba.live.pbp.v1"
     },
     "state": [],
     "triggers": [
@@ -194,8 +194,8 @@
     "instruments": { "market": "{{series}}.current" },
     "signals": {
       "book": "{{series}}.current.price.v1",
-      "margin": "nba.sim.margin.v1",
-      "pbp": "nba.sim.pbp.v1"
+      "margin": "nba.live.margin.v1",
+      "pbp": "nba.live.pbp.v1"
     },
     "state": [],
     "triggers": [

@@ -8,13 +8,18 @@ fills the placeholders, compiles every document against the generated registry
 at boot, and refuses to start on a diagnostic or a warning. `GET
 /api/strategies/templates?series=` serves the cards.
 
-The `parked/` subfolder holds templates that are not embedded or loaded. They
-target an `nba-h2h` series that the server no longer runs, so they cannot
-compile against the generated registry. Bringing them back takes more than
-moving the files: the series row and its `home`/`away` outcomes, the NBA
-signals in the registry, their copy files and a round driver all went with
-the simulator, and so did the tests of the home/away frame. Commit `e5b269f`
-has every one of them.
+The `parked/` subfolder holds templates that are not embedded or loaded. Six
+of the seven NBA templates it used to hold are embedded and listed again on the
+`nba-h2h` series, whose row, `home`/`away` outcomes, NBA signals
+(`nba.live.pbp`, `nba.live.polymarket`, `nba.live.margin`, `nba.live.winprob`,
+with team codes as plain strings) and copy files are back in the registry.
+`team-loyalty` stays in `parked/`: it compares the matchup's `home_team` /
+`away_team` to a team name, which the compiler reads as a bare word and the
+string-typed matchup field rejects; the card's logic is left unchanged. This is
+the static scaffolding only: no round driver opens an `nba-h2h` round and no
+producer publishes the NBA feeds yet, so the series sits idle and every NBA
+card reports its signals under `waiting_on` until a real driver and producer
+are added.
 
 ## File shape
 
@@ -35,8 +40,8 @@ has every one of them.
 Documents are text-substituted before parsing, so a placeholder may sit inside
 an expression string or a param default.
 
-- `{{series}}` — the series slug (`btc-5m`, `btc-15m`). Every instrument and
-  exchange-internal signal id is written as `{{series}}.current…`.
+- `{{series}}` — the series slug (`btc-5m`, `btc-15m`, `nba-h2h`). Every
+  instrument and exchange-internal signal id is written as `{{series}}.current…`.
 - `{{spot}}` — the round's reference price signal, `gemini.btc_usd.spot.v1`
   (Gemini's index price, the one its contracts settle on). It exposes `last`.
   No listed document uses it today: they read the distance from the strike
@@ -128,6 +133,12 @@ an expression string or a param default.
 | absorption-fade | btc-5m | taker | external absorption_state |
 | inside-quote | both | maker, one cent inside the best on the side the strike favours (inverse quotes both sides when the strike says nothing) | book, strike distance, window clock |
 | late-fade | both | taker in the last minute, small, against a side whose offers are gone (inverse joins it with a resting bid) | book, window clock |
+| model-vs-crowd | nba-h2h | taker, buys the side the model (inverse: Polymarket's price) calls cheap and sells out when the book returns | nba.live.winprob / nba.live.polymarket, book |
+| lead-change | nba-h2h | taker, backs the leader and flips on a lead change, locking in the fourth | nba.live.margin, nba.live.pbp, book |
+| venue-gap | nba-h2h | taker, buys the side Polymarket prices higher than our book | nba.live.polymarket, nba.live.margin, book |
+| fourth-quarter | nba-h2h | taker in crunch time on the margin | nba.live.margin, nba.live.pbp, book |
+| pregame-pick | nba-h2h | taker, takes the pregame favourite before tipoff | nba.live.polymarket, book |
+| shooting-streak | nba-h2h | taker, rides a scoring run | nba.live.pbp, book |
 
 `inside-quote` and `late-fade` read nothing but the exchange's own signals, so
 they are ready as soon as a round is open, with every signal lane off. The rest
@@ -142,7 +153,7 @@ the public list as a result are named in the next section.
 These six templates carry `listed: false`: they still compile at boot and stay
 reachable by id and deployable, but the list route leaves them out, because of
 how each did against Gemini's live books. This is not the `parked/` folder
-above, whose files are not embedded at all.
+above, whose files (now just `team-loyalty`) are not embedded at all.
 
 | template | run |
 |---|---|

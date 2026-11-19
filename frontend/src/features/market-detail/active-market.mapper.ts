@@ -1,9 +1,10 @@
 import type { EventDetail, MarketRecord } from '@kyros/domain'
 import { CANDLE_INTERVALS } from '@kyros/ui/charts/lib/candles'
 import { MINUTE, SECOND } from '@kyros/ui/charts/lib/time'
+import type { TimeRange } from '@kyros/ui/charts/lib/types'
 
 import { decimalToNumber } from './price-tick'
-import type { MarketPriceChartData } from './types'
+import type { MarketDetail, MarketPriceChartData } from './types'
 
 const STRIKE_CHART_BAND = 300
 
@@ -11,7 +12,7 @@ function firstAutomatedMarket(detail: EventDetail): MarketRecord | undefined {
   return detail.markets.find(market => market.metadata.automation !== undefined)
 }
 
-function windowRange(detail: EventDetail): { end: number; start: number } | undefined {
+export function windowRange(detail: EventDetail): { end: number; start: number } | undefined {
   const start = Date.parse(detail.startsAt)
   const end = Date.parse(detail.endsAt)
 
@@ -70,6 +71,28 @@ export function resolvePriceMarket(detail: EventDetail) {
   return market === undefined || priceChart === undefined ? undefined : { market, priceChart }
 }
 
+/**
+ * The automated market the event rolls over on, once its window can be plotted. Unlike
+ * `resolvePriceMarket` this does not require a price chart, so an NBA round (which charts
+ * probability, not price) resolves too.
+ */
+export function resolveActiveMarket(detail: EventDetail): MarketRecord | undefined {
+  const market = firstAutomatedMarket(detail)
+
+  return market !== undefined && windowRange(detail) !== undefined ? market : undefined
+}
+
 export function toActiveMarketIdentity(detail: EventDetail): { eventId: number } | undefined {
-  return resolvePriceMarket(detail) === undefined ? undefined : { eventId: detail.id }
+  return resolveActiveMarket(detail) === undefined ? undefined : { eventId: detail.id }
+}
+
+/**
+ * The window the market header counts down to. A game ends at its final, not at a time on
+ * the clock, so a market with a scoreboard has none.
+ */
+export function headerCountdownRange(
+  market: Pick<MarketDetail, 'priceChart' | 'probabilityChart' | 'scoreboard'>
+): TimeRange | undefined {
+  if (market.scoreboard !== undefined) return undefined
+  return market.priceChart?.range ?? market.probabilityChart?.range
 }

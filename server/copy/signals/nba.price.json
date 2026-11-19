@@ -1,0 +1,26 @@
+{
+  "title": "Market price",
+  "description": "What the book is paying for the home side right now, in cents on the dollar. The away side is always one dollar minus home.",
+  "fields": {
+    "home": {
+      "label": "Home",
+      "description": "The market's current odds that the home team wins, as a price in cents. Fifty cents is a coin flip."
+    },
+    "away": {
+      "label": "Away",
+      "description": "The market's current odds that the away team wins, as a price in cents. Always one dollar minus the home price."
+    },
+    "bid": {
+      "label": "Best bid",
+      "description": "The highest price someone is waiting to pay for the home side. Selling home right now fills here."
+    },
+    "ask": {
+      "label": "Best ask",
+      "description": "The lowest price someone is waiting to sell the home side at. Buying home right now fills here."
+    },
+    "last": {
+      "label": "Last trade",
+      "description": "The price of the most recent fill in this round. It lags the book when nobody is trading."
+    }
+  }
+}

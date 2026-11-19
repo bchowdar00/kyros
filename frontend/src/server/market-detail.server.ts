@@ -69,7 +69,7 @@ export const loadMarketDetail = cache(async (slug: string): Promise<MarketDetail
     return undefined
   }
 
-  const market = toMarketDetail(live.series, live.detail)
+  const market = toMarketDetail(live.series, live.detail, undefined, live.gemini)
 
   // History comes with the `/ws/price` snapshot in the browser; nothing to preload here.
   // The Gemini block seeds the browser's poll of where the book comes from.

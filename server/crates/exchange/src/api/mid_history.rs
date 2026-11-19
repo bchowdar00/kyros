@@ -21,6 +21,7 @@ use serde::Serialize;
 
 use super::{AppState, BOOK_WS_DEPTH, BookSnapshotMessage, SeriesQuery, build_book_snapshot_message};
 use crate::engine::MarketEngine;
+use crate::engine::book::{MAX_MARK_TENTHS, MIN_MARK_TENTHS};
 use crate::types::{DEFAULT_SERIES, MarketId, SeriesId};
 
 /// Upper bound on points kept for one round. The market maker refreshes
@@ -29,6 +30,16 @@ use crate::types::{DEFAULT_SERIES, MarketId, SeriesId};
 /// oldest point goes, which only ever trims the start of a very busy
 /// round.
 pub const MID_HISTORY_CAP: usize = 10_000;
+
+/// A spread wider than this (25 cents) is a gap, not a market: on a thin
+/// book a maker pulling one quote for a fraction of a second leaves the
+/// next level tens of cents away, and the midpoint across it is a price
+/// nobody quoted.
+pub const WIDE_SPREAD_TENTHS: u16 = 250;
+
+/// How long a gap has to stand before its midpoint is charted. Shorter
+/// than this, the chart holds its last value.
+pub const WIDE_SETTLE_MS: u64 = 3_000;
 
 /// One sample of the YES midpoint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -42,19 +53,41 @@ pub struct MidPoint {
 pub struct MidHistory {
     market_id: Option<MarketId>,
     points: VecDeque<MidPoint>,
+    /// When the book's spread last became wider than
+    /// [`WIDE_SPREAD_TENTHS`]; `None` while it is not.
+    wide_since_ms: Option<u64>,
 }
 
 impl MidHistory {
     /// Bring the buffer up to date with the engine's book. Clears on a
     /// new round, then records the midpoint if it moved. Returns the
-    /// current midpoint, which is what the broadcast frame carries.
+    /// charted midpoint, which is what the broadcast frame carries.
+    ///
+    /// While the spread is a gap that has not yet stood for
+    /// [`WIDE_SETTLE_MS`], the charted midpoint is the last one recorded
+    /// (the first point of a round has nothing to hold and is recorded
+    /// as it is).
     pub fn record(&mut self, engine: &MarketEngine, now_ms: u64) -> Option<u16> {
         let market_id = engine.current_market().map(|m| m.id);
         if market_id != self.market_id {
             self.market_id = market_id;
             self.points.clear();
+            self.wide_since_ms = None;
         }
-        let mid = engine.book().chart_mid_yes_tenths()?;
+        let book = engine.book();
+        let mid = book.chart_mid_yes_tenths()?;
+        let bid = book.best_bid().map_or(MIN_MARK_TENTHS, |p| p.tenths());
+        let ask = book.best_ask().map_or(MAX_MARK_TENTHS, |p| p.tenths());
+        if ask.saturating_sub(bid) > WIDE_SPREAD_TENTHS {
+            let since = *self.wide_since_ms.get_or_insert(now_ms);
+            if now_ms.saturating_sub(since) < WIDE_SETTLE_MS
+                && let Some(held) = self.latest()
+            {
+                return Some(held);
+            }
+        } else {
+            self.wide_since_ms = None;
+        }
         if self.points.back().map(|p| p.mid) != Some(mid) {
             if self.points.len() == MID_HISTORY_CAP {
                 self.points.pop_front();
@@ -168,6 +201,60 @@ mod tests {
             vec![MidPoint { ts_ms: 2, mid: 450 }, MidPoint { ts_ms: 4, mid: 460 }]
         );
         assert_eq!(history.latest(), Some(460));
+    }
+
+    /// A quote pulled for a moment leaves the next level a long way off.
+    /// The midpoint across that gap is a price nobody saw, so the chart
+    /// holds its last value and the frame carries the held value too.
+    #[test]
+    fn a_gap_that_opens_for_a_moment_is_not_charted() {
+        let (mut x, buyer, seller) = exchange_with_round();
+        let mut history = MidHistory::default();
+        quote(&mut x, buyer, seller, 290, 310);
+        assert_eq!(history.record(x.engine(S), 1_000), Some(300));
+
+        // The near ask is pulled; the next one rests at 90 cents.
+        quote(&mut x, buyer, seller, 290, 900);
+        assert_eq!(history.record(x.engine(S), 1_200), Some(300), "the gap is not a price");
+
+        quote(&mut x, buyer, seller, 300, 320);
+        assert_eq!(history.record(x.engine(S), 1_500), Some(310));
+        assert_eq!(
+            history.points(),
+            vec![MidPoint { ts_ms: 1_000, mid: 300 }, MidPoint { ts_ms: 1_500, mid: 310 }]
+        );
+    }
+
+    /// A gap that stands is the market: once it has lasted
+    /// [`WIDE_SETTLE_MS`] its midpoint is charted like any other.
+    #[test]
+    fn a_gap_that_stands_is_charted() {
+        let (mut x, buyer, seller) = exchange_with_round();
+        let mut history = MidHistory::default();
+        quote(&mut x, buyer, seller, 290, 310);
+        history.record(x.engine(S), 1_000);
+        quote(&mut x, buyer, seller, 290, 900);
+        assert_eq!(history.record(x.engine(S), 1_200), Some(300));
+        assert_eq!(history.record(x.engine(S), 1_200 + WIDE_SETTLE_MS - 1), Some(300));
+        assert_eq!(history.record(x.engine(S), 1_200 + WIDE_SETTLE_MS), Some(595));
+        assert_eq!(history.latest(), Some(595));
+
+        // A second gap is timed from its own start, not from the first.
+        quote(&mut x, buyer, seller, 290, 310);
+        assert_eq!(history.record(x.engine(S), 10_000), Some(300));
+        quote(&mut x, buyer, seller, 290, 900);
+        assert_eq!(history.record(x.engine(S), 10_100), Some(300));
+    }
+
+    /// With nothing charted yet there is no last value to hold, so a
+    /// round that opens on a wide book gets its first point at once.
+    #[test]
+    fn a_round_that_opens_on_a_wide_book_still_gets_its_first_point() {
+        let (mut x, buyer, seller) = exchange_with_round();
+        let mut history = MidHistory::default();
+        quote(&mut x, buyer, seller, 100, 900);
+        assert_eq!(history.record(x.engine(S), 1), Some(500));
+        assert_eq!(history.points().len(), 1);
     }
 
     #[test]

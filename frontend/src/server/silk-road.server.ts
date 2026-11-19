@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createRustExchangeClient, type RustExchangeClient } from '@kyros/api'
 import type { EventDetail, RustGeminiSeries, RustSeriesInfo, SeriesRecord } from '@kyros/domain'
+import { cache } from 'react'
 
 import { env } from '@/env'
 import {
@@ -110,3 +111,40 @@ export async function loadLiveSeriesEventBySlug(
 
   return (await listLive(exchange)).find(candidate => candidate.series.slug === slug)
 }
+
+/** A listed series regardless of a Gemini block; absent for the UI. */
+export interface LiveSeries {
+  gemini?: RustGeminiSeries
+  series: SeriesRecord
+}
+
+/**
+ * The record of a game series for a slug, whether or not a game is open. Only a series that
+ * follows games can be between them for hours, so only it gets a waiting screen instead of a
+ * 404; a Bitcoin series between rounds, an underlying this client does not know, and an
+ * unlisted or hidden slug all stay `undefined`.
+ */
+export const loadGameSeriesBySlug = cache(async (slug: string): Promise<LiveSeries | undefined> => {
+  const exchange = client()
+
+  if (exchange === undefined) {
+    return undefined
+  }
+
+  const result = await exchange.listSeries()
+
+  if (!result.ok) {
+    return undefined
+  }
+
+  for (const [index, info] of result.data.entries()) {
+    if (info.series !== slug || info.underlying !== 'nba' || !isSeriesVisible(info)) {
+      continue
+    }
+
+    const series = toSeriesRecord(info, seriesIdForIndex(index))
+    return { series, ...(info.gemini === undefined ? {} : { gemini: info.gemini }) }
+  }
+
+  return undefined
+})

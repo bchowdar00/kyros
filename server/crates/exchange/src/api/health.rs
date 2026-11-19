@@ -32,6 +32,10 @@ pub const FEED_STALE_MS: u64 = 10_000;
 /// How long a series may sit between rounds. Gemini publishes a result
 /// within about ten seconds and the next window is already listed.
 pub const BETWEEN_ROUNDS_MS: u64 = 60_000;
+/// How long past its stated close a game may go without a result before
+/// someone should look: long enough for overtimes and for Gemini to
+/// settle, short of forever (a postponed game never gets one).
+pub const RESULT_OVERDUE_MS: u64 = 2 * 3_600_000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SeriesInput {
@@ -41,6 +45,10 @@ pub struct SeriesInput {
     pub expires_at_ms: Option<u64>,
     pub book: BookState,
     pub templates: usize,
+    /// Whether the series should have a round open at all times. A BTC
+    /// series rolls from one window into the next; a series that follows
+    /// games waits, sometimes for a day, until one is listed.
+    pub always_open: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,7 +98,7 @@ pub fn assess(inputs: &HealthInputs) -> HealthReport {
         problems.push("no series follows gemini".to_owned());
     }
     for series in &inputs.series {
-        if series.phase != Phase::Open {
+        if series.phase != Phase::Open && series.always_open {
             match series.expires_at_ms {
                 None => problems.push(format!("{}: no round yet", series.series)),
                 Some(expiry) => {
@@ -100,6 +108,15 @@ pub fn assess(inputs: &HealthInputs) -> HealthReport {
                     }
                 }
             }
+        }
+        // A series that follows games may wait for one, but not for a
+        // result that is hours late: a postponed game never gets one.
+        if !series.always_open
+            && series.phase == Phase::WaitingForResult
+            && let Some(since) = series.expires_at_ms.map(|expiry| inputs.now_ms.saturating_sub(expiry))
+            && since > RESULT_OVERDUE_MS
+        {
+            problems.push(format!("{}: no result {} min after the stated close", series.series, since / 60_000));
         }
         if series.templates == 0 {
             problems.push(format!("{}: no strategy templates", series.series));
@@ -130,7 +147,8 @@ pub fn assess(inputs: &HealthInputs) -> HealthReport {
 
 /// What the check reads from the running server: Gemini's clock, the
 /// newest index second, and one row per series in the table. A series
-/// with no Gemini link reads as never having had a round.
+/// with no Gemini link reads as never having had a round, which is a
+/// fault only for a series that should always have one (the BTC series).
 pub fn gather(gemini: &GeminiState, templates: &TemplateCatalogue) -> HealthInputs {
     let series = SeriesId::all()
         .map(|id| {
@@ -141,6 +159,7 @@ pub fn gather(gemini: &GeminiState, templates: &TemplateCatalogue) -> HealthInpu
                 expires_at_ms: view.as_ref().and_then(|v| v.expires_at_ms),
                 book: view.as_ref().map_or(BookState::Waiting, |v| v.book),
                 templates: templates.for_series(id).count(),
+                always_open: id.is_btc(),
             }
         })
         .collect();
@@ -182,7 +201,7 @@ mod tests {
     const NOW: u64 = 1_795_030_000_000;
 
     fn open(series: &'static str) -> SeriesInput {
-        SeriesInput { series, phase: Phase::Open, expires_at_ms: Some(NOW + 120_000), book: BookState::Live, templates: 11 }
+        SeriesInput { series, phase: Phase::Open, expires_at_ms: Some(NOW + 120_000), book: BookState::Live, templates: 11, always_open: true }
     }
 
     fn good() -> HealthInputs {
@@ -212,6 +231,35 @@ mod tests {
         assert_eq!(report.series.len(), 2);
         let json = serde_json::to_value(&report).unwrap();
         assert_eq!(json["series"][0], serde_json::json!({ "series": "btc-5m", "phase": "open", "book": "live", "templates": 11 }));
+    }
+
+    #[test]
+    fn a_series_that_follows_games_may_wait_for_one() {
+        let mut inputs = good();
+        inputs.series.push(SeriesInput { series: "nba-h2h", phase: Phase::WaitingForWindow, expires_at_ms: None, book: BookState::Waiting, templates: 6, always_open: false });
+        assert_eq!(assess(&inputs).problems, Vec::<String>::new(), "no game listed yet");
+        // After a game, too: the next may be a day away.
+        inputs.series[2].expires_at_ms = Some(NOW - 3_600_000);
+        assert!(assess(&inputs).ok);
+        // It still needs its templates.
+        inputs.series[2].templates = 0;
+        assert_eq!(assess(&inputs).problems, vec!["nba-h2h: no strategy templates".to_owned()]);
+        // A rolling series gets no such allowance.
+        inputs.series[2].templates = 6;
+        inputs.series[2].always_open = true;
+        assert_eq!(assess(&inputs).problems, vec!["nba-h2h: no round open for 3600 s".to_owned()]);
+    }
+
+    #[test]
+    fn a_game_whose_result_is_long_overdue_is_reported() {
+        let mut inputs = good();
+        let overdue = |ago_ms: u64| SeriesInput { series: "nba-h2h", phase: Phase::WaitingForResult, expires_at_ms: Some(NOW - ago_ms), book: BookState::Waiting, templates: 6, always_open: false };
+        // A long game, or Gemini taking its time, is not a fault.
+        inputs.series.push(overdue(RESULT_OVERDUE_MS));
+        assert!(assess(&inputs).ok);
+        // A game that was postponed never gets a result: someone has to look.
+        inputs.series[2] = overdue(RESULT_OVERDUE_MS + 60_000);
+        assert_eq!(assess(&inputs).problems, vec!["nba-h2h: no result 121 min after the stated close".to_owned()]);
     }
 
     #[test]

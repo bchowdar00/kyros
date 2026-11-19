@@ -1,7 +1,7 @@
 {
   "id": "fourth-quarter",
   "title": "Crunch Time",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-03.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-03.jpg" },
   "series": ["nba-h2h"],
   "logic": "Waits for the fourth quarter. When a team leads by ten or more with under six minutes left and its side costs 92 cents or less, it buys that side and holds to the final. The bet is that the last few cents are free once the game is nearly decided.",
   "inverse_logic": "Waits for the last four minutes. When a team trails by six or less and its side costs under twenty cents, it buys a lottery ticket on the comeback and holds it. Close games get closer late, so the tickets hit more often than the price says.",
@@ -24,8 +24,8 @@
     "instruments": { "market": "{{series}}.current" },
     "signals": {
       "book": "{{series}}.current.price.v1",
-      "margin": "nba.sim.margin.v1",
-      "pbp": "nba.sim.pbp.v1"
+      "margin": "nba.live.margin.v1",
+      "pbp": "nba.live.pbp.v1"
     },
     "state": [],
     "params": [ { "name": "max_price", "type": "decimal", "default": "0.92" } ],
@@ -113,8 +113,8 @@
     "instruments": { "market": "{{series}}.current" },
     "signals": {
       "book": "{{series}}.current.price.v1",
-      "margin": "nba.sim.margin.v1",
-      "pbp": "nba.sim.pbp.v1"
+      "margin": "nba.live.margin.v1",
+      "pbp": "nba.live.pbp.v1"
     },
     "state": [],
     "params": [ { "name": "ticket", "type": "decimal", "default": "0.2" } ],

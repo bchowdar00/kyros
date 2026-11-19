@@ -1,7 +1,7 @@
 {
   "id": "team-loyalty",
   "title": "Celtics Nation",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-05.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-05.jpg" },
   "series": ["nba-h2h"],
   "logic": "Whenever Boston plays, it buys the Celtics before tipoff, home or away, and holds to the final. It does nothing on games Boston sits out.",
   "inverse_logic": "Whenever Boston plays, it buys whoever they are playing before tipoff and holds to the final. It does nothing on games Boston sits out.",

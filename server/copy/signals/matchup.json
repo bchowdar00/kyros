@@ -1,0 +1,18 @@
+{
+  "title": "Round matchup",
+  "description": "The game this round trades: the two teams and the pregame view of the home side, captured when the round opened. Reference data for the round rather than a reading to watch.",
+  "fields": {
+    "home_team": {
+      "label": "Home",
+      "description": "The home side; the book quotes its win probability."
+    },
+    "away_team": {
+      "label": "Away",
+      "description": "The away side; its price is the complement of the home price."
+    },
+    "pregame_home_prob": {
+      "label": "Pregame home win",
+      "description": "Gemini's price for the home side when the round opened, read as a probability; a round that opened after tipoff starts from even. The model starts from it all game."
+    }
+  }
+}

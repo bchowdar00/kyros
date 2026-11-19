@@ -177,6 +177,9 @@ pub fn write(registry: &Registry, path: &Path) -> Result<()> {
 pub fn build(inputs: &Inputs<'_>) -> Result<Registry> {
     let mut signals: Vec<Value> = Vec::new();
     signals.push(price_feed_signal(inputs.price_source));
+    // Scoped to the `nba` underlying: they reach a series only once one
+    // with that underlying is in the table.
+    signals.extend(nba_signals());
     for spec in SERIES {
         signals.extend(series_signals(spec));
     }
@@ -285,9 +288,14 @@ pub fn cadence(duration_secs: u64) -> String {
 /// The authoring description of a series, by underlying.
 fn series_description(spec: &SeriesSpec) -> String {
     let c = cadence(spec.duration_secs);
-    format!(
-        "{c} BTC up/down. The strike is the BTC price when the round opens; at close the price decides up (at or above the strike) or down. The book quotes the up side; down is its complement."
-    )
+    match spec.underlying {
+        "nba" => format!(
+            "{c} NBA head-to-head. Every window is one real NBA game listed on Gemini; the matchup and the pregame line are captured when the window opens, and at close the final score decides home or away. The book quotes the home side; away is its complement."
+        ),
+        _ => format!(
+            "{c} BTC up/down. The strike is the BTC price when the round opens; at close the price decides up (at or above the strike) or down. The book quotes the up side; down is its complement."
+        ),
+    }
 }
 
 fn series_entry(spec: &SeriesSpec) -> Value {
@@ -328,9 +336,87 @@ pub fn stats_signal_id(slug: &str) -> String {
     format!("{slug}.current.stats.v1")
 }
 
+/// The underlying of the NBA series.
+pub const NBA_UNDERLYING: &str = "nba";
+
+/// Signal ids of the NBA game's live feeds and derived signals: plays,
+/// margin and model from the public scoreboard (`sports::nba_live`), and
+/// Polymarket's price for the same game (`sports::polymarket`).
+pub const NBA_PBP_SIGNAL: &str = "nba.live.pbp.v1";
+pub const NBA_POLYMARKET_SIGNAL: &str = "nba.live.polymarket.v1";
+pub const NBA_MARGIN_SIGNAL: &str = "nba.live.margin.v1";
+pub const NBA_WINPROB_SIGNAL: &str = "nba.live.winprob.v1";
+
+/// Signal id of a series' matchup internal (NBA series only).
+pub fn matchup_signal_id(slug: &str) -> String {
+    format!("{slug}.current.matchup.v1")
+}
+
+/// The four signals an NBA game publishes, scoped to every series with
+/// the `nba` underlying: the two feeds (play-by-play and the pregame
+/// line) and the two derived from them (margin and model win
+/// probability). Team codes travel as plain strings; a real producer
+/// fills them from the live game. No producer runs yet.
+pub fn nba_signals() -> Vec<Value> {
+    let scope = json!(Scope::Underlying { underlying: NBA_UNDERLYING.to_string() });
+    vec![
+        json!({
+            "signal_id": NBA_PBP_SIGNAL, "version": "1", "location": "internal",
+            "name": "Play-by-play",
+            "description": "Plays and score of the live NBA game, from the public scoreboard, with full game context: action, result, team, player, quarter, clock and the scores before and after. Game-scoped: the final stays as recorded state until the next tipoff. clock_remaining is published last.",
+            "fields": [
+                {"name": "seq", "label": "Play", "type": "u32"},
+                {"name": "action", "label": "Action", "type": "enum", "variants": ["tipoff", "two_pointer", "three_pointer", "free_throw", "turnover", "rebound", "foul", "final", "other"]},
+                {"name": "result", "label": "Result", "type": "enum", "variants": ["made", "missed", "none"]},
+                {"name": "team", "label": "Team", "type": "string"},
+                {"name": "player", "label": "Player", "type": "string"},
+                {"name": "phase", "label": "Phase", "type": "enum", "variants": ["pregame", "in_play", "final"]},
+                {"name": "home_team", "label": "Home", "type": "string"},
+                {"name": "away_team", "label": "Away", "type": "string"},
+                {"name": "quarter", "label": "Quarter", "type": "u8"},
+                {"name": "home_score_before", "label": "Home Before", "type": "u32"},
+                {"name": "away_score_before", "label": "Away Before", "type": "u32"},
+                {"name": "home_score", "label": "Home Score", "type": "u32"},
+                {"name": "away_score", "label": "Away Score", "type": "u32"},
+                {"name": "clock_remaining", "label": "Clock", "type": "decimal"}
+            ],
+            "metadata": {
+                "scope": scope, "producer": "nba_live", "live": true, "approximate_interval_ms": 0,
+                "team_semantics": "offense for shots, turnovers and free throws; defense for fouls and rebounds"
+            }
+        }),
+        json!({
+            "signal_id": NBA_POLYMARKET_SIGNAL, "version": "1", "location": "internal",
+            "name": "Polymarket line",
+            "description": "What Polymarket pays for each side of the same game: the midpoint of its order book for the home team, and its complement. Read every ten seconds while the round is open.",
+            "fields": [
+                {"name": "home_team", "label": "Home", "type": "string"},
+                {"name": "away_team", "label": "Away", "type": "string"},
+                {"name": "home_prob", "label": "Home Win", "type": "decimal"},
+                {"name": "away_prob", "label": "Away Win", "type": "decimal"}
+            ],
+            "metadata": { "scope": scope, "producer": "nba_live", "live": true, "approximate_interval_ms": 10000 }
+        }),
+        json!({
+            "signal_id": NBA_MARGIN_SIGNAL, "version": "1", "location": "internal",
+            "name": "Score margin",
+            "description": "Home score minus away score for the game in play, republished on every play and reset to zero at tipoff.",
+            "fields": [ {"name": "value", "label": "Margin", "type": "decimal"} ],
+            "metadata": { "scope": scope, "producer": "nba_live", "inputs": [NBA_PBP_SIGNAL], "live": true, "approximate_interval_ms": 0 }
+        }),
+        json!({
+            "signal_id": NBA_WINPROB_SIGNAL, "version": "1", "location": "internal",
+            "name": "Model win probability",
+            "description": "Model win probability from the score, the clock and the pregame line: P(home), the pregame line before tipoff, then a margin-and-clock model in play with the pregame line held as its prior.",
+            "fields": [ {"name": "home", "label": "Home Win", "type": "decimal"} ],
+            "metadata": { "scope": scope, "producer": "nba_live", "inputs": [NBA_PBP_SIGNAL], "live": true, "approximate_interval_ms": 0 }
+        }),
+    ]
+}
+
 /// The internals the exchange publishes for every series: four shared
-/// (price, window, trades, stats) plus the BTC reference signals (strike
-/// and delta).
+/// (price, window, trades, stats) plus the underlying's own reference
+/// signals (BTC: strike and delta; NBA: matchup).
 fn series_signals(spec: &SeriesSpec) -> Vec<Value> {
     let s = spec.slug;
     let sid = |kind: &str| format!("{s}.current.{kind}.v1");
@@ -338,7 +424,20 @@ fn series_signals(spec: &SeriesSpec) -> Vec<Value> {
     let [pos, neg] = spec.outcomes;
     let (pos_label, neg_label) = (field_label(pos), field_label(neg));
     let mut out = Vec::new();
-    {
+    if spec.underlying == NBA_UNDERLYING {
+        out.push(json!({
+            "signal_id": matchup_signal_id(s), "version": "1", "location": "internal",
+            "name": "Round Matchup",
+            "description": format!("The game the current {s} round trades: the home and away teams and the pregame home win probability, captured when the round opened, with the game number."),
+            "fields": [
+                {"name": "home_team", "label": "Home", "type": "string"},
+                {"name": "away_team", "label": "Away", "type": "string"},
+                {"name": "pregame_home_prob", "label": "Pregame Home Win", "type": "decimal"},
+                {"name": "game_seq", "label": "Game", "type": "u64"}
+            ],
+            "metadata": { "series_id": s, "scope": scope }
+        }));
+    } else {
         out.push(json!({
             "signal_id": sid("strike"), "version": "1", "location": "internal",
             "name": "Round Strike",
@@ -656,6 +755,61 @@ mod tests {
                 assert!(text.len() <= 320, "{indicator}.{name}: too long");
             }
         }
+    }
+
+    /// The NBA signals are published under their four-segment `nba.live.*`
+    /// ids for a series with the `nba` underlying, carry their team codes
+    /// as plain strings with no roster table in the registry, and each has
+    /// a copy file.
+    #[test]
+    fn nba_signals_type_and_mirror_the_roster() {
+        let r = build(&inputs(&[])).expect("builds");
+        let nba = SERIES.iter().find(|s| s.underlying == NBA_UNDERLYING).expect("an NBA series in the table");
+        let find = |id: &str| r.signals.iter().find(|s| s.signal_id == id).unwrap_or_else(|| panic!("{id}"));
+        // The four feed signals exist under the renamed ids and apply to
+        // the NBA series, not to BTC.
+        for id in [NBA_PBP_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL] {
+            let def = find(id);
+            let sc = Scope::of(def).unwrap();
+            assert_eq!(sc, Scope::Underlying { underlying: "nba".into() });
+            assert!(sc.applies_to(nba));
+            assert!(!sc.applies_to(&SERIES[0]), "not a BTC signal");
+            assert_eq!(def.metadata.as_ref().unwrap()["producer"], "nba_live");
+        }
+        assert!(!r.signals.iter().any(|s| s.signal_id.contains(".sim.")), "no sim ids survive");
+        // Team fields and the player are plain strings; no roster table
+        // rides in the pbp metadata.
+        let pbp = find(NBA_PBP_SIGNAL);
+        for name in ["team", "home_team", "away_team", "player"] {
+            let f = pbp.fields.iter().find(|f| f.name.as_str() == name).unwrap_or_else(|| panic!("{name}"));
+            assert_eq!(f.field_type, FieldType::String, "{name} is a string");
+        }
+        let meta = pbp.metadata.as_ref().unwrap();
+        assert!(meta.get("players").is_none(), "no players table");
+        assert!(meta.get("teams").is_none(), "no teams table");
+        // The pbp action enum ends in `other`; phase carries `pregame`.
+        let field = |n: &str| pbp.fields.iter().find(|f| f.name.as_str() == n).unwrap();
+        assert!(matches!(&field("action").field_type, FieldType::Enum { variants } if variants.last().map(String::as_str) == Some("other")));
+        assert!(matches!(&field("phase").field_type, FieldType::Enum { variants } if variants.iter().any(|v| v == "pregame")));
+        // The NBA series' matchup internal has string teams; its price and
+        // window internals are present and there is no strike.
+        let matchup = find(&matchup_signal_id(nba.slug));
+        for name in ["home_team", "away_team"] {
+            assert_eq!(matchup.fields.iter().find(|f| f.name.as_str() == name).unwrap().field_type, FieldType::String);
+        }
+        for kind in ["matchup", "price", "window"] {
+            find(&format!("{}.current.{kind}.v1", nba.slug));
+        }
+        assert!(!r.signals.iter().any(|s| s.signal_id == format!("{}.current.strike.v1", nba.slug)), "no strike on the NBA series");
+        // Each NBA signal resolves a copy file.
+        let book = CopyBook::load(&copy_dir(None).expect("copy directory in the checkout")).unwrap();
+        for id in [NBA_PBP_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL] {
+            assert!(book.for_signal(id).is_some(), "{id} has a copy file");
+        }
+        let nba_u = Some(NBA_UNDERLYING);
+        assert!(book.for_signal_in(&matchup_signal_id(nba.slug), nba_u).is_some(), "matchup copy");
+        assert!(book.for_signal_in(&format!("{}.current.price.v1", nba.slug), nba_u).is_some(), "nba price copy");
+        assert!(book.for_signal_in(&format!("{}.current.window.v1", nba.slug), nba_u).is_some(), "nba window copy");
     }
 
     #[test]

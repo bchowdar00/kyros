@@ -89,9 +89,9 @@ pub const MAX_SUB_ACCOUNTS_PER_USER: usize = 200;
 pub enum RoundReference {
     /// BTC up/down: the spot price when the round opened.
     Btc { strike_btc_usd: f64 },
-    /// NBA head-to-head: the matchup and the sharp line's pregame home win
-    /// probability, both captured at open; `game_seq` is the world's game
-    /// counter so a stale final from the previous game can be told apart.
+    /// NBA head-to-head: the matchup and the pregame view of the home
+    /// side (Gemini's price when the round opened before tipoff, else
+    /// even), both captured at open; `game_seq` counts the series' games.
     Nba {
         home_team: &'static str,
         away_team: &'static str,

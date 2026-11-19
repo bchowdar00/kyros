@@ -42,6 +42,34 @@ describe('ChatPanel', () => {
   })
 })
 
+const BITCOIN_NOTICE =
+  'The assistant writes Bitcoin strategies for now. Pick a ready-made strategy to run on this game.'
+
+describe('ChatPanel with the assistant turned off', () => {
+  it('disables the composer with a notice, hides the BTC sentence, keeps the strategies', () => {
+    render(<ChatPanel data={market.chatPanel} authoringUnavailable />)
+
+    expect(screen.getByText(BITCOIN_NOTICE)).toBeVisible()
+    expect(screen.queryByRole('heading', { name: /Buy Up when BTC is/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Message Kyros' })).toBeDisabled()
+    expect(screen.getByRole('heading', { name: market.chatPanel.sectionTitle })).toBeVisible()
+  })
+
+  it('does not send when the assistant is unavailable', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    render(
+      <StrategyComposer {...market.chatPanel.composer} authoringUnavailable onSubmit={onSubmit} />
+    )
+
+    const input = screen.getByRole('textbox', { name: market.chatPanel.composer.inputLabel })
+    expect(input).toBeDisabled()
+    await user.type(input, 'Buy Up now{Enter}')
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText(BITCOIN_NOTICE)).toBeVisible()
+  })
+})
+
 describe('StrategyComposer', () => {
   it('preserves a draft when chat is not connected', async () => {
     const user = userEvent.setup()

@@ -3,10 +3,12 @@ import type { MarketTrading } from './exchange/buy'
 import type { StrategyDeploy } from './exchange/deploy'
 import { LiveMarketPoller } from './live-market-poller'
 import { MarketDetailLayout } from './market-detail-layout'
+import { headerCountdownRange } from './active-market.mapper'
 import { MarketHeader } from './market-header'
 import { MarketPriceCard } from './market-price-card'
 import { MarketProbabilityCard } from './market-probability-card'
 import { MyStrategiesPanel } from './my-strategies-panel'
+import { NbaScoreboard } from './nba-scoreboard'
 import { OrderBookPanel } from './order-book-panel'
 import { LiveSignalsSection } from './live-signals-section'
 import { SignalsSection } from './signals-section'
@@ -54,8 +56,16 @@ export function MarketDetailScreen({
               }
               marketKey={marketKey}
               marketSlug={market.slug}
-              range={market.priceChart?.range ?? market.probabilityChart?.range}
+              range={headerCountdownRange(market)}
             />
+
+            {market.scoreboard ? (
+              <NbaScoreboard
+                scoreboard={market.scoreboard}
+                signalsApi={signalsApi}
+                key={`scoreboard:${marketKey}`}
+              />
+            ) : null}
 
             {/* The series keeps the chart scale and animation alive across event rollover. */}
             <div
@@ -109,6 +119,8 @@ export function MarketDetailScreen({
               trading={trading}
               deploy={deploy}
               exchangeApi={signalsApi}
+              // The LLM author writes Bitcoin strategies only; an NBA game turns it off.
+              authoringUnavailable={market.scoreboard !== undefined}
               scopeLabel={market.header.title}
               data={market.chatPanel}
               marketSlug={market.slug}

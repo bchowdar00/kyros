@@ -25,6 +25,7 @@ use exchange::gemini::audit::{RoundAudit, spawn_audit};
 use exchange::gemini::driver::{DriverParts, GeminiUpDriver, Phase, RestSource, SeriesLink};
 use exchange::gemini::index_feed::spawn_gemini_index_feed;
 use exchange::gemini::mirror_task::spawn_mirror;
+use exchange::gemini::nba::{GameCell, GeminiNbaDriver, NbaParts, RestNbaSource};
 use exchange::gemini::strikes::{GeminiClock, IndexTape, StrikeBook, spawn_reference_listener};
 use exchange::gemini::venue::{
     GeminiVenue, OrderLookup, SessionConfig, SymbolFn, install_outside_accounts, parse_max_order, parse_operator, real_orders_key,
@@ -36,6 +37,8 @@ use exchange::pricing::feed::{PriceFeed, spawn_tick_flusher};
 use exchange::registry::{self, PriceSource};
 use exchange::scheduler;
 use exchange::series::SERIES;
+use exchange::sports::nba_live::{ScoreBoard, spawn_nba_live, withdraw_game_signals};
+use exchange::sports::polymarket::spawn_polymarket_line;
 use exchange::{signals, signals_retention};
 use exchange::templates::TemplateCatalogue;
 use exchange::types::{SeriesId, Tenths};
@@ -317,6 +320,39 @@ async fn main() {
                 spawn_mirror(engine.clone(), series, gemini_socket.clone(), link, move |engine| {
                     broadcast_book(engine, &channels)
                 });
+            } else if series.underlying() == exchange::registry::NBA_UNDERLYING {
+                // The NBA series follows one listed game at a time: the
+                // round opens when a game with a two-sided book is listed,
+                // its book is the home side's contract on Gemini, and it
+                // resolves on Gemini's own result. Orders are taken until
+                // then; there is no close to lock at.
+                let link = SeriesLink::new();
+                gemini.follow(series, "NBA", link.clone());
+                // What was read for one game is taken away the moment the
+                // round moves to another.
+                let game = {
+                    let (bus, platform) = (bus.clone(), platform.clone());
+                    GameCell::on_change(move || withdraw_game_signals(&bus, &platform))
+                };
+                let board = ScoreBoard::default();
+                let driver = GeminiNbaDriver::new(NbaParts {
+                    source: RestNbaSource(gemini_env),
+                    clock: gemini_clock.clone(),
+                    link: link.clone(),
+                    game: game.clone(),
+                    score: board.score_fn(),
+                });
+                scheduler::spawn_with_driver(engine.clone(), series, driver, runtime.clone(), broadcast);
+                let channels = ch.clone();
+                spawn_mirror(engine.clone(), series, gemini_socket.clone(), link, move |engine| {
+                    broadcast_book(engine, &channels)
+                });
+                // The game's score and plays, from the public scoreboard,
+                // as the `nba.live.*` signals.
+                spawn_nba_live(game.clone(), board, bus.clone());
+                // What Polymarket pays for the same game, as a second line.
+                spawn_polymarket_line(game, bus.clone(), platform.clone());
+                tracing::info!(series = %series, "nba: following gemini's listed games");
             } else {
                 tracing::error!(series = %series, "no round driver for this series; it will never open a round");
             }

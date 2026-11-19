@@ -41,6 +41,12 @@ const TEMPLATE_FILES: &[(&str, &str)] = &[
     ("trend-rider", include_str!("../templates/trend-rider.json")),
     ("inside-quote", include_str!("../templates/inside-quote.json")),
     ("late-fade", include_str!("../templates/late-fade.json")),
+    ("model-vs-crowd", include_str!("../templates/model-vs-crowd.json")),
+    ("lead-change", include_str!("../templates/lead-change.json")),
+    ("venue-gap", include_str!("../templates/venue-gap.json")),
+    ("fourth-quarter", include_str!("../templates/fourth-quarter.json")),
+    ("pregame-pick", include_str!("../templates/pregame-pick.json")),
+    ("shooting-streak", include_str!("../templates/shooting-streak.json")),
 ];
 
 // ───────────────────────────── File shape ─────────────────────────────
@@ -411,6 +417,10 @@ mod tests {
         let five = catalogue.for_series(SERIES[0].id).count();
         let fifteen = catalogue.for_series(SERIES[1].id).count();
         assert_eq!((five, fifteen), (10, 11));
+        // The NBA set: six NBA templates list the nba-h2h series
+        // (team-loyalty stays parked: its team-name comparison does not
+        // type against the string-typed matchup signal).
+        assert_eq!(catalogue.for_series(SERIES[2].id).count(), 6, "the NBA set");
     }
 
     #[test]

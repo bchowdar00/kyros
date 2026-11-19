@@ -176,7 +176,7 @@ function ConnectedMarketScreen({ address, market, config }: ScreenProps & { addr
               Position:{' '}
               {account.status !== 'live' || feed.marketId === null
                 ? '—'
-                : `${position?.yes ?? '0'} UP / ${position?.no ?? '0'} DOWN`}
+                : `${position?.yes ?? '0'} ${market.header.outcomes[0].label} / ${position?.no ?? '0'} ${market.header.outcomes[1].label}`}
             </span>
           </div>
           {trading.reason && <p>{trading.reason}</p>}

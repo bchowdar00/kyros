@@ -1,0 +1,10 @@
+{
+  "title": "Score margin",
+  "description": "Home score minus away score for the game in play. Resets to zero at tipoff and updates on every play.",
+  "fields": {
+    "value": {
+      "label": "Margin",
+      "description": "Points the home side leads by; negative when it trails."
+    }
+  }
+}

@@ -10,11 +10,17 @@ import type { StrategyComposerData } from './types'
 
 export type StrategyComposerSubmitAction = (prompt: string) => void
 
+/** Shown in place of the composer's tip when LLM authoring is off for the series. */
+const AUTHORING_UNAVAILABLE_NOTICE =
+  'The assistant writes Bitcoin strategies for now. Pick a ready-made strategy to run on this game.'
+
 export interface StrategyComposerProps extends Partial<StrategyComposerData> {
   focusInput?: boolean
   embedded?: boolean
   busy?: boolean
   showTip?: boolean
+  /** The assistant only authors Bitcoin strategies; on any other series it is turned off. */
+  authoringUnavailable?: boolean
   onStop?: () => void
   onAddContext?: () => void
   onSubmit?: StrategyComposerSubmitAction
@@ -25,6 +31,7 @@ export function StrategyComposer({
   focusInput = false,
   busy = false,
   showTip = true,
+  authoringUnavailable = false,
   onStop,
   addContextLabel = 'Add strategy context',
   dismissTipLabel = 'Dismiss strategy tip',
@@ -38,17 +45,18 @@ export function StrategyComposer({
 }: StrategyComposerProps) {
   const input = useRef<HTMLInputElement>(null)
   useEffect(() => {
-    if (focusInput) input.current?.focus({ preventScroll: true })
-  }, [focusInput])
+    if (focusInput && !authoringUnavailable) input.current?.focus({ preventScroll: true })
+  }, [focusInput, authoringUnavailable])
   const [prompt, setPrompt] = useState('')
   const [isTipVisible, setIsTipVisible] = useState(true)
-  const canSubmit = !busy && onSubmit !== undefined && prompt.trim().length > 0
+  const canSubmit =
+    !busy && !authoringUnavailable && onSubmit !== undefined && prompt.trim().length > 0
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const submittedPrompt = prompt.trim()
-    if (busy || submittedPrompt.length === 0 || onSubmit === undefined) {
+    if (authoringUnavailable || busy || submittedPrompt.length === 0 || onSubmit === undefined) {
       return
     }
 
@@ -80,7 +88,8 @@ export function StrategyComposer({
           <input
             ref={input}
             aria-label={inputLabel}
-            className="min-w-0 flex-1 bg-transparent text-heading-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
+            className="min-w-0 flex-1 bg-transparent text-heading-sm font-medium text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+            disabled={authoringUnavailable}
             onChange={event => setPrompt(event.currentTarget.value)}
             placeholder={placeholder}
             type="text"
@@ -90,7 +99,7 @@ export function StrategyComposer({
           <IconButton
             aria-label={busy ? 'Stop response' : submitLabel}
             className="relative border-foreground bg-foreground text-background hover:border-action hover:bg-action hover:text-on-action after:absolute after:-inset-copy after:content-['']"
-            disabled={busy ? onStop === undefined : !canSubmit}
+            disabled={authoringUnavailable || (busy ? onStop === undefined : !canSubmit)}
             size="medium"
             type={busy ? 'button' : 'submit'}
             onClick={busy ? onStop : undefined}
@@ -101,7 +110,11 @@ export function StrategyComposer({
         </div>
       </div>
 
-      {showTip && isTipVisible ? (
+      {authoringUnavailable ? (
+        <p className="relative px-md pt-sm pb-md text-label font-regular text-muted-foreground">
+          {AUTHORING_UNAVAILABLE_NOTICE}
+        </p>
+      ) : showTip && isTipVisible ? (
         <div className="relative flex items-center justify-between px-md pt-sm pb-md">
           <p className="truncate text-label font-regular text-muted-foreground">
             {tipPrefix}{' '}

@@ -1,7 +1,7 @@
 {
   "id": "shooting-streak",
   "title": "Hot Hand",
-  "creator": { "handle": "@tiny", "username": "Tiny", "avatar": "strategy-06.jpg" },
+  "creator": { "handle": "@kyros", "username": "Kyros", "avatar": "strategy-06.jpg" },
   "series": ["nba-h2h"],
   "logic": "Counts each team's shots from the play-by-play. When a team has made four in a row, it buys that team and holds to the final, once per game.",
   "inverse_logic": "Counts each team's shots from the play-by-play. When a team has missed five in a row, it bets on the bounce back and buys that team. Sells after a four-cent gain and looks for the next cold streak, otherwise holds to the final.",
@@ -24,7 +24,7 @@
     "instruments": { "market": "{{series}}.current" },
     "signals": {
       "book": "{{series}}.current.price.v1",
-      "pbp": "nba.sim.pbp.v1"
+      "pbp": "nba.live.pbp.v1"
     },
     "state": [
       { "name": "home_hot", "kind": "scalar", "value_type": "decimal" },
@@ -130,7 +130,7 @@
     "instruments": { "market": "{{series}}.current" },
     "signals": {
       "book": "{{series}}.current.price.v1",
-      "pbp": "nba.sim.pbp.v1"
+      "pbp": "nba.live.pbp.v1"
     },
     "state": [
       { "name": "home_cold", "kind": "scalar", "value_type": "decimal" },

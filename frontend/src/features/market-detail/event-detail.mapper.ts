@@ -1,10 +1,16 @@
-import type { EventDetail, SeriesRecord } from '@kyros/domain'
+import type { EventDetail, MarketRecord, RustGeminiSeries, SeriesRecord } from '@kyros/domain'
 
 import type { HomeMarketCardModel } from '@/features/home/types'
 
 import { MARKET_DETAIL_FIXTURES } from './market-detail.fixture'
-import { resolvePriceMarket } from './active-market.mapper'
-import type { ChatPanelData, MarketDetail, PublicStrategy } from './types'
+import { resolveActiveMarket, resolvePriceMarket, windowRange } from './active-market.mapper'
+import type {
+  ChatPanelData,
+  MarketDetail,
+  MarketOutcome,
+  ProbabilitySeries,
+  PublicStrategy,
+} from './types'
 
 const HEADER_SURFACE = '/assets/market/header-surface.png'
 const prototypeChrome = MARKET_DETAIL_FIXTURES['btc-above-118k-0903']
@@ -37,11 +43,103 @@ export function toChatPanel(
     : { publicStrategies, availability: 'ready', view: 'strategies' }
 }
 
+/** An NBA round's matchup, read from the market's outcome labels (`yes` = home team). */
+function nbaMatchup(market: MarketRecord): { away: string; home: string } | undefined {
+  return market.metadata.automation?.kind === 'nba_h2h' &&
+    market.yesLabel !== undefined &&
+    market.noLabel !== undefined
+    ? { away: market.noLabel, home: market.yesLabel }
+    : undefined
+}
+
+function nbaOutcomes(home: string, away: string): readonly [MarketOutcome, MarketOutcome] {
+  return [
+    { label: home, side: 'home' },
+    { label: away, side: 'away' },
+  ]
+}
+
+function nbaProbabilitySeries(
+  home: string,
+  away: string
+): readonly [ProbabilitySeries, ProbabilitySeries] {
+  return [
+    { label: home, points: [], side: 'home' },
+    { label: away, points: [], side: 'away' },
+  ]
+}
+
+function toNbaMarketDetail(
+  series: SeriesRecord,
+  detail: EventDetail,
+  market: MarketRecord,
+  matchup: { away: string; home: string },
+  gemini: RustGeminiSeries | undefined,
+  publicStrategies: readonly PublicStrategy[] | undefined
+): MarketDetail | undefined {
+  const range = windowRange(detail)
+
+  if (range === undefined) {
+    return undefined
+  }
+
+  const { away, home } = matchup
+
+  return {
+    category: 'Sports',
+    liveEvent: { eventId: detail.id, seriesId: series.id },
+    header: {
+      outcomes: nbaOutcomes(home, away),
+      surfaceImage: { alt: '', src: HEADER_SURFACE },
+      subtitle: market.question,
+      title: market.title,
+    },
+    myStrategies: prototypeChrome.myStrategies,
+    orderBook: {
+      title: 'Order book',
+      actionLabel: 'Center order book',
+      columnLabels: [`Price (${home})`, 'Lots', 'Total'],
+      asks: [],
+      bids: [],
+      spreadLabel: 'Spread',
+      spreadTicks: null,
+    },
+    probabilityChart: {
+      live: true,
+      range,
+      series: nbaProbabilitySeries(home, away),
+      seriesSlug: series.slug,
+      timeZone: 'UTC',
+    },
+    scoreboard: {
+      home,
+      away,
+      ...(gemini?.starts_at_ms === undefined ? {} : { tipoffMs: gemini.starts_at_ms }),
+    },
+    signals: prototypeChrome.signals,
+    slug: series.slug,
+    chatPanel: toChatPanel(publicStrategies),
+  }
+}
+
 export function toMarketDetail(
   series: SeriesRecord,
   detail: EventDetail,
-  publicStrategies?: readonly PublicStrategy[]
+  publicStrategies?: readonly PublicStrategy[],
+  gemini?: RustGeminiSeries
 ): MarketDetail | undefined {
+  const active = resolveActiveMarket(detail)
+
+  if (active === undefined) {
+    return undefined
+  }
+
+  const matchup = nbaMatchup(active)
+
+  if (matchup !== undefined) {
+    return toNbaMarketDetail(series, detail, active, matchup, gemini, publicStrategies)
+  }
+
   const resolved = resolvePriceMarket(detail)
 
   if (resolved === undefined) {
@@ -84,6 +182,31 @@ export function toHomeMarketCard(
   series: SeriesRecord,
   detail: EventDetail
 ): HomeMarketCardModel | undefined {
+  const active = resolveActiveMarket(detail)
+  const matchup = active === undefined ? undefined : nbaMatchup(active)
+
+  if (active !== undefined && matchup !== undefined) {
+    const range = windowRange(detail)
+
+    if (range === undefined) {
+      return undefined
+    }
+
+    const { away, home } = matchup
+
+    return {
+      category: 'Sports',
+      live: true,
+      outcomes: nbaOutcomes(home, away),
+      range,
+      series: nbaProbabilitySeries(home, away),
+      slug: series.slug,
+      subtitle: active.question,
+      timeZone: 'UTC',
+      title: active.title,
+    }
+  }
+
   const resolved = resolvePriceMarket(detail)
 
   if (resolved === undefined) {

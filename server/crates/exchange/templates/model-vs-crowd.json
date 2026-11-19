@@ -1,16 +1,16 @@
 {
   "id": "model-vs-crowd",
-  "title": "Buy the side the model says is cheap",
+  "title": "Model vs Crowd",
   "creator": {
-    "handle": "@tiny",
-    "username": "Tiny",
+    "handle": "@kyros",
+    "username": "Kyros",
     "avatar": "strategy-01.jpg"
   },
   "series": [
     "nba-h2h"
   ],
-  "logic": "The public win-probability model prices the game from the score, the clock and the pregame line. Whenever either team is at least four cents under that number at the ask, buy it. Once the book comes back to the model, sell out and go back to hunting, so a game can be traded more than once. Nothing new is bought in the final stretch.",
-  "inverse_logic": "Use the sharp book's live line as fair instead of the model. Whenever either team is at least four cents under the line at the ask, buy it, and sell out when the book comes back to the line. The line moves more slowly than the model, so this fades the crowd.",
+  "logic": "The public win-probability model prices the game from the score, the clock and the pregame line. Whenever either team is at least four cents under that number at the ask, buy it. Once the book comes back to the model, sell out and go back to hunting, so a game can be traded more than once.",
+  "inverse_logic": "Use Polymarket's price as fair instead of the model. Whenever either team is at least four cents under it at the ask, buy it, and sell out when the book comes back to it. This trades the gap between two markets on the same game.",
   "envelope": {
     "loss_budget_fraction": "1",
     "order_fraction": "0.2",
@@ -27,7 +27,7 @@
   "primary": {
     "meta": {
       "name": "Model vs Crowd",
-      "description": "The public win-probability model prices the game from the score, the clock and the pregame line. When either side's ask sits at least the edge under the model, take it with an immediate-or-cancel at the ask; when the book's bid on that side reaches the model, sell out and go back to hunting. No new entries inside the cutoff before the close.",
+      "description": "The public win-probability model prices the game from the score, the clock and the pregame line. When either side's ask sits at least the edge under the model, take it with an immediate-or-cancel limit a cent over the ask; when the book's bid on that side reaches the model, sell out and go back to hunting. No new entries inside the cutoff before the market's stated close, which sits hours after tipoff.",
       "dsl_version": "0.3"
     },
     "instruments": {
@@ -35,7 +35,7 @@
     },
     "signals": {
       "book": "{{series}}.current.price.v1",
-      "model": "nba.sim.winprob.v1",
+      "model": "nba.live.winprob.v1",
       "window": "{{series}}.current.window.v1"
     },
     "state": [],
@@ -255,8 +255,8 @@
   },
   "inverse": {
     "meta": {
-      "name": "Sharp vs Crowd",
-      "description": "The sharp book's live line, not the model, is fair. When either side's ask sits at least the edge under the sharp line, take it with an immediate-or-cancel at the ask; when the book's bid on that side reaches the line, sell out and hunt again. The line tracks the game more slowly than the model, so this fades the crowd's overreactions.",
+      "name": "Polymarket vs Crowd",
+      "description": "Polymarket's price, not the model, is fair. When either side's ask sits at least the edge under it, take it with an immediate-or-cancel limit a cent over the ask; when the book's bid on that side reaches it, sell out and hunt again.",
       "dsl_version": "0.3"
     },
     "instruments": {
@@ -264,7 +264,7 @@
     },
     "signals": {
       "book": "{{series}}.current.price.v1",
-      "sharp": "nba.sim.sharp_line.v1",
+      "sharp": "nba.live.polymarket.v1",
       "window": "{{series}}.current.window.v1"
     },
     "state": [],

@@ -1,0 +1,2216 @@
+{
+ "data": [
+  {
+   "id": "471839",
+   "title": "UConn vs Arizona",
+   "slug": "uconn-vs-arizona",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NCAAM-2611190200-UCONN-ARI-M",
+   "status": "active",
+   "createdAt": "2026-11-17T00:05:37.026Z",
+   "contracts": [
+    {
+     "id": "471839-1181334",
+     "label": "Arizona",
+     "prices": {
+      "buy": {
+       "yes": "0.95",
+       "no": "0.08"
+      },
+      "sell": {
+       "yes": "0.92",
+       "no": "0.05"
+      },
+      "bestBid": "0.92",
+      "bestAsk": "0.95",
+      "lastTradePrice": "0.95"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:05:37.026Z",
+     "ticker": "ARI",
+     "instrumentSymbol": "GEMI-NCAAM-2611190200-UCONN-ARI-M-ARI",
+     "marketState": "open",
+     "abbreviatedName": "ARI",
+     "expiryDate": "2026-11-21T02:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "9b166a3f-e64b-4825-bb6b-92c6f0418263",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01"
+    },
+    {
+     "id": "471839-1181318",
+     "label": "UConn",
+     "prices": {
+      "buy": {
+       "yes": "0.08",
+       "no": "0.94"
+      },
+      "sell": {
+       "yes": "0.06",
+       "no": "0.92"
+      },
+      "bestBid": "0.06",
+      "bestAsk": "0.08",
+      "lastTradePrice": "0.05"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:05:37.026Z",
+     "ticker": "UCONN",
+     "instrumentSymbol": "GEMI-NCAAM-2611190200-UCONN-ARI-M-UCONN",
+     "marketState": "open",
+     "abbreviatedName": "UCONN",
+     "expiryDate": "2026-11-21T02:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "efba5350-79bc-47aa-a189-db177b95b491",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01"
+    }
+   ],
+   "effectiveDate": "2026-11-17T00:05:37.026Z",
+   "isLive": true,
+   "participants": [
+    {
+     "id": "532",
+     "name": "Arizona Wildcats",
+     "abbreviation": "ARI",
+     "side": "home"
+    },
+    {
+     "id": "815",
+     "name": "UConn Huskies",
+     "abbreviation": "UCONN",
+     "side": "away"
+    }
+   ],
+   "volume": "9344.94",
+   "volume24h": "9344.94",
+   "tags": [
+    "College Basketball"
+   ],
+   "expiryDate": "2026-11-21T02:00:00.000Z",
+   "startTime": "2026-11-19T02:00:00.000Z",
+   "subcategory": {
+    "id": 15,
+    "slug": "sports_basketball_college-basketball",
+    "name": "College Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "College Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "a78b847d-636e-4c34-8d1c-c56a4ad480da",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "ARI",
+     "name": "Arizona Wildcats",
+     "externalIds": {
+      "sportradarId": "9b166a3f-e64b-4825-bb6b-92c6f0418263"
+     }
+    }
+   }
+  },
+  {
+   "id": "468032",
+   "title": "Boston vs Denver",
+   "slug": "boston-vs-denver",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611190230-BOS-DEN-M",
+   "status": "active",
+   "createdAt": "2026-11-16T00:01:41.830Z",
+   "contracts": [
+    {
+     "id": "468032-1167154",
+     "label": "Boston",
+     "prices": {
+      "buy": {
+       "yes": "0.69",
+       "no": "0.34"
+      },
+      "sell": {
+       "yes": "0.66",
+       "no": "0.31"
+      },
+      "bestBid": "0.66",
+      "bestAsk": "0.69",
+      "lastTradePrice": "0.66"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:41.830Z",
+     "ticker": "BOS",
+     "instrumentSymbol": "GEMI-NBA-2611190230-BOS-DEN-M-BOS",
+     "marketState": "open",
+     "abbreviatedName": "BOS",
+     "expiryDate": "2026-11-20T14:30:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583eccfa-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Boston Celtics",
+      "externalIds": {
+       "sportradar": "583eccfa-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "468032-1167169",
+     "label": "Denver",
+     "prices": {
+      "buy": {
+       "yes": "0.34",
+       "no": "0.69"
+      },
+      "sell": {
+       "yes": "0.31",
+       "no": "0.66"
+      },
+      "bestBid": "0.31",
+      "bestAsk": "0.34",
+      "lastTradePrice": "0.37"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:41.830Z",
+     "ticker": "DEN",
+     "instrumentSymbol": "GEMI-NBA-2611190230-BOS-DEN-M-DEN",
+     "marketState": "open",
+     "abbreviatedName": "DEN",
+     "expiryDate": "2026-11-20T14:30:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ed102-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Denver Nuggets",
+      "externalIds": {
+       "sportradar": "583ed102-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-16T00:01:41.830Z",
+   "isLive": true,
+   "participants": [
+    {
+     "id": "474",
+     "name": "Denver Nuggets",
+     "abbreviation": "DEN",
+     "side": "home"
+    },
+    {
+     "id": "459",
+     "name": "Boston Celtics",
+     "abbreviation": "BOS",
+     "side": "away"
+    }
+   ],
+   "volume": "10398.24",
+   "volume24h": "10398.24",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-20T14:30:00.000Z",
+   "startTime": "2026-11-19T02:30:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "f20ad464-5515-4926-988c-aed1e9ce5ef3",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "BOS",
+     "name": "Boston Celtics",
+     "externalIds": {
+      "sportradarId": "583eccfa-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "468015",
+   "title": "Detroit vs New Orleans",
+   "slug": "detroit-vs-new-orleans",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611190100-DET-NOP-M",
+   "status": "active",
+   "createdAt": "2026-11-16T00:01:23.644Z",
+   "contracts": [
+    {
+     "id": "468015-1167107",
+     "label": "Detroit",
+     "prices": {
+      "buy": {
+       "yes": "0.93",
+       "no": "0.02"
+      },
+      "sell": {
+       "yes": "0.98",
+       "no": "0.07"
+      },
+      "bestBid": "0.98",
+      "lastTradePrice": "0.93"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:23.644Z",
+     "ticker": "DET",
+     "instrumentSymbol": "GEMI-NBA-2611190100-DET-NOP-M-DET",
+     "marketState": "open",
+     "abbreviatedName": "DET",
+     "expiryDate": "2026-11-20T13:00:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ec928-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Detroit Pistons",
+      "externalIds": {
+       "sportradar": "583ec928-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "468015-1167127",
+     "label": "New Orleans",
+     "prices": {
+      "buy": {
+       "yes": "0.02",
+       "no": "0.98"
+      },
+      "sell": {
+       "yes": "0.02",
+       "no": "0.98"
+      },
+      "bestAsk": "0.02",
+      "lastTradePrice": "0.02"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:23.644Z",
+     "ticker": "NOP",
+     "instrumentSymbol": "GEMI-NBA-2611190100-DET-NOP-M-NOP",
+     "marketState": "open",
+     "abbreviatedName": "NOP",
+     "expiryDate": "2026-11-20T13:00:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ecc9a-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "New Orleans Pelicans",
+      "externalIds": {
+       "sportradar": "583ecc9a-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-16T00:01:23.644Z",
+   "isLive": true,
+   "participants": [
+    {
+     "id": "481",
+     "name": "New Orleans Pelicans",
+     "abbreviation": "NOP",
+     "side": "home"
+    },
+    {
+     "id": "464",
+     "name": "Detroit Pistons",
+     "abbreviation": "DET",
+     "side": "away"
+    }
+   ],
+   "volume": "12608.96",
+   "volume24h": "12523.9",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-20T13:00:00.000Z",
+   "startTime": "2026-11-19T01:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "729ed543-c261-4a32-a52c-d1b99f797666",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "27693.83",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "NOP",
+     "name": "New Orleans Pelicans",
+     "externalIds": {
+      "sportradarId": "583ecc9a-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "468012",
+   "title": "Golden State vs Dallas",
+   "slug": "golden-state-vs-dallas",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611190100-GSW-DAL-M",
+   "status": "active",
+   "createdAt": "2026-11-16T00:01:13.633Z",
+   "contracts": [
+    {
+     "id": "468012-1167102",
+     "label": "Dallas",
+     "prices": {
+      "buy": {
+       "yes": "0.97",
+       "no": "0.02"
+      },
+      "sell": {
+       "yes": "0.98",
+       "no": "0.03"
+      },
+      "bestBid": "0.98",
+      "lastTradePrice": "0.97"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:13.633Z",
+     "ticker": "DAL",
+     "instrumentSymbol": "GEMI-NBA-2611190100-GSW-DAL-M-DAL",
+     "marketState": "open",
+     "abbreviatedName": "DAL",
+     "expiryDate": "2026-11-20T13:00:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ecf50-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Dallas Mavericks",
+      "externalIds": {
+       "sportradar": "583ecf50-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "468012-1167085",
+     "label": "Golden State",
+     "prices": {
+      "buy": {
+       "yes": "0.02",
+       "no": "0.97"
+      },
+      "sell": {
+       "yes": "0.03",
+       "no": "0.98"
+      },
+      "bestAsk": "0.02",
+      "lastTradePrice": "0.03"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:13.633Z",
+     "ticker": "GSW",
+     "instrumentSymbol": "GEMI-NBA-2611190100-GSW-DAL-M-GSW",
+     "marketState": "open",
+     "abbreviatedName": "GSW",
+     "expiryDate": "2026-11-20T13:00:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ec825-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Golden State Warriors",
+      "externalIds": {
+       "sportradar": "583ec825-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-16T00:01:13.633Z",
+   "isLive": true,
+   "participants": [
+    {
+     "id": "473",
+     "name": "Dallas Mavericks",
+     "abbreviation": "DAL",
+     "side": "home"
+    },
+    {
+     "id": "475",
+     "name": "Golden State Warriors",
+     "abbreviation": "GSW",
+     "side": "away"
+    }
+   ],
+   "volume": "6947.03",
+   "volume24h": "6370.73",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-20T13:00:00.000Z",
+   "startTime": "2026-11-19T01:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "9f57c670-02ce-41a1-af30-e5d3ae819879",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "1070.44",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "DAL",
+     "name": "Dallas Mavericks",
+     "externalIds": {
+      "sportradarId": "583ecf50-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "468050",
+   "title": "Utah vs Los Angeles L",
+   "slug": "utah-vs-los-angeles-l",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611190300-UTA-LAL-M",
+   "status": "active",
+   "createdAt": "2026-11-16T00:01:58.853Z",
+   "contracts": [
+    {
+     "id": "468050-1167206",
+     "label": "Los Angeles L",
+     "prices": {
+      "buy": {
+       "yes": "0.77",
+       "no": "0.25"
+      },
+      "sell": {
+       "yes": "0.75",
+       "no": "0.23"
+      },
+      "bestBid": "0.75",
+      "bestAsk": "0.77",
+      "lastTradePrice": "0.75"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:58.853Z",
+     "ticker": "LAL",
+     "instrumentSymbol": "GEMI-NBA-2611190300-UTA-LAL-M-LAL",
+     "marketState": "open",
+     "abbreviatedName": "LAL",
+     "expiryDate": "2026-11-20T15:00:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ecae2-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Los Angeles Lakers",
+      "externalIds": {
+       "sportradar": "583ecae2-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "468050-1167201",
+     "label": "Utah",
+     "prices": {
+      "buy": {
+       "yes": "0.25",
+       "no": "0.78"
+      },
+      "sell": {
+       "yes": "0.22",
+       "no": "0.75"
+      },
+      "bestBid": "0.22",
+      "bestAsk": "0.25",
+      "lastTradePrice": "0.19"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:58.853Z",
+     "ticker": "UTA",
+     "instrumentSymbol": "GEMI-NBA-2611190300-UTA-LAL-M-UTA",
+     "marketState": "open",
+     "abbreviatedName": "UTA",
+     "expiryDate": "2026-11-20T15:00:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ece50-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Utah Jazz",
+      "externalIds": {
+       "sportradar": "583ece50-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-16T00:01:58.853Z",
+   "isLive": true,
+   "participants": [
+    {
+     "id": "478",
+     "name": "Los Angeles Lakers",
+     "abbreviation": "LAL",
+     "side": "home"
+    },
+    {
+     "id": "487",
+     "name": "Utah Jazz",
+     "abbreviation": "UTA",
+     "side": "away"
+    }
+   ],
+   "volume": "8095.5",
+   "volume24h": "2452.74",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-20T15:00:00.000Z",
+   "startTime": "2026-11-19T03:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "5d5a9d56-1f85-406d-85d5-bf59c2bfab02",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "-45.7",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "LAL",
+     "name": "Los Angeles Lakers",
+     "externalIds": {
+      "sportradarId": "583ecae2-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "468041",
+   "title": "Phoenix vs Sacramento",
+   "slug": "phoenix-vs-sacramento",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611190300-PHX-SAC-M",
+   "status": "active",
+   "createdAt": "2026-11-16T00:01:50.451Z",
+   "contracts": [
+    {
+     "id": "468041-1167178",
+     "label": "Phoenix",
+     "prices": {
+      "buy": {
+       "yes": "0.75",
+       "no": "0.27"
+      },
+      "sell": {
+       "yes": "0.73",
+       "no": "0.25"
+      },
+      "bestBid": "0.73",
+      "bestAsk": "0.75",
+      "lastTradePrice": "0.77"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:50.451Z",
+     "ticker": "PHX",
+     "instrumentSymbol": "GEMI-NBA-2611190300-PHX-SAC-M-PHX",
+     "marketState": "open",
+     "abbreviatedName": "PHX",
+     "expiryDate": "2026-11-20T15:00:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ecfa8-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Phoenix Suns",
+      "externalIds": {
+       "sportradar": "583ecfa8-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "468041-1167197",
+     "label": "Sacramento",
+     "prices": {
+      "buy": {
+       "yes": "0.27",
+       "no": "0.76"
+      },
+      "sell": {
+       "yes": "0.24",
+       "no": "0.73"
+      },
+      "bestBid": "0.24",
+      "bestAsk": "0.27",
+      "lastTradePrice": "0.29"
+     },
+     "status": "active",
+     "createdAt": "2026-11-16T00:01:50.451Z",
+     "ticker": "SAC",
+     "instrumentSymbol": "GEMI-NBA-2611190300-PHX-SAC-M-SAC",
+     "marketState": "open",
+     "abbreviatedName": "SAC",
+     "expiryDate": "2026-11-20T15:00:00.000Z",
+     "effectiveDate": "2026-11-16T00:00:04.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ed0ac-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Sacramento Kings",
+      "externalIds": {
+       "sportradar": "583ed0ac-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-16T00:01:50.451Z",
+   "isLive": true,
+   "participants": [
+    {
+     "id": "485",
+     "name": "Sacramento Kings",
+     "abbreviation": "SAC",
+     "side": "home"
+    },
+    {
+     "id": "483",
+     "name": "Phoenix Suns",
+     "abbreviation": "PHX",
+     "side": "away"
+    }
+   ],
+   "volume": "2350.33",
+   "volume24h": "2200.33",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-20T15:00:00.000Z",
+   "startTime": "2026-11-19T03:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "c1b55ae0-1e4d-43a8-8157-31926e0bdd13",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "1366.89",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "PHX",
+     "name": "Phoenix Suns",
+     "externalIds": {
+      "sportradarId": "583ecfa8-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "471763",
+   "title": "Portland vs Milwaukee",
+   "slug": "portland-vs-milwaukee",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611200100-POR-MIL-M",
+   "status": "active",
+   "createdAt": "2026-11-17T00:01:49.503Z",
+   "contracts": [
+    {
+     "id": "471763-1180524",
+     "label": "Portland",
+     "prices": {
+      "buy": {
+       "yes": "0.79",
+       "no": "0.23"
+      },
+      "sell": {
+       "yes": "0.77",
+       "no": "0.21"
+      },
+      "bestBid": "0.77",
+      "bestAsk": "0.79",
+      "lastTradePrice": "0.81"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:49.503Z",
+     "ticker": "POR",
+     "instrumentSymbol": "GEMI-NBA-2611200100-POR-MIL-M-POR",
+     "marketState": "open",
+     "abbreviatedName": "POR",
+     "expiryDate": "2026-11-21T13:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ed056-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Portland Trail Blazers",
+      "externalIds": {
+       "sportradar": "583ed056-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "471763-1180550",
+     "label": "Milwaukee",
+     "prices": {
+      "buy": {
+       "yes": "0.22",
+       "no": "0.79"
+      },
+      "sell": {
+       "yes": "0.21",
+       "no": "0.78"
+      },
+      "bestBid": "0.21",
+      "bestAsk": "0.22",
+      "lastTradePrice": "0.17"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:49.503Z",
+     "ticker": "MIL",
+     "instrumentSymbol": "GEMI-NBA-2611200100-POR-MIL-M-MIL",
+     "marketState": "open",
+     "abbreviatedName": "MIL",
+     "expiryDate": "2026-11-21T13:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ecefd-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Milwaukee Bucks",
+      "externalIds": {
+       "sportradar": "583ecefd-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-17T00:01:49.503Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "467",
+     "name": "Milwaukee Bucks",
+     "abbreviation": "MIL",
+     "side": "home"
+    },
+    {
+     "id": "484",
+     "name": "Portland Trail Blazers",
+     "abbreviation": "POR",
+     "side": "away"
+    }
+   ],
+   "volume": "1105.29",
+   "volume24h": "1105.29",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-21T13:00:00.000Z",
+   "startTime": "2026-11-20T01:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "445d9f3b-480b-4583-952d-33e9387ecaf7",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "MIL",
+     "name": "Milwaukee Bucks",
+     "externalIds": {
+      "sportradarId": "583ecefd-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "471759",
+   "title": "Golden State vs Memphis",
+   "slug": "golden-state-vs-memphis",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611200100-GSW-MEM-M",
+   "status": "active",
+   "createdAt": "2026-11-17T00:01:40.628Z",
+   "contracts": [
+    {
+     "id": "471759-1180504",
+     "label": "Memphis",
+     "prices": {
+      "buy": {
+       "yes": "0.66",
+       "no": "0.36"
+      },
+      "sell": {
+       "yes": "0.64",
+       "no": "0.34"
+      },
+      "bestBid": "0.64",
+      "bestAsk": "0.66",
+      "lastTradePrice": "0.66"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:40.628Z",
+     "ticker": "MEM",
+     "instrumentSymbol": "GEMI-NBA-2611200100-GSW-MEM-M-MEM",
+     "marketState": "open",
+     "abbreviatedName": "MEM",
+     "expiryDate": "2026-11-21T13:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583eca88-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Memphis Grizzlies",
+      "externalIds": {
+       "sportradar": "583eca88-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "471759-1180484",
+     "label": "Golden State",
+     "prices": {
+      "buy": {
+       "yes": "0.35",
+       "no": "0.67"
+      },
+      "sell": {
+       "yes": "0.33",
+       "no": "0.65"
+      },
+      "bestBid": "0.33",
+      "bestAsk": "0.35"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:40.628Z",
+     "ticker": "GSW",
+     "instrumentSymbol": "GEMI-NBA-2611200100-GSW-MEM-M-GSW",
+     "marketState": "open",
+     "abbreviatedName": "GSW",
+     "expiryDate": "2026-11-21T13:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ec825-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Golden State Warriors",
+      "externalIds": {
+       "sportradar": "583ec825-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-17T00:01:40.628Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "479",
+     "name": "Memphis Grizzlies",
+     "abbreviation": "MEM",
+     "side": "home"
+    },
+    {
+     "id": "475",
+     "name": "Golden State Warriors",
+     "abbreviation": "GSW",
+     "side": "away"
+    }
+   ],
+   "volume": "878.59",
+   "volume24h": "878.59",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-21T13:00:00.000Z",
+   "startTime": "2026-11-20T01:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "c617f7b9-adda-4211-924f-d822d8808bb8",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "MEM",
+     "name": "Memphis Grizzlies",
+     "externalIds": {
+      "sportradarId": "583eca88-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "471748",
+   "title": "New York vs Minnesota",
+   "slug": "new-york-vs-minnesota",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611200100-NYK-MIN-M",
+   "status": "active",
+   "createdAt": "2026-11-17T00:01:21.907Z",
+   "contracts": [
+    {
+     "id": "471748-1180306",
+     "label": "New York",
+     "prices": {
+      "buy": {
+       "yes": "0.51",
+       "no": "0.51"
+      },
+      "sell": {
+       "yes": "0.49",
+       "no": "0.49"
+      },
+      "bestBid": "0.49",
+      "bestAsk": "0.51",
+      "lastTradePrice": "0.48"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:21.907Z",
+     "ticker": "NYK",
+     "instrumentSymbol": "GEMI-NBA-2611200100-NYK-MIN-M-NYK",
+     "marketState": "open",
+     "abbreviatedName": "NYK",
+     "expiryDate": "2026-11-21T13:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ec70e-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "New York Knicks",
+      "externalIds": {
+       "sportradar": "583ec70e-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "471748-1180341",
+     "label": "Minnesota",
+     "prices": {
+      "buy": {
+       "yes": "0.51",
+       "no": "0.51"
+      },
+      "sell": {
+       "yes": "0.49",
+       "no": "0.49"
+      },
+      "bestBid": "0.49",
+      "bestAsk": "0.51"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:21.907Z",
+     "ticker": "MIN",
+     "instrumentSymbol": "GEMI-NBA-2611200100-NYK-MIN-M-MIN",
+     "marketState": "open",
+     "abbreviatedName": "MIN",
+     "expiryDate": "2026-11-21T13:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583eca2f-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Minnesota Timberwolves",
+      "externalIds": {
+       "sportradar": "583eca2f-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-17T00:01:21.907Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "480",
+     "name": "Minnesota Timberwolves",
+     "abbreviation": "MIN",
+     "side": "home"
+    },
+    {
+     "id": "468",
+     "name": "New York Knicks",
+     "abbreviation": "NYK",
+     "side": "away"
+    }
+   ],
+   "volume": "541.22",
+   "volume24h": "505.35",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-21T13:00:00.000Z",
+   "startTime": "2026-11-20T01:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "f974197a-fa84-4598-8fd4-4645710a6095",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "MIN",
+     "name": "Minnesota Timberwolves",
+     "externalIds": {
+      "sportradarId": "583eca2f-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "471754",
+   "title": "Los Angeles C vs San Antonio",
+   "slug": "los-angeles-c-vs-san-antonio",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611200100-LAC-SAS-M",
+   "status": "active",
+   "createdAt": "2026-11-17T00:01:31.417Z",
+   "contracts": [
+    {
+     "id": "471754-1180455",
+     "label": "San Antonio",
+     "prices": {
+      "buy": {
+       "yes": "0.91",
+       "no": "0.1"
+      },
+      "sell": {
+       "yes": "0.9",
+       "no": "0.09"
+      },
+      "bestBid": "0.9",
+      "bestAsk": "0.91"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:31.417Z",
+     "ticker": "SAS",
+     "instrumentSymbol": "GEMI-NBA-2611200100-LAC-SAS-M-SAS",
+     "marketState": "open",
+     "abbreviatedName": "SAS",
+     "expiryDate": "2026-11-21T13:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ecd4f-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "San Antonio Spurs",
+      "externalIds": {
+       "sportradar": "583ecd4f-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "471754-1180396",
+     "label": "Los Angeles C",
+     "prices": {
+      "buy": {
+       "yes": "0.1",
+       "no": "0.91"
+      },
+      "sell": {
+       "yes": "0.09",
+       "no": "0.9"
+      },
+      "bestBid": "0.09",
+      "bestAsk": "0.1",
+      "lastTradePrice": "0.11"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:31.417Z",
+     "ticker": "LAC",
+     "instrumentSymbol": "GEMI-NBA-2611200100-LAC-SAS-M-LAC",
+     "marketState": "open",
+     "abbreviatedName": "LAC",
+     "expiryDate": "2026-11-21T13:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ecdfb-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Los Angeles Clippers",
+      "externalIds": {
+       "sportradar": "583ecdfb-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-17T00:01:31.417Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "486",
+     "name": "San Antonio Spurs",
+     "abbreviation": "SAS",
+     "side": "home"
+    },
+    {
+     "id": "477",
+     "name": "Los Angeles Clippers",
+     "abbreviation": "LAC",
+     "side": "away"
+    }
+   ],
+   "volume": "486.4",
+   "volume24h": "477",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-21T13:00:00.000Z",
+   "startTime": "2026-11-20T01:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "de6bbffe-6c51-4761-b0fb-78e3c496bda9",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "4974.47",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "SAS",
+     "name": "San Antonio Spurs",
+     "externalIds": {
+      "sportradarId": "583ecd4f-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "471767",
+   "title": "Charlotte vs Atlanta",
+   "slug": "charlotte-vs-atlanta",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611210000-CHA-ATL-M",
+   "status": "active",
+   "createdAt": "2026-11-17T00:01:58.328Z",
+   "contracts": [
+    {
+     "id": "471767-1180617",
+     "label": "Atlanta",
+     "prices": {
+      "buy": {
+       "yes": "0.66",
+       "no": "0.35"
+      },
+      "sell": {
+       "yes": "0.65",
+       "no": "0.34"
+      },
+      "bestBid": "0.65",
+      "bestAsk": "0.66"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:58.328Z",
+     "ticker": "ATL",
+     "instrumentSymbol": "GEMI-NBA-2611210000-CHA-ATL-M-ATL",
+     "marketState": "open",
+     "abbreviatedName": "ATL",
+     "expiryDate": "2026-11-22T12:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ecb8f-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Atlanta Hawks",
+      "externalIds": {
+       "sportradar": "583ecb8f-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "471767-1180598",
+     "label": "Charlotte",
+     "prices": {
+      "buy": {
+       "yes": "0.35",
+       "no": "0.66"
+      },
+      "sell": {
+       "yes": "0.34",
+       "no": "0.65"
+      },
+      "bestBid": "0.34",
+      "bestAsk": "0.35"
+     },
+     "status": "active",
+     "createdAt": "2026-11-17T00:01:58.328Z",
+     "ticker": "CHA",
+     "instrumentSymbol": "GEMI-NBA-2611210000-CHA-ATL-M-CHA",
+     "marketState": "open",
+     "abbreviatedName": "CHA",
+     "expiryDate": "2026-11-22T12:00:00.000Z",
+     "effectiveDate": "2026-11-17T00:00:07.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ec97e-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Charlotte Hornets",
+      "externalIds": {
+       "sportradar": "583ec97e-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-17T00:01:58.328Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "458",
+     "name": "Atlanta Hawks",
+     "abbreviation": "ATL",
+     "side": "home"
+    },
+    {
+     "id": "461",
+     "name": "Charlotte Hornets",
+     "abbreviation": "CHA",
+     "side": "away"
+    }
+   ],
+   "volume": "0",
+   "volume24h": "0",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-22T12:00:00.000Z",
+   "startTime": "2026-11-21T00:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "29fb5f5f-f77f-4578-85a9-b7a2147903e7",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "ATL",
+     "name": "Atlanta Hawks",
+     "externalIds": {
+      "sportradarId": "583ecb8f-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "475075",
+   "title": "Toronto vs Detroit",
+   "slug": "toronto-vs-detroit",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611210030-TOR-DET-M",
+   "status": "active",
+   "createdAt": "2026-11-18T00:01:24.210Z",
+   "contracts": [
+    {
+     "id": "475075-1195003",
+     "label": "Detroit",
+     "prices": {
+      "buy": {
+       "yes": "0.63",
+       "no": "0.39"
+      },
+      "sell": {
+       "yes": "0.61",
+       "no": "0.37"
+      },
+      "bestBid": "0.61",
+      "bestAsk": "0.63"
+     },
+     "status": "active",
+     "createdAt": "2026-11-18T00:01:24.210Z",
+     "ticker": "DET",
+     "instrumentSymbol": "GEMI-NBA-2611210030-TOR-DET-M-DET",
+     "marketState": "open",
+     "abbreviatedName": "DET",
+     "expiryDate": "2026-11-22T12:30:00.000Z",
+     "effectiveDate": "2026-11-18T00:00:08.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ec928-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Detroit Pistons",
+      "externalIds": {
+       "sportradar": "583ec928-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "475075-1194969",
+     "label": "Toronto",
+     "prices": {
+      "buy": {
+       "yes": "0.38",
+       "no": "0.63"
+      },
+      "sell": {
+       "yes": "0.37",
+       "no": "0.62"
+      },
+      "bestBid": "0.37",
+      "bestAsk": "0.38",
+      "lastTradePrice": "0.38"
+     },
+     "status": "active",
+     "createdAt": "2026-11-18T00:01:24.210Z",
+     "ticker": "TOR",
+     "instrumentSymbol": "GEMI-NBA-2611210030-TOR-DET-M-TOR",
+     "marketState": "open",
+     "abbreviatedName": "TOR",
+     "expiryDate": "2026-11-22T12:30:00.000Z",
+     "effectiveDate": "2026-11-18T00:00:08.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ecda6-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Toronto Raptors",
+      "externalIds": {
+       "sportradar": "583ecda6-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-18T00:01:24.210Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "464",
+     "name": "Detroit Pistons",
+     "abbreviation": "DET",
+     "side": "home"
+    },
+    {
+     "id": "471",
+     "name": "Toronto Raptors",
+     "abbreviation": "TOR",
+     "side": "away"
+    }
+   ],
+   "volume": "6.28",
+   "volume24h": "6.28",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-22T12:30:00.000Z",
+   "startTime": "2026-11-21T00:30:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "8549d122-dcbb-44cb-a586-454f4857da49",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "TOR",
+     "name": "Toronto Raptors",
+     "externalIds": {
+      "sportradarId": "583ecda6-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "475079",
+   "title": "Indiana vs Cleveland",
+   "slug": "indiana-vs-cleveland",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611210030-IND-CLE-M",
+   "status": "active",
+   "createdAt": "2026-11-18T00:01:42.983Z",
+   "contracts": [
+    {
+     "id": "475079-1195034",
+     "label": "Cleveland",
+     "prices": {
+      "buy": {
+       "yes": "0.73",
+       "no": "0.34"
+      },
+      "sell": {
+       "yes": "0.66",
+       "no": "0.27"
+      },
+      "bestBid": "0.66",
+      "bestAsk": "0.73"
+     },
+     "status": "active",
+     "createdAt": "2026-11-18T00:01:42.983Z",
+     "ticker": "CLE",
+     "instrumentSymbol": "GEMI-NBA-2611210030-IND-CLE-M-CLE",
+     "marketState": "open",
+     "abbreviatedName": "CLE",
+     "expiryDate": "2026-11-22T12:30:00.000Z",
+     "effectiveDate": "2026-11-18T00:00:08.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ec773-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Cleveland Cavaliers",
+      "externalIds": {
+       "sportradar": "583ec773-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "475079-1195028",
+     "label": "Indiana",
+     "prices": {
+      "buy": {
+       "yes": "0.31",
+       "no": "0.78"
+      },
+      "sell": {
+       "yes": "0.22",
+       "no": "0.69"
+      },
+      "bestBid": "0.22",
+      "bestAsk": "0.31",
+      "lastTradePrice": "0.32"
+     },
+     "status": "active",
+     "createdAt": "2026-11-18T00:01:42.983Z",
+     "ticker": "IND",
+     "instrumentSymbol": "GEMI-NBA-2611210030-IND-CLE-M-IND",
+     "marketState": "open",
+     "abbreviatedName": "IND",
+     "expiryDate": "2026-11-22T12:30:00.000Z",
+     "effectiveDate": "2026-11-18T00:00:08.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ec7cd-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Indiana Pacers",
+      "externalIds": {
+       "sportradar": "583ec7cd-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-18T00:01:42.983Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "463",
+     "name": "Cleveland Cavaliers",
+     "abbreviation": "CLE",
+     "side": "home"
+    },
+    {
+     "id": "465",
+     "name": "Indiana Pacers",
+     "abbreviation": "IND",
+     "side": "away"
+    }
+   ],
+   "volume": "6.09",
+   "volume24h": "6.09",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-22T12:30:00.000Z",
+   "startTime": "2026-11-21T00:30:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "317c2a92-f68a-41d7-920f-9f2c4d0bc2ab",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "IND",
+     "name": "Indiana Pacers",
+     "externalIds": {
+      "sportradarId": "583ec7cd-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "475077",
+   "title": "Orlando vs Brooklyn",
+   "slug": "orlando-vs-brooklyn",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611210030-ORL-BKN-M",
+   "status": "active",
+   "createdAt": "2026-11-18T00:01:33.708Z",
+   "contracts": [
+    {
+     "id": "475077-1195010",
+     "label": "Orlando",
+     "prices": {
+      "buy": {
+       "yes": "0.65",
+       "no": "0.36"
+      },
+      "sell": {
+       "yes": "0.64",
+       "no": "0.35"
+      },
+      "bestBid": "0.64",
+      "bestAsk": "0.65"
+     },
+     "status": "active",
+     "createdAt": "2026-11-18T00:01:33.708Z",
+     "ticker": "ORL",
+     "instrumentSymbol": "GEMI-NBA-2611210030-ORL-BKN-M-ORL",
+     "marketState": "open",
+     "abbreviatedName": "ORL",
+     "expiryDate": "2026-11-22T12:30:00.000Z",
+     "effectiveDate": "2026-11-18T00:00:08.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ed157-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Orlando Magic",
+      "externalIds": {
+       "sportradar": "583ed157-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "475077-1195019",
+     "label": "Brooklyn",
+     "prices": {
+      "buy": {
+       "yes": "0.37",
+       "no": "0.65"
+      },
+      "sell": {
+       "yes": "0.35",
+       "no": "0.63"
+      },
+      "bestBid": "0.35",
+      "bestAsk": "0.37"
+     },
+     "status": "active",
+     "createdAt": "2026-11-18T00:01:33.708Z",
+     "ticker": "BKN",
+     "instrumentSymbol": "GEMI-NBA-2611210030-ORL-BKN-M-BKN",
+     "marketState": "open",
+     "abbreviatedName": "BKN",
+     "expiryDate": "2026-11-22T12:30:00.000Z",
+     "effectiveDate": "2026-11-18T00:00:08.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ec9d6-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Brooklyn Nets",
+      "externalIds": {
+       "sportradar": "583ec9d6-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-18T00:01:33.708Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "460",
+     "name": "Brooklyn Nets",
+     "abbreviation": "BKN",
+     "side": "home"
+    },
+    {
+     "id": "469",
+     "name": "Orlando Magic",
+     "abbreviation": "ORL",
+     "side": "away"
+    }
+   ],
+   "volume": "0",
+   "volume24h": "0",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-22T12:30:00.000Z",
+   "startTime": "2026-11-21T00:30:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "721de66b-595a-4c4b-98f5-f6a9f42d3504",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "BKN",
+     "name": "Brooklyn Nets",
+     "externalIds": {
+      "sportradarId": "583ec9d6-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  },
+  {
+   "id": "475093",
+   "title": "New Orleans vs Oklahoma City",
+   "slug": "new-orleans-vs-oklahoma-city",
+   "type": "categorical",
+   "category": "Sports",
+   "ticker": "NBA-2611210100-NOP-OKC-M",
+   "status": "active",
+   "createdAt": "2026-11-18T00:02:03.355Z",
+   "contracts": [
+    {
+     "id": "475093-1195177",
+     "label": "Oklahoma City",
+     "prices": {
+      "buy": {
+       "yes": "0.84",
+       "no": "0.17"
+      },
+      "sell": {
+       "yes": "0.83",
+       "no": "0.16"
+      },
+      "bestBid": "0.83",
+      "bestAsk": "0.84"
+     },
+     "status": "active",
+     "createdAt": "2026-11-18T00:02:03.355Z",
+     "ticker": "OKC",
+     "instrumentSymbol": "GEMI-NBA-2611210100-NOP-OKC-M-OKC",
+     "marketState": "open",
+     "abbreviatedName": "OKC",
+     "expiryDate": "2026-11-22T13:00:00.000Z",
+     "effectiveDate": "2026-11-18T00:00:08.000Z",
+     "sortOrder": 2,
+     "sportsSide": "home",
+     "teamId": "583ecfff-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "Oklahoma City Thunder",
+      "externalIds": {
+       "sportradar": "583ecfff-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    },
+    {
+     "id": "475093-1195146",
+     "label": "New Orleans",
+     "prices": {
+      "buy": {
+       "yes": "0.17",
+       "no": "0.84"
+      },
+      "sell": {
+       "yes": "0.16",
+       "no": "0.83"
+      },
+      "bestBid": "0.16",
+      "bestAsk": "0.17",
+      "lastTradePrice": "0.17"
+     },
+     "status": "active",
+     "createdAt": "2026-11-18T00:02:03.355Z",
+     "ticker": "NOP",
+     "instrumentSymbol": "GEMI-NBA-2611210100-NOP-OKC-M-NOP",
+     "marketState": "open",
+     "abbreviatedName": "NOP",
+     "expiryDate": "2026-11-22T13:00:00.000Z",
+     "effectiveDate": "2026-11-18T00:00:08.000Z",
+     "sortOrder": 1,
+     "sportsSide": "away",
+     "teamId": "583ecc9a-fb46-11e1-82cb-f4ce4684ea4c",
+     "isCombo": false,
+     "quantityIncrement": "0.01",
+     "quantityMinimum": "0.01",
+     "priceIncrement": "0.01",
+     "quoteAssetPrecision": 2,
+     "priceMinimum": "0.01",
+     "target": {
+      "type": "team",
+      "name": "New Orleans Pelicans",
+      "externalIds": {
+       "sportradar": "583ecc9a-fb46-11e1-82cb-f4ce4684ea4c"
+      }
+     }
+    }
+   ],
+   "effectiveDate": "2026-11-18T00:02:03.355Z",
+   "isLive": false,
+   "participants": [
+    {
+     "id": "482",
+     "name": "Oklahoma City Thunder",
+     "abbreviation": "OKC",
+     "side": "home"
+    },
+    {
+     "id": "481",
+     "name": "New Orleans Pelicans",
+     "abbreviation": "NOP",
+     "side": "away"
+    }
+   ],
+   "volume": "5.52",
+   "volume24h": "5.52",
+   "tags": [
+    "Pro Basketball"
+   ],
+   "expiryDate": "2026-11-22T13:00:00.000Z",
+   "startTime": "2026-11-21T01:00:00.000Z",
+   "subcategory": {
+    "id": 14,
+    "slug": "sports_basketball_pro-basketball",
+    "name": "Pro Basketball",
+    "path": [
+     "Sports",
+     "Basketball",
+     "Pro Basketball"
+    ]
+   },
+   "template": "sports-game",
+   "gameId": "9e048542-66af-487e-a4f9-ec83e68373ce",
+   "sourceDetails": {
+    "agency": "statscore-rest-api",
+    "index": "Basketball"
+   },
+   "volumeDelta24hPct": "0",
+   "sportsMarket": {
+    "sport": "basketball",
+    "type": "moneyline",
+    "subject": "contest",
+    "scope": {
+     "type": "full_contest"
+    },
+    "team": {
+     "symbol": "OKC",
+     "name": "Oklahoma City Thunder",
+     "externalIds": {
+      "sportradarId": "583ecfff-fb46-11e1-82cb-f4ce4684ea4c"
+     }
+    }
+   }
+  }
+ ],
+ "pagination": {
+  "limit": 100,
+  "offset": 0,
+  "total": 15
+ }
+}
