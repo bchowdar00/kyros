@@ -135,6 +135,20 @@ export interface RustExchangeClient {
     body: RustDeployTemplateRequest,
     idempotencyKey: string
   ): Promise<ApiResult<RustStrategyDetail>>
+  /**
+   * Pause or resume a deployed strategy. `parent` is the owning account, `id` the strategy's
+   * sub-account address. A status change pauses or resumes the deployment; returns its detail.
+   */
+  updateStrategyStatus(
+    parent: string,
+    id: string,
+    status: 'active' | 'paused'
+  ): Promise<ApiResult<RustStrategyDetail>>
+  /**
+   * Stop a deployed strategy: cancel its resting orders, flatten its position and sweep its cash
+   * back to the parent. Returns what was swept and whether the sub-account is gone immediately.
+   */
+  stopStrategy(parent: string, id: string): Promise<ApiResult<RustDeleteStrategyResponse>>
 }
 
 const MUTATION_TIMEOUT_MS = 5_000
@@ -143,6 +157,19 @@ const MUTATION_TIMEOUT_MS = 5_000
 const RustBookSnapshotSchema = z.pick(RustBookFrameSchema, { bids: true, asks: true })
 /** `GET /api/trades` is a bare array of engine fills, unlike the socket's collapsed rows. */
 const RustTradesSchema = z.array(RustFillSchema)
+
+/**
+ * `DELETE /api/accounts/{parent}/strategies/{id}` report. Money is tenths of a cent. When the
+ * position could not be flattened (no liquidity) the sub-account is left for the resolution
+ * sweep: `removed` is false, `swept_tenths` is 0 and `residual_position` is the signed size left.
+ */
+const RustDeleteStrategyResponseSchema = z.object({
+  swept_tenths: z.int(),
+  cancelled_orders: z.int().check(z.minimum(0)),
+  residual_position: z.int(),
+  removed: z.boolean(),
+})
+export type RustDeleteStrategyResponse = z.infer<typeof RustDeleteStrategyResponseSchema>
 
 /**
  * The exchange answers errors as `{error, message}` with a 4xx status; the generic client
@@ -417,6 +444,20 @@ export function createRustExchangeClient(options: ApiClientOptions): RustExchang
         options,
         () => jsonRequest(url(`api/orders/${orderId}`, { address, series }), 'DELETE'),
         undefined
+      )
+    },
+    updateStrategyStatus(parent, id, status) {
+      return mutate(
+        options,
+        () => jsonRequest(url(`api/accounts/${parent}/strategies/${id}`), 'PATCH', { status }),
+        RustStrategyDetailSchema
+      )
+    },
+    stopStrategy(parent, id) {
+      return mutate(
+        options,
+        () => jsonRequest(url(`api/accounts/${parent}/strategies/${id}`), 'DELETE'),
+        RustDeleteStrategyResponseSchema
       )
     },
   }

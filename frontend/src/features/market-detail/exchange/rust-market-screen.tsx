@@ -145,6 +145,8 @@ function ConnectedMarketScreen({ address, market, config }: ScreenProps & { addr
     deploy,
     exchangeMarketId: feed.marketId,
     signalsApi: config,
+    // The pause/stop controls act as the signed-in account that owns the strategies.
+    accountAddress: address,
     exchangeOrders: (
       <ExchangeOpenOrders account={account} outcomes={market.header.outcomes} store={store} />
     ),

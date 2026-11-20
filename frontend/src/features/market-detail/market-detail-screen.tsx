@@ -26,6 +26,8 @@ interface MarketDetailScreenProps {
   exchangeMarketId?: string | null
   /** Where the browser reads the live signal catalogue; absent for static fixtures. */
   signalsApi?: { apiUrl: string; series: string } | undefined
+  /** The signed-in account the strategy controls act as; absent signed-out, which hides them. */
+  accountAddress?: string | undefined
 }
 
 export function MarketDetailScreen({
@@ -37,6 +39,7 @@ export function MarketDetailScreen({
   exchangeHistory,
   exchangeMarketId,
   signalsApi,
+  accountAddress,
 }: MarketDetailScreenProps) {
   const marketKey = `${market.slug}:${market.liveEvent?.eventId ?? market.slug}:${exchangeMarketId ?? 'catalog'}`
   const commentary = market.priceChart?.commentary ?? market.probabilityChart?.commentary
@@ -101,6 +104,7 @@ export function MarketDetailScreen({
                   apiUrl={signalsApi?.apiUrl}
                   key={`strategies:${marketKey}`}
                   openOrders={exchangeOrders}
+                  parentAddress={accountAddress}
                   tradeHistory={exchangeHistory}
                 />
               ) : null}

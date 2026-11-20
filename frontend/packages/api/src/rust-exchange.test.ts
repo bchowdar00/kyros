@@ -444,4 +444,80 @@ describe('rust exchange client', () => {
     })
     expect(!refused.ok && refused.error.message).toBe('compile_failed: strategy failed to compile')
   })
+
+  it('pauses a strategy over PATCH and parses the updated detail', async () => {
+    const parent = `0x${'11'.repeat(20)}`
+    const child = `0x${'ab'.repeat(20)}`
+    const detail = {
+      id: child,
+      kind: 'strategy',
+      name: 'Late Closer',
+      status: 'paused',
+      created_at_ms: 1_700_000_000_000,
+      home_series: 'btc-15m',
+      trades_this_market: 0,
+      series_positions: [],
+      balance_tenths: 50_000,
+      locked_tenths: 0,
+      equity_tenths: 50_000,
+      net_contributed_tenths: 50_000,
+      lifetime_pnl_tenths: 0,
+      lifetime_realized_pnl_tenths: 0,
+      strategy: {
+        name: 'Late Closer',
+        status: 'paused',
+        created_at_ms: 1_700_000_000_000,
+        series: 'btc-15m',
+        strategy_id: 'sha:late',
+        deploy_epoch: 3,
+        deployment_id: 'sha:late:3',
+        template_id: 'late-closer',
+        inverse: false,
+      },
+    }
+    server.use(
+      http.patch(`${baseUrl}/api/accounts/${parent}/strategies/${child}`, async ({ request }) => {
+        expect(request.method).toBe('PATCH')
+        expect(await request.json()).toEqual({ status: 'paused' })
+        return HttpResponse.json(detail)
+      })
+    )
+    const client = createRustExchangeClient({ baseUrl, retry: { attempts: 1 } })
+    const updated = await client.updateStrategyStatus(parent, child, 'paused')
+    expect(updated.ok && updated.data.status).toBe('paused')
+    expect(updated.ok && updated.data.strategy.deployment_id).toBe('sha:late:3')
+  })
+
+  it('stops a strategy over DELETE, parsing the sweep report, and surfaces a 4xx', async () => {
+    const parent = `0x${'11'.repeat(20)}`
+    const child = `0x${'ab'.repeat(20)}`
+    const missing = `0x${'cd'.repeat(20)}`
+    server.use(
+      http.delete(`${baseUrl}/api/accounts/${parent}/strategies/${child}`, ({ request }) => {
+        expect(request.method).toBe('DELETE')
+        return HttpResponse.json({
+          swept_tenths: 49_000,
+          cancelled_orders: 2,
+          residual_position: 0,
+          removed: true,
+        })
+      }),
+      http.delete(`${baseUrl}/api/accounts/${parent}/strategies/${missing}`, () =>
+        HttpResponse.json(
+          { error: 'strategy_not_found', message: 'no such strategy' },
+          { status: 404 }
+        )
+      )
+    )
+    const client = createRustExchangeClient({ baseUrl, retry: { attempts: 1 } })
+    const stopped = await client.stopStrategy(parent, child)
+    expect(stopped).toEqual({
+      ok: true,
+      data: { swept_tenths: 49_000, cancelled_orders: 2, residual_position: 0, removed: true },
+    })
+    const absent = await client.stopStrategy(parent, missing)
+    expect(absent.ok).toBe(false)
+    expect(!absent.ok && absent.error.status).toBe(404)
+    expect(!absent.ok && absent.error.message).toBe('strategy_not_found: no such strategy')
+  })
 })
