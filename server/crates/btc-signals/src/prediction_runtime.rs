@@ -1713,7 +1713,11 @@ impl PredictionPipeline<BufWriter<File>> {
             caps.max_updates,
             caps.max_output_bytes,
         )?;
-        *self = rebuilt;
+        // The in-process observer belongs to the run, not to a file generation: the
+        // exchange hears this lane only through it. `build` starts with none, so it is
+        // carried across by hand, or the lane falls silent at its first rotation.
+        let stream_hook = self.stream_hook.take();
+        *self = rebuilt.with_stream_hook(stream_hook);
         Ok(())
     }
 }

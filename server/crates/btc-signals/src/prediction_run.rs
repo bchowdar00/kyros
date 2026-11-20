@@ -2857,6 +2857,70 @@ mod tests {
         (pipeline, rotation)
     }
 
+    /// The in-process stream hook must outlive a file rotation: the exchange hears a
+    /// prediction lane only through it. Regression: `rotate` rebuilt the pipeline
+    /// without the hook, so a lane fell silent to the server at its first rotation
+    /// while it went on writing its files.
+    #[test]
+    fn stream_hook_still_hears_the_lane_after_a_file_rotation() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicU64, Ordering};
+
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock after epoch")
+            .as_nanos();
+        let lane_root = std::env::temp_dir().join(format!("pred-rot-hook-{unique}"));
+        let clock = ProcessClock::start();
+        let first_open_ns = clock.elapsed_ns().expect("first open time");
+        let (pipeline, mut rotation) = build_rotation_fixture(
+            &lane_root,
+            "polymarket",
+            "live-prediction-hook",
+            &clock,
+            first_open_ns,
+        );
+        let heard = Arc::new(AtomicU64::new(0));
+        let counter = Arc::clone(&heard);
+        let hook: StreamHook = Arc::new(move |_message| {
+            counter.fetch_add(1, Ordering::Relaxed);
+        });
+        let hooked = Rc::try_unwrap(pipeline)
+            .ok()
+            .expect("the fixture is the pipeline's only owner")
+            .into_inner()
+            .with_stream_hook(Some(hook));
+        let pipeline = Rc::new(RefCell::new(hooked));
+        let health_tick = |now_ns: u64| {
+            let mut pipeline = pipeline.borrow_mut();
+            let admission_seq = pipeline.next_admission_seq();
+            pipeline
+                .admit_live(PredictionJournalInput::HealthTick {
+                    admission_seq,
+                    now_ns,
+                })
+                .expect("health tick admits");
+        };
+
+        health_tick(first_open_ns + 1_000_000_000);
+        assert!(
+            heard.load(Ordering::Relaxed) > 0,
+            "a health tick writes a stream message the hook hears"
+        );
+
+        let now_ns = first_open_ns + 61 * 1_000_000_000;
+        rotate_generation(&pipeline, &clock, now_ns, &mut rotation)
+            .expect("rotation past the first period succeeds");
+        let at_rotation = heard.load(Ordering::Relaxed);
+        health_tick(now_ns + 30 * 1_000_000_000);
+        assert!(
+            heard.load(Ordering::Relaxed) > at_rotation,
+            "the hook must still hear the lane after its files rotate"
+        );
+
+        let _ = std::fs::remove_dir_all(&lane_root);
+    }
+
     /// A rotated generation's `RUN-META.json` records the generation's OWN derived
     /// output epoch (`<prefix>-<name_unix>`) — the same epoch the reset frame and
     /// checkpoint lineage carry — not the base publisher prefix (which is only
