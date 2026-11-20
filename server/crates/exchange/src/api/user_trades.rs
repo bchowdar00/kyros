@@ -18,6 +18,11 @@
 //! empty list rather than 404 so external callers can ask uniformly
 //! without leaking the user-vs-bot distinction. Truly nonexistent
 //! accounts (the engine has no record at all) still return 404.
+//!
+//! Each row carries `at_ms`, the wall-clock time the order was placed
+//! in unix milliseconds, for placing the order on a time axis. `ts`
+//! remains the engine's sequence number used only for newest-first
+//! ordering.
 
 use axum::{
     Json,
@@ -40,6 +45,10 @@ pub struct UserTradeRow {
     pub series: SeriesId,
     pub order_id: u64,
     pub ts: u64,
+    /// Wall-clock time the order was placed, in unix milliseconds. Fills
+    /// that land later do not change it. Use this to place the order on a
+    /// time axis; `ts` is a sequence number, not a clock time.
+    pub at_ms: u64,
     /// User's order direction. `Yes` = bought YES (Bid). `No` = sold
     /// YES / bought NO (Ask).
     pub side: TradeSide,
@@ -199,6 +208,7 @@ fn project_row(
         series,
         order_id: row.order_id.0,
         ts: row.placed_ts,
+        at_ms: row.placed_at_ms,
         side: match row.side {
             Side::Bid => TradeSide::Yes,
             Side::Ask => TradeSide::No,
@@ -497,6 +507,21 @@ mod tests {
         assert_eq!(json["order_type"], "limit");
         assert_eq!(json["side"], "yes");
         assert_eq!(json["market_id"], 1);
+    }
+
+    #[test]
+    fn project_row_copies_placed_at_ms_to_at_ms_and_serializes() {
+        let (mut e, user, bot) = engine_with_user_and_bot();
+        e.place_limit(bot, Side::Ask, tick(500), Qty(2), TradeSource::Bot)
+            .unwrap();
+        e.place_market(user, Side::Bid, Qty(2), TradeSource::Ui)
+            .unwrap();
+        let order_row = e.user_orders(&user)[0];
+        let row = project_row(crate::types::DEFAULT_SERIES, &order_row, None, false);
+        assert_eq!(row.at_ms, order_row.placed_at_ms);
+        let json = serde_json::to_value(&row).unwrap();
+        // Always serialized, as a number equal to the placement time.
+        assert_eq!(json["at_ms"].as_u64(), Some(order_row.placed_at_ms));
     }
 
     #[test]

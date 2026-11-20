@@ -341,9 +341,11 @@ pub const NBA_UNDERLYING: &str = "nba";
 
 /// Signal ids of the NBA game's live feeds and derived signals: plays,
 /// margin and model from the public scoreboard (`sports::nba_live`), and
-/// Polymarket's price for the same game (`sports::polymarket`).
+/// Polymarket's and Kalshi's prices for the same game
+/// (`sports::polymarket`, `sports::kalshi`).
 pub const NBA_PBP_SIGNAL: &str = "nba.live.pbp.v1";
 pub const NBA_POLYMARKET_SIGNAL: &str = "nba.live.polymarket.v1";
+pub const NBA_KALSHI_SIGNAL: &str = "nba.live.kalshi.v1";
 pub const NBA_MARGIN_SIGNAL: &str = "nba.live.margin.v1";
 pub const NBA_WINPROB_SIGNAL: &str = "nba.live.winprob.v1";
 
@@ -352,11 +354,11 @@ pub fn matchup_signal_id(slug: &str) -> String {
     format!("{slug}.current.matchup.v1")
 }
 
-/// The four signals an NBA game publishes, scoped to every series with
-/// the `nba` underlying: the two feeds (play-by-play and the pregame
-/// line) and the two derived from them (margin and model win
-/// probability). Team codes travel as plain strings; a real producer
-/// fills them from the live game. No producer runs yet.
+/// The five signals an NBA game publishes, scoped to every series with
+/// the `nba` underlying: the play-by-play feed, the two venue lines
+/// (Polymarket and Kalshi) and the two derived from the plays (margin
+/// and model win probability). Team codes travel as plain strings; the
+/// producers in `sports/` fill them from the live game.
 pub fn nba_signals() -> Vec<Value> {
     let scope = json!(Scope::Underlying { underlying: NBA_UNDERLYING.to_string() });
     vec![
@@ -388,14 +390,26 @@ pub fn nba_signals() -> Vec<Value> {
         json!({
             "signal_id": NBA_POLYMARKET_SIGNAL, "version": "1", "location": "internal",
             "name": "Polymarket line",
-            "description": "What Polymarket pays for each side of the same game: the midpoint of its order book for the home team, and its complement. Read every ten seconds while the round is open.",
+            "description": "What Polymarket pays for each side of the same game: the midpoint of its order book for the home team, and its complement. Read every three seconds while the round is open.",
             "fields": [
                 {"name": "home_team", "label": "Home", "type": "string"},
                 {"name": "away_team", "label": "Away", "type": "string"},
                 {"name": "home_prob", "label": "Home Win", "type": "decimal"},
                 {"name": "away_prob", "label": "Away Win", "type": "decimal"}
             ],
-            "metadata": { "scope": scope, "producer": "nba_live", "live": true, "approximate_interval_ms": 10000 }
+            "metadata": { "scope": scope, "producer": "nba_live", "live": true, "approximate_interval_ms": 3000 }
+        }),
+        json!({
+            "signal_id": NBA_KALSHI_SIGNAL, "version": "1", "location": "internal",
+            "name": "Kalshi line",
+            "description": "What Kalshi pays for each side of the same game: the midpoint of its bid and ask for the home team, and its complement. Read every three seconds while the round is open.",
+            "fields": [
+                {"name": "home_team", "label": "Home", "type": "string"},
+                {"name": "away_team", "label": "Away", "type": "string"},
+                {"name": "home_prob", "label": "Home Win", "type": "decimal"},
+                {"name": "away_prob", "label": "Away Win", "type": "decimal"}
+            ],
+            "metadata": { "scope": scope, "producer": "nba_live", "live": true, "approximate_interval_ms": 3000 }
         }),
         json!({
             "signal_id": NBA_MARGIN_SIGNAL, "version": "1", "location": "internal",
@@ -766,9 +780,9 @@ mod tests {
         let r = build(&inputs(&[])).expect("builds");
         let nba = SERIES.iter().find(|s| s.underlying == NBA_UNDERLYING).expect("an NBA series in the table");
         let find = |id: &str| r.signals.iter().find(|s| s.signal_id == id).unwrap_or_else(|| panic!("{id}"));
-        // The four feed signals exist under the renamed ids and apply to
+        // The five feed signals exist under the renamed ids and apply to
         // the NBA series, not to BTC.
-        for id in [NBA_PBP_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL] {
+        for id in [NBA_PBP_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_KALSHI_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL] {
             let def = find(id);
             let sc = Scope::of(def).unwrap();
             assert_eq!(sc, Scope::Underlying { underlying: "nba".into() });
@@ -803,7 +817,7 @@ mod tests {
         assert!(!r.signals.iter().any(|s| s.signal_id == format!("{}.current.strike.v1", nba.slug)), "no strike on the NBA series");
         // Each NBA signal resolves a copy file.
         let book = CopyBook::load(&copy_dir(None).expect("copy directory in the checkout")).unwrap();
-        for id in [NBA_PBP_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL] {
+        for id in [NBA_PBP_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_KALSHI_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL] {
             assert!(book.for_signal(id).is_some(), "{id} has a copy file");
         }
         let nba_u = Some(NBA_UNDERLYING);

@@ -742,6 +742,10 @@ impl MarketEngine {
         };
         let market_id = market.id;
         let placed_ts = self.next_seq();
+        // Wall-clock reading for display only. The clock is unix seconds
+        // (see `RoundClock`), so scale to milliseconds. Plays no part in
+        // ordering — that stays `placed_ts`.
+        let placed_at_ms = self.clock.now() * 1000;
         self.user_orders
             .entry(account)
             .or_default()
@@ -749,6 +753,7 @@ impl MarketEngine {
                 order_id,
                 market_id,
                 placed_ts,
+                placed_at_ms,
                 side,
                 qty_requested,
                 limit_price,

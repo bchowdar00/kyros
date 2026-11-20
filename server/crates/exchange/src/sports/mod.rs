@@ -7,3 +7,4 @@ pub mod winprob;
 pub mod espn;
 pub mod nba_live;
 pub mod polymarket;
+pub mod kalshi;

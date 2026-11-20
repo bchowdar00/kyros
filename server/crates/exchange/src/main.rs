@@ -38,6 +38,7 @@ use exchange::registry::{self, PriceSource};
 use exchange::scheduler;
 use exchange::series::SERIES;
 use exchange::sports::nba_live::{ScoreBoard, spawn_nba_live, withdraw_game_signals};
+use exchange::sports::kalshi::spawn_kalshi_line;
 use exchange::sports::polymarket::spawn_polymarket_line;
 use exchange::{signals, signals_retention};
 use exchange::templates::TemplateCatalogue;
@@ -351,7 +352,9 @@ async fn main() {
                 // as the `nba.live.*` signals.
                 spawn_nba_live(game.clone(), board, bus.clone());
                 // What Polymarket pays for the same game, as a second line.
-                spawn_polymarket_line(game, bus.clone(), platform.clone());
+                spawn_polymarket_line(game.clone(), bus.clone(), platform.clone());
+                // What Kalshi pays for the same game, as a third line.
+                spawn_kalshi_line(game, bus.clone(), platform.clone());
                 tracing::info!(series = %series, "nba: following gemini's listed games");
             } else {
                 tracing::error!(series = %series, "no round driver for this series; it will never open a round");

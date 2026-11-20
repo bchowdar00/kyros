@@ -136,6 +136,7 @@ an expression string or a param default.
 | model-vs-crowd | nba-h2h | taker, buys the side the model (inverse: Polymarket's price) calls cheap and sells out when the book returns | nba.live.winprob / nba.live.polymarket, book |
 | lead-change | nba-h2h | taker, backs the leader and flips on a lead change, locking in the fourth | nba.live.margin, nba.live.pbp, book |
 | venue-gap | nba-h2h | taker, buys the side Polymarket prices higher than our book | nba.live.polymarket, nba.live.margin, book |
+| kalshi-gap | nba-h2h | taker, buys the side Kalshi prices higher than our book | nba.live.kalshi, nba.live.margin, book |
 | fourth-quarter | nba-h2h | taker in crunch time on the margin | nba.live.margin, nba.live.pbp, book |
 | pregame-pick | nba-h2h | taker, takes the pregame favourite before tipoff | nba.live.polymarket, book |
 | shooting-streak | nba-h2h | taker, rides a scoring run | nba.live.pbp, book |

@@ -128,3 +128,16 @@ fn the_line_is_withdrawn_when_its_game_is_no_longer_the_round() {
     assert_eq!(watch.end(), Step::Withdraw, "the last price was for another game");
     assert_eq!(watch.end(), Step::Nothing);
 }
+
+#[test]
+fn a_standing_line_survives_thirty_seconds_of_failed_reads() {
+    // Reading faster must not make the line quicker to vanish: each withdrawal also
+    // clears the snapshot a running strategy trades on.
+    assert_eq!(POLL * STALE_AFTER, Duration::from_secs(30));
+}
+
+#[test]
+fn a_dead_price_never_stands_much_longer_than_a_minute() {
+    // The worst case: every read hangs until its timeout before it counts as a miss.
+    assert!((POLL + READ_TIMEOUT) * STALE_AFTER <= Duration::from_secs(70));
+}

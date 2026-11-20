@@ -1214,6 +1214,20 @@ impl Rig {
         );
     }
 
+    /// One Kalshi reading of the home team's price.
+    fn publish_kalshi_line(&self, home_prob: &str) {
+        let home = Decimal::from_str(home_prob).unwrap();
+        self.publish(
+            crate::registry::NBA_KALSHI_SIGNAL,
+            &[
+                ("home_team", json!("BOS")),
+                ("away_team", json!("LAL")),
+                ("home_prob", json!(home.normalize().to_string())),
+                ("away_prob", json!((Decimal::ONE - home).normalize().to_string())),
+            ],
+        );
+    }
+
     fn publish_margin(&self, margin: i64) {
         self.publish(crate::registry::NBA_MARGIN_SIGNAL, &[("value", json!(margin.to_string()))]);
     }
@@ -1283,5 +1297,74 @@ async fn after_a_hold_the_line_move_fader_starts_from_the_next_reading() {
 
     // The next reading is compared with that one: three cents up is faded.
     rig.publish_polymarket_line("0.53");
+    assert!(rig.wait_for_position(child, |p| p < 0).await < 0);
+}
+
+// ───────────────────────────── kalshi-gap (NBA) ─────────────────────────────
+
+/// Fade the Kalshi Move treats a Kalshi jump as noise only when the score
+/// did not change between the two readings. A jump that came with a basket
+/// is news and is left alone; the next jump, with the score where it was,
+/// is faded with Away.
+#[tokio::test]
+async fn the_kalshi_move_fader_leaves_a_jump_that_came_with_a_basket_alone() {
+    let nba = SERIES.iter().find(|s| s.underlying == "nba").expect("an NBA series in the table").id;
+    let rig = Rig::new(nba, 450, 550, 500);
+    let (child, id) = rig.deploy("kalshi-gap", Side::Inverse).await;
+    assert_eq!(rig.status(&id).await.current_leg, "hunting");
+
+    rig.publish_home_book("0.45", "0.55");
+    rig.publish_margin(0);
+    rig.publish_kalshi_line("0.50");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+
+    // Home scores and the line rises three cents with it: not a fade.
+    rig.publish_margin(2);
+    rig.publish_kalshi_line("0.53");
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert_eq!(rig.position(child), 0, "a move that came with a basket is not noise");
+    assert_eq!(rig.status(&id).await.current_leg, "hunting");
+
+    // The line rises three more cents with the score where it was: fade it.
+    rig.publish_kalshi_line("0.56");
+    let pos = rig.wait_for_position(child, |p| p < 0).await;
+    assert_eq!(pos, -9, "$5 at the 0.55 Away ask is nine lots of Away");
+    assert_eq!(rig.wait_for_leg(&id, "holding_away").await, "holding_away");
+}
+
+/// While a position is held no reading is compared. After the exit the
+/// first reading only starts the comparison again: a line that drifted
+/// during the hold is not a jump.
+#[tokio::test]
+async fn after_a_hold_the_kalshi_move_fader_starts_from_the_next_reading() {
+    let nba = SERIES.iter().find(|s| s.underlying == "nba").expect("an NBA series in the table").id;
+    // Nine lots at the ask: the entry takes all of them.
+    let rig = Rig::new(nba, 450, 550, 9);
+    let (child, id) = rig.deploy("kalshi-gap", Side::Inverse).await;
+
+    rig.publish_home_book("0.45", "0.55");
+    rig.publish_margin(0);
+    rig.publish_kalshi_line("0.50");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    // The line falls three cents with the score where it was: fade it with Home.
+    rig.publish_kalshi_line("0.47");
+    assert_eq!(rig.wait_for_position(child, |p| p > 0).await, 9);
+    assert_eq!(rig.wait_for_leg(&id, "holding_home").await, "holding_home");
+
+    // Home's bid is three cents over the entry: take the profit.
+    rig.rest(BookSide::Bid, 580, 20);
+    tokio::time::sleep(Duration::from_millis(1_100)).await;
+    rig.publish_home_book("0.58", "0.68");
+    assert_eq!(rig.wait_for_position(child, |p| p == 0).await, 0);
+    assert_eq!(rig.wait_for_leg(&id, "hunting").await, "hunting");
+
+    // The line is back at 0.50, three cents above the reading at the
+    // entry. Nothing was compared during the hold, so this is no jump.
+    rig.publish_kalshi_line("0.50");
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert_eq!(rig.position(child), 0, "a drift over the hold is not a jump");
+
+    // The next reading is compared with that one: three cents up is faded.
+    rig.publish_kalshi_line("0.53");
     assert!(rig.wait_for_position(child, |p| p < 0).await < 0);
 }

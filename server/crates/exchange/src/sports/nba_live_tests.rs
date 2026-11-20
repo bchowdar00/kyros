@@ -330,7 +330,7 @@ fn withdrawing_takes_every_game_signal_off_the_bus_and_the_platform() {
 
     withdraw_game_signals(&bus, &platform);
 
-    for id in [NBA_PBP_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL, crate::registry::NBA_POLYMARKET_SIGNAL] {
+    for id in [NBA_PBP_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL, crate::registry::NBA_POLYMARKET_SIGNAL, crate::registry::NBA_KALSHI_SIGNAL] {
         assert_ne!(bus.latest(id).map(|f| f.quality.state.clone()).unwrap_or_default(), "ready", "{id}");
     }
     let mut cleared = Vec::new();
@@ -340,7 +340,7 @@ fn withdrawing_takes_every_game_signal_off_the_bus_and_the_platform() {
         }
     }
     cleared.sort();
-    assert_eq!(cleared, vec![NBA_MARGIN_SIGNAL, NBA_PBP_SIGNAL, crate::registry::NBA_POLYMARKET_SIGNAL, NBA_WINPROB_SIGNAL]);
+    assert_eq!(cleared, vec![crate::registry::NBA_KALSHI_SIGNAL, NBA_MARGIN_SIGNAL, NBA_PBP_SIGNAL, crate::registry::NBA_POLYMARKET_SIGNAL, NBA_WINPROB_SIGNAL]);
 }
 
 #[test]

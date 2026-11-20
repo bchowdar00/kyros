@@ -3330,4 +3330,85 @@ mod tests {
         e.register_user(a);
         assert!(e.is_user_account(&a));
     }
+
+    /// Drive the engine clock from a test-owned seconds counter, exactly
+    /// as `lock_tests`/`external_tests` do.
+    fn set_test_clock(e: &mut Engine, now: &std::sync::Arc<std::sync::atomic::AtomicU64>) {
+        use std::sync::atomic::Ordering;
+        let reads = now.clone();
+        e.exchange_mut()
+            .engine_mut(DEFAULT_SERIES)
+            .set_clock(RoundClock::new(move || reads.load(Ordering::SeqCst)));
+    }
+
+    #[test]
+    fn placed_at_ms_captures_engine_clock_scaled_to_ms() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicU64, Ordering};
+        let (mut e, user, bot) = engine_with_market();
+        e.register_user(user);
+        let now = Arc::new(AtomicU64::new(1_000)); // unix seconds
+        set_test_clock(&mut e, &now);
+
+        // First order placed while the clock reads 1000s.
+        e.place_limit(bot, Side::Ask, tick(500), Qty(5), TradeSource::Bot)
+            .unwrap();
+        e.place_market(user, Side::Bid, Qty(2), TradeSource::Ui)
+            .unwrap();
+        let first = e.user_orders(&user)[0].placed_at_ms;
+        assert_eq!(first, 1_000 * 1_000, "seconds scaled to milliseconds");
+
+        // Advance the clock; a later placement carries the later time.
+        now.store(1_005, Ordering::SeqCst);
+        e.place_market(user, Side::Bid, Qty(1), TradeSource::Ui)
+            .unwrap();
+        let second = e.user_orders(&user)[1].placed_at_ms;
+        assert_eq!(second, 1_005 * 1_000);
+        assert!(second > first);
+    }
+
+    #[test]
+    fn resting_order_placed_at_ms_unchanged_by_later_fill() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicU64, Ordering};
+        let (mut e, user, bot) = engine_with_market();
+        e.register_user(user);
+        let now = Arc::new(AtomicU64::new(2_000));
+        set_test_clock(&mut e, &now);
+
+        // User rests a limit at t = 2000s.
+        e.place_limit(user, Side::Ask, tick(600), Qty(10), TradeSource::Ui)
+            .unwrap();
+        assert_eq!(e.user_orders(&user)[0].placed_at_ms, 2_000 * 1_000);
+
+        // Clock advances, then a taker fills part of the resting order.
+        now.store(2_050, Ordering::SeqCst);
+        e.place_market(bot, Side::Bid, Qty(4), TradeSource::Bot)
+            .unwrap();
+        let row = e.user_orders(&user)[0];
+        assert_eq!(row.filled_qty, Qty(4));
+        // The fill landed later, but the placement time is unchanged.
+        assert_eq!(row.placed_at_ms, 2_000 * 1_000);
+    }
+
+    #[test]
+    fn settled_archive_preserves_placed_at_ms() {
+        use std::sync::Arc;
+        use std::sync::atomic::AtomicU64;
+        let (mut e, user, bot) = engine_with_market();
+        e.register_user(user);
+        let now = Arc::new(AtomicU64::new(3_000));
+        set_test_clock(&mut e, &now);
+        e.place_limit(bot, Side::Ask, tick(500), Qty(2), TradeSource::Bot)
+            .unwrap();
+        e.place_market(user, Side::Bid, Qty(2), TradeSource::Ui)
+            .unwrap();
+        let live = e.user_orders(&user)[0].placed_at_ms;
+        assert_eq!(live, 3_000 * 1_000);
+
+        e.resolve_and_open_next(60_000.0, 60_000.0, 60, 60);
+        let settled = e.settled_user_orders(&user);
+        assert_eq!(settled.len(), 1);
+        assert_eq!(settled[0].placed_at_ms, live);
+    }
 }

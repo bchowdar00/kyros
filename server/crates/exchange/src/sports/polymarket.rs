@@ -24,7 +24,7 @@ use crate::gemini::nba::{GameCell, NbaGame};
 use crate::registry::NBA_POLYMARKET_SIGNAL;
 
 /// Between midpoint reads while the round is open.
-pub const POLL: Duration = Duration::from_secs(10);
+pub const POLL: Duration = Duration::from_secs(3);
 /// Between tries for a listing that could not be read or does not fit.
 pub const LISTING_RETRY: Duration = Duration::from_secs(60);
 /// With no round open; nothing is read.
@@ -152,8 +152,16 @@ pub fn line_frame(home: &str, away: &str, home_prob: Decimal, ts_ms: u64) -> Sig
     SignalFrame { signal_id: NBA_POLYMARKET_SIGNAL.to_owned(), ts_ms, quality: Quality::ready(), values }
 }
 
-/// Consecutive readings that may fail before the line is withdrawn.
-pub const STALE_AFTER: u32 = 3;
+/// How long one read of the price may take before it counts as a miss.
+pub const READ_TIMEOUT: Duration = Duration::from_secs(4);
+/// How long the game's listing may take; it is looked up once per game, not every [`POLL`].
+const LISTING_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Consecutive readings that may fail before the line is withdrawn: thirty
+/// seconds of them at [`POLL`] when they fail at once, seventy when every
+/// one hangs until [`READ_TIMEOUT`]. A withdrawal clears the snapshot a
+/// running strategy trades on, so one slow answer must not cause it.
+pub const STALE_AFTER: u32 = 10;
 
 /// What one reading means for the published line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -218,7 +226,7 @@ pub fn spawn_polymarket_line(cell: GameCell, bus: Arc<SignalBus>, platform: Plat
             };
             if known.is_none() {
                 let slug = market_slug(&game.away.code, &game.home.code, game.tipoff_ms);
-                let found = get_text(&client, LISTING_URL, &[("slug", slug.as_str())])
+                let found = get_text(&client, LISTING_URL, &[("slug", slug.as_str())], LISTING_TIMEOUT)
                     .await
                     .map(|body| parse_listing(&body, &game.away.code, &game.home.code, game.tipoff_ms));
                 match found {
@@ -237,7 +245,7 @@ pub fn spawn_polymarket_line(cell: GameCell, bus: Arc<SignalBus>, platform: Plat
                 }
             }
             if let Some((_, listing)) = &known {
-                let mid = get_text(&client, MIDPOINT_URL, &[("token_id", listing.home_token.as_str())]).await.ok().and_then(|body| parse_midpoint(&body));
+                let mid = get_text(&client, MIDPOINT_URL, &[("token_id", listing.home_token.as_str())], READ_TIMEOUT).await.ok().and_then(|body| parse_midpoint(&body));
                 // The read took a while; publish only if this is still the
                 // round's game. A withdrawal goes through either way.
                 match watch.read(mid) {
@@ -265,8 +273,8 @@ fn apply(step: Step, game: Option<&NbaGame>, bus: &SignalBus, platform: &Platfor
     }
 }
 
-async fn get_text(client: &reqwest::Client, url: &str, query: &[(&str, &str)]) -> Result<String, String> {
-    let resp = client.get(url).query(query).timeout(Duration::from_secs(10)).send().await.map_err(|e| e.to_string())?;
+async fn get_text(client: &reqwest::Client, url: &str, query: &[(&str, &str)], timeout: Duration) -> Result<String, String> {
+    let resp = client.get(url).query(query).timeout(timeout).send().await.map_err(|e| e.to_string())?;
     if !resp.status().is_success() {
         return Err(format!("polymarket answered {}", resp.status()));
     }

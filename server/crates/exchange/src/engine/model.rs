@@ -72,6 +72,11 @@ pub struct UserOrderRow {
     /// `next_seq` value captured at placement; used for newest-first
     /// ordering on read.
     pub placed_ts: u64,
+    /// Engine clock reading when the order was placed, as unix
+    /// milliseconds. Wall-clock time for display only (e.g. placing a
+    /// marker on a time axis); it takes no part in ordering, which stays
+    /// `placed_ts`.
+    pub placed_at_ms: u64,
     /// The user's order side. `Bid` = bought YES; `Ask` = sold YES.
     pub side: Side,
     pub qty_requested: Qty,

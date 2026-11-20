@@ -16,7 +16,7 @@ use serde_json::{Value as Json, json};
 use crate::automation::signal_bus::{Quality, SignalBus, SignalFrame};
 use crate::automation::sme::task::PlatformHandle;
 use crate::gemini::nba::{GameCell, Score, ScoreFn};
-use crate::registry::{NBA_MARGIN_SIGNAL, NBA_PBP_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_WINPROB_SIGNAL};
+use crate::registry::{NBA_KALSHI_SIGNAL, NBA_MARGIN_SIGNAL, NBA_PBP_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_WINPROB_SIGNAL};
 use crate::sports::espn::{self, GamePhase, GameState, Play};
 use crate::sports::winprob;
 
@@ -279,7 +279,7 @@ mod tests;
 /// one game is ever traded on in the next.
 pub fn withdraw_game_signals(bus: &SignalBus, platform: &PlatformHandle) {
     let now = crate::pricing::feed::unix_now_ms();
-    for id in [NBA_PBP_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL, NBA_POLYMARKET_SIGNAL] {
+    for id in [NBA_PBP_SIGNAL, NBA_MARGIN_SIGNAL, NBA_WINPROB_SIGNAL, NBA_POLYMARKET_SIGNAL, NBA_KALSHI_SIGNAL] {
         bus.set_quality(id, now, Quality { state: "unavailable".into(), reasons: vec!["the game changed".into()] });
         platform.clear_snapshot(id);
     }
