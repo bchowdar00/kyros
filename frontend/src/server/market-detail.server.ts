@@ -10,6 +10,7 @@ import {
   toStatsSignals,
 } from '@/features/market-detail/exchange-extras.mapper'
 import { getMarketDetailFixture } from '@/features/market-detail/market-detail.fixture'
+import { toStrategyCardNames } from '@/features/market-detail/strategy-card-names'
 import { toPublicStrategies } from '@/features/market-detail/strategy-template.mapper'
 import type { MarketDetail } from '@/features/market-detail/types'
 import { fixturesEnabled } from '@/server/fixtures.server'
@@ -54,7 +55,13 @@ async function withExchangeExtras(market: MarketDetail): Promise<MarketDetail> {
             ...(history.ok ? { recentMarketResults: toRecentMarketResults(history.data) } : {}),
           },
         }),
-    ...(templates.ok ? { chatPanel: toChatPanel(toPublicStrategies(templates.data)) } : {}),
+    ...(templates.ok
+      ? {
+          chatPanel: toChatPanel(toPublicStrategies(templates.data)),
+          // Every card, deployable now or not: a strategy already running keeps its card's name.
+          strategyCardNames: toStrategyCardNames(templates.data),
+        }
+      : {}),
   }
 }
 

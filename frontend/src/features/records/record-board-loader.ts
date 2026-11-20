@@ -1,6 +1,11 @@
 import { RustRecordViewSchema } from '@kyros/domain'
 import * as z from 'zod/mini'
 
+import {
+  cardNameOf,
+  type StrategyCardName,
+  toStrategyCardNames,
+} from '@/features/market-detail/strategy-card-names'
 import { decodeRecordLog, ExplorerLogSchema, type RecordEvent } from './arc-logs'
 import { buildRecordBoard, type RecordBoard, type RecordBoardRow } from './board'
 
@@ -51,6 +56,17 @@ const LogPageSchema = z.object({
   items: z.array(ExplorerLogSchema),
   // The cursor is the explorer's own; whatever it holds is handed back as it came.
   next_page_params: z.nullable(z.record(z.string(), z.unknown())),
+})
+
+/** The part of `GET /api/strategies/templates?series=` the card titles come from. */
+const CardCatalogueSchema = z.object({
+  templates: z.array(
+    z.object({
+      inverse: z.object({ name: z.string() }),
+      primary: z.object({ name: z.string() }),
+      title: z.string(),
+    })
+  ),
 })
 
 const AccountStrategySchema = z.object({
@@ -126,6 +142,50 @@ async function describeRow(
   }
 }
 
+/** The public cards of one market, or none when the exchange cannot say. */
+async function cardsOf(
+  exchangeUrl: string,
+  series: string,
+  deadline: AbortSignal
+): Promise<StrategyCardName[]> {
+  try {
+    const url = new URL('api/strategies/templates', `${exchangeUrl}/`)
+    url.searchParams.set('series', series)
+    return toStrategyCardNames(z.parse(CardCatalogueSchema, await getJson(url, deadline)))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * A strategy run from a public card is shown under the card's title, as on the market page.
+ * One read of the cards per market that has a named row.
+ */
+async function withCardTitles(
+  exchangeUrl: string | undefined,
+  rows: NamedRecordBoardRow[],
+  deadline: AbortSignal
+): Promise<NamedRecordBoardRow[]> {
+  if (exchangeUrl === undefined) return rows
+  const markets = new Set<string>()
+  for (const row of rows) {
+    if (row.name !== undefined && row.series !== undefined) markets.add(row.series)
+  }
+  const cards = new Map(
+    await Promise.all(
+      [...markets].map(
+        async series => [series, await cardsOf(exchangeUrl, series, deadline)] as const
+      )
+    )
+  )
+
+  return rows.map(row =>
+    row.name === undefined || row.series === undefined
+      ? row
+      : { ...row, name: cardNameOf(row.name, cards.get(row.series) ?? []) }
+  )
+}
+
 /**
  * A loader for the public record board. The board is built from the contract's logs on Arc,
  * read through the explorer, so it is the same whatever the exchange remembers; the exchange
@@ -150,15 +210,16 @@ export function createRecordBoardLoader(
       const { events, truncated } = await readEvents(options, deadline)
       const board = buildRecordBoard(events)
       const { exchangeUrl } = options
-      const rows = await Promise.all(
+      const described = await Promise.all(
         board.rows.map(async (row, index): Promise<NamedRecordBoardRow> => {
-          const described =
+          const found =
             exchangeUrl === undefined || index >= NAMED_ROWS
               ? { name: undefined, series: undefined }
               : await describeRow(exchangeUrl, row.deploymentId, deadline)
-          return { ...row, ...described }
+          return { ...row, ...found }
         })
       )
+      const rows = await withCardTitles(exchangeUrl, described, deadline)
 
       return {
         asOf: new Date(readAt).toISOString(),

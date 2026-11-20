@@ -85,6 +85,9 @@ function mockExchange(deployment = 'Strategy_abc:7'): void {
         address: ACCOUNT_A,
         strategy: { deployment_id: deployment, name: 'Quote With the Lean' },
       })
+    ),
+    http.get(`${EXCHANGE}/api/strategies/templates`, () =>
+      HttpResponse.json({ message: 'no cards' }, { status: 503 })
     )
   )
 }
@@ -136,6 +139,34 @@ describe('the record board loader', () => {
     expect(board.rows[0]).toMatchObject({ name: 'Quote With the Lean', series: 'btc-5m' })
     expect(board.rows[1]?.name).toBeUndefined()
     expect(board.rows[1]?.series).toBeUndefined()
+  })
+
+  it('shows a strategy run from a public card under the card’s title', async () => {
+    mockTwoPagesOfLogs()
+    mockExchange()
+    const asked: (string | null)[] = []
+    server.use(
+      http.get(`${EXCHANGE}/api/strategies/templates`, ({ request }) => {
+        asked.push(new URL(request.url).searchParams.get('series'))
+        return HttpResponse.json({
+          series: 'btc-5m',
+          templates: [
+            {
+              title: 'Inside the Spread',
+              primary: { name: 'Quote With the Lean' },
+              inverse: { name: 'Quote Both Sides' },
+            },
+          ],
+        })
+      })
+    )
+
+    const board = await loader()()
+
+    if (board.status !== 'ok') throw new Error('expected a board')
+    expect(board.rows[0]).toMatchObject({ name: 'Inside the Spread', series: 'btc-5m' })
+    // One read of the cards for the one market on the board.
+    expect(asked).toEqual(['btc-5m'])
   })
 
   it('does not borrow the name of a newer deployment in the same account', async () => {

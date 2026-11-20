@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { formatExchangeTicks } from '@kyros/money'
 import { Button } from '@kyros/ui/components/button'
 
+import { cardNameOf, type StrategyCardName } from '../strategy-card-names'
 import type { MarketOutcome } from '../types'
 import type { AccountState } from './account'
 import type { RustExchangeStore } from './rust-exchange-store'
@@ -53,13 +54,18 @@ export function ActivityPager({
  */
 export function ExchangeOpenOrders({
   account,
+  cards = [],
   outcomes,
   store,
 }: {
   account: AccountState
+  /** The series' public cards: a strategy run from one is named by the card's title. */
+  cards?: readonly StrategyCardName[] | undefined
   outcomes: readonly [MarketOutcome, MarketOutcome]
   store: Pick<RustExchangeStore, 'cancel'>
 }) {
+  const ownerName = (order: AccountState['openOrders'][number]) =>
+    order.account_kind === 'strategy' ? cardNameOf(order.account_name, cards) : order.account_name
   const [page, setPage] = useState(0)
   const orders = account.openOrders
   const pages = Math.max(1, Math.ceil(orders.length / ACTIVITY_PAGE_SIZE))
@@ -81,7 +87,7 @@ export function ExchangeOpenOrders({
           key={`${order.account}:${order.order_id}`}
         >
           <span className="flex min-w-0 flex-col">
-            <span className="truncate font-medium text-foreground">{order.account_name}</span>
+            <span className="truncate font-medium text-foreground">{ownerName(order)}</span>
             <span className="font-mono text-muted-foreground">
               Buy {order.qty_open} {outcomeLabel(outcomes, order.side === 'bid')} at{' '}
               {formatExchangeTicks(order.side === 'bid' ? order.price : 1000 - order.price)} ·{' '}
@@ -92,7 +98,7 @@ export function ExchangeOpenOrders({
             className="min-h-touch"
             disabled={account.status !== 'live'}
             onClick={() => void store.cancel(order)}
-            aria-label={`Cancel ${order.account_name} order ${order.order_id}`}
+            aria-label={`Cancel ${ownerName(order)} order ${order.order_id}`}
           >
             Cancel
           </Button>

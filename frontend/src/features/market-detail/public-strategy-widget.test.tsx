@@ -132,7 +132,13 @@ describe('public strategy widget', () => {
     expect(button).toBeEnabled()
     await user.click(button)
     expect(requests).toEqual([
-      { templateId: strategy.templateId, inverse: true, allocationCents: 2_550 },
+      {
+        templateId: strategy.templateId,
+        inverse: true,
+        allocationCents: 2_550,
+        // The deployment is named by the card and the side chosen.
+        title: `Inverse: ${strategy.title}`,
+      },
     ])
   })
 

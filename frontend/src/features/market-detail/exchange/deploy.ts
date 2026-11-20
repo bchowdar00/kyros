@@ -11,6 +11,17 @@ export interface StrategyDeployRequest {
   templateId: string
   inverse: boolean
   allocationCents: Cents
+  /** What the visitor ran, as the card words it; the exchange's own name is the fallback. */
+  title?: string
+}
+
+/** The notice after a deployment: the card it was run from, and what it is doing now. */
+export function deployedNotice(
+  title: string | undefined,
+  exchangeName: string,
+  leg: string | undefined
+): string {
+  return `Deployed ${title ?? exchangeName}${leg === undefined ? '' : `, now ${leg}`}.`
 }
 
 /** What the Run / Inverse widget needs to deploy a template into a funded sub-account. */

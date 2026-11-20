@@ -1,6 +1,7 @@
 import type { RustAccountRow } from '@kyros/domain'
 import { type Cents, cents, createMoneyFormatter } from '@kyros/money'
 
+import { cardNameOf, type StrategyCardName } from '../strategy-card-names'
 import type { MarketOutcome, MyStrategy, StrategyPosition } from '../types'
 
 const money = createMoneyFormatter('en-US')
@@ -76,14 +77,16 @@ export function rankedRows(rows: readonly MyStrategy[], rank: readonly string[])
 export function accountRows(
   accounts: readonly RustAccountRow[],
   series: string,
-  outcomes: readonly [MarketOutcome, MarketOutcome]
+  outcomes: readonly [MarketOutcome, MarketOutcome],
+  /** The series' public cards: a strategy run from one is shown under the card's title. */
+  cards: readonly StrategyCardName[] = []
 ): MyStrategy[] {
   return accounts.map(account => {
     const row = seriesRowOf(account, series)
     const position = row === undefined ? undefined : positionOf(row, outcomes)
     return {
       id: account.id,
-      name: account.name,
+      name: account.kind === 'strategy' ? cardNameOf(account.name, cards) : account.name,
       ...(position === undefined ? {} : { position }),
       status: account.status === 'paused' ? 'paused' : 'active',
       totalPnlCents: toCents(row?.market_pnl_tenths ?? 0),

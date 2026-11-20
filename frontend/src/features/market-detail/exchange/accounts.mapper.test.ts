@@ -58,6 +58,12 @@ const strategy: RustAccountRow = {
 }
 
 describe('accountRows', () => {
+  it('shows a strategy under the title of the card it was run from, and leaves the main account alone', () => {
+    const cards = [{ title: 'Flash Move', primaryName: 'Momentum', inverseName: 'jet' }]
+    const rows = accountRows([main, strategy], 'btc-5m', outcomes, cards)
+    expect(rows.map(row => row.name)).toEqual(['jet', 'Flash Move'])
+  })
+
   it('keeps the exchange order, main first, and shows this series for the main account', () => {
     const rows = accountRows([main, strategy], 'btc-5m', outcomes)
     expect(rows.map(row => row.name)).toEqual(['jet', 'Momentum'])

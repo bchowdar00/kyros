@@ -8,9 +8,12 @@ import {
   signalsUnavailable,
   type StrategyDeploy,
 } from './exchange/deploy'
+import { cardSideTitle } from './strategy-card-names'
 
 interface PublicStrategyDeployProps {
   templateId: string
+  /** The card's title; the deployment is named by it and the side chosen. */
+  title: string
   inverse: boolean
   /** The dollars-and-cents draft from the settings above. */
   allocation: string
@@ -22,6 +25,7 @@ interface PublicStrategyDeployProps {
 /** The widget's footer: why Deploy is disabled, what the last deploy did, Remix and Deploy. */
 export function PublicStrategyDeploy({
   templateId,
+  title,
   inverse,
   allocation,
   waitingOn,
@@ -52,7 +56,12 @@ export function PublicStrategyDeploy({
           disabled={reason !== undefined || allocated === undefined}
           onClick={() => {
             if (deploy !== undefined && allocated !== undefined)
-              void deploy.submit({ templateId, inverse, allocationCents: allocated })
+              void deploy.submit({
+                templateId,
+                inverse,
+                allocationCents: allocated,
+                title: cardSideTitle(title, inverse),
+              })
           }}
           className="min-h-touch flex-1 text-body disabled:opacity-100"
         >

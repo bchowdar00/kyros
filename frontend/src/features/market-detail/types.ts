@@ -4,6 +4,8 @@ import type { ChartPoint, TimeRange } from '@kyros/ui/charts/lib/types'
 import type { ChartWindow } from '@kyros/ui/charts/chart-window'
 import type { RecentMarketResult } from '@kyros/ui/charts/recent-market-results'
 
+import type { StrategyCardName } from './strategy-card-names'
+
 export type MarketSide = 'away' | 'home'
 
 export type StrategyStatus = 'active' | 'paused'
@@ -254,6 +256,8 @@ export interface MarketDetail {
   category: string
   header: MarketHeaderData
   myStrategies?: MyStrategiesData
+  /** The series' public cards by name, so a running strategy is shown under its card's title. */
+  strategyCardNames?: readonly StrategyCardName[]
   orderBook?: OrderBookData
   /** Strike markets show price against the strike as the hero chart instead of probability. */
   priceChart?: MarketPriceChartData

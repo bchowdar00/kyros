@@ -115,7 +115,12 @@ function ConnectedMarketScreen({ address, market, config }: ScreenProps & { addr
   const position = account.positions.find(
     item => feed.marketId !== null && item.market_id === exchangeMarketKey(feed.marketId)
   )
-  const rows = accountRows(account.accounts, config.series, market.header.outcomes)
+  const rows = accountRows(
+    account.accounts,
+    config.series,
+    market.header.outcomes,
+    market.strategyCardNames
+  )
   const rank = useStrategyRank(rows)
   const liveMarket = {
     ...market,
@@ -148,9 +153,20 @@ function ConnectedMarketScreen({ address, market, config }: ScreenProps & { addr
     // The pause/stop controls act as the signed-in account that owns the strategies.
     accountAddress: address,
     exchangeOrders: (
-      <ExchangeOpenOrders account={account} outcomes={market.header.outcomes} store={store} />
+      <ExchangeOpenOrders
+        account={account}
+        cards={market.strategyCardNames}
+        outcomes={market.header.outcomes}
+        store={store}
+      />
     ),
-    exchangeHistory: <ExchangeTradeHistory account={account} outcomes={market.header.outcomes} />,
+    exchangeHistory: (
+      <ExchangeTradeHistory
+        account={account}
+        cards={market.strategyCardNames}
+        outcomes={market.header.outcomes}
+      />
+    ),
   }
 
   return (

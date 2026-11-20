@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { initialAccount } from './account'
 import {
+  deployedNotice,
   allocationCents,
   allocationTenths,
   allocationUnavailable,
@@ -51,5 +52,14 @@ describe('strategy deploy', () => {
       'Allocation exceeds your available balance.'
     )
     expect(allocationUnavailable('1000', undefined)).toBeUndefined()
+  })
+
+  it('names a deployment by the card it was run from, falling back to the exchange’s name', () => {
+    expect(deployedNotice('Inside the Spread', 'Quote With the Lean', 'hunting')).toBe(
+      'Deployed Inside the Spread, now hunting.'
+    )
+    expect(deployedNotice(undefined, 'Quote With the Lean', undefined)).toBe(
+      'Deployed Quote With the Lean.'
+    )
   })
 })

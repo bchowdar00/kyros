@@ -11,6 +11,7 @@ import { useState } from 'react'
 
 import type { StrategyDeploy } from './exchange/deploy'
 import { PublicStrategyDeploy } from './public-strategy-deploy'
+import { cardSideTitle } from './strategy-card-names'
 import { PublicStrategySettings } from './public-strategy-settings'
 import { StrategyLogicTabs } from './strategy-logic-tabs'
 import type { PublicStrategy } from './types'
@@ -89,7 +90,7 @@ export function PublicStrategyWidget({
             />
             <div className="min-w-0">
               <h2 className="text-heading-md font-regular">
-                {inverse ? `Inverse: ${strategy.title}` : strategy.title}
+                {cardSideTitle(strategy.title, inverse)}
               </h2>
               <p className="mt-copy text-label font-medium text-muted-foreground">
                 By {strategy.creator.handle}
@@ -146,6 +147,7 @@ export function PublicStrategyWidget({
         </div>
         <PublicStrategyDeploy
           templateId={strategy.templateId}
+          title={strategy.title}
           inverse={inverse}
           allocation={allocation}
           waitingOn={strategy.waitingOn}

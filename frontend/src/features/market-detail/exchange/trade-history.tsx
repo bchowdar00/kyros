@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { RustUserTradeRow } from '@kyros/domain'
 import { cents, createMoneyFormatter, formatExchangeTicks } from '@kyros/money'
 
+import { cardNameOf, type StrategyCardName } from '../strategy-card-names'
 import type { MarketOutcome } from '../types'
 import type { AccountState } from './account'
 import { ACTIVITY_PAGE_SIZE, ActivityPager, outcomeLabel } from './open-orders'
@@ -40,9 +41,12 @@ function pnlOf(trade: RustUserTradeRow): string {
  */
 export function ExchangeTradeHistory({
   account,
+  cards = [],
   outcomes,
 }: {
   account: AccountState
+  /** The series' public cards: a strategy run from one is named by the card's title. */
+  cards?: readonly StrategyCardName[] | undefined
   outcomes: readonly [MarketOutcome, MarketOutcome]
 }) {
   const [page, setPage] = useState(0)
@@ -77,7 +81,11 @@ export function ExchangeTradeHistory({
           <tbody>
             {trades.slice(start, start + ACTIVITY_PAGE_SIZE).map(trade => (
               <tr key={`${trade.strategy_id ?? 'main'}:${trade.order_id}`}>
-                <td className="truncate py-sm">{trade.strategy_name ?? 'Main'}</td>
+                <td className="truncate py-sm">
+                  {trade.strategy_name === undefined
+                    ? 'Main'
+                    : cardNameOf(trade.strategy_name, cards)}
+                </td>
                 <td>{outcomeLabel(outcomes, trade.side === 'yes')}</td>
                 <td className="font-mono">
                   {trade.filled_qty}/{trade.qty_requested}

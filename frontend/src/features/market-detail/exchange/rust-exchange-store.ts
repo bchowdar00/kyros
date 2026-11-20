@@ -10,7 +10,12 @@ import {
 import type { GeminiBookState } from '../types'
 import { type AccountState, initialAccount } from './account'
 import { type ExchangeBuyQuote, tradingUnavailable } from './buy'
-import { allocationTenths, deployUnavailable, type StrategyDeployRequest } from './deploy'
+import {
+  allocationTenths,
+  deployedNotice,
+  deployUnavailable,
+  type StrategyDeployRequest,
+} from './deploy'
 import { type FeedState, initialFeed } from './feed'
 import { cancelFailureNotice, deployFailureNotice, orderFailureNotice } from './order-error.mapper'
 import { applyRustAccounts, applyRustPosition } from './rust-account'
@@ -226,7 +231,7 @@ export function createRustExchangeStore(config: RustExchangeConfig) {
       const leg = deployed.data.runtime?.current_leg
       update({
         deploying: false,
-        deployNotice: `Deployed ${deployed.data.strategy.name}${leg === undefined ? '' : `, now ${leg}`}.`,
+        deployNotice: deployedNotice(request.title, deployed.data.strategy.name, leg),
       })
       return true
     },

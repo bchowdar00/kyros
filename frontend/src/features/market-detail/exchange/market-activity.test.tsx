@@ -77,6 +77,23 @@ describe('ExchangeOpenOrders', () => {
     await expectNoA11yViolations(container)
   })
 
+  it('names a strategy by the card it was run from, and leaves the main account alone', () => {
+    render(
+      <ExchangeOpenOrders
+        account={live}
+        cards={[{ title: 'Flash Move', primaryName: 'Momentum', inverseName: 'jet' }]}
+        outcomes={outcomes}
+        store={{ cancel: vi.fn() }}
+      />
+    )
+
+    const region = screen.getByRole('region', { name: 'Open orders' })
+    expect(region).toHaveTextContent('Flash Move')
+    expect(region).not.toHaveTextContent('Momentum')
+    expect(region).toHaveTextContent('jet')
+    expect(screen.getByRole('button', { name: 'Cancel Flash Move order 2' })).toBeVisible()
+  })
+
   it('explains an empty list by connection state', () => {
     render(
       <ExchangeOpenOrders
@@ -106,5 +123,20 @@ describe('ExchangeTradeHistory', () => {
     expect(rows[1]).toHaveTextContent('40.0¢')
     expect(rows[1]).toHaveTextContent('3/3')
     await expectNoA11yViolations(container)
+  })
+
+  it('names a strategy by the card it was run from', () => {
+    render(
+      <ExchangeTradeHistory
+        account={live}
+        cards={[{ title: 'Flash Move', primaryName: 'Slow Fade', inverseName: 'Momentum' }]}
+        outcomes={outcomes}
+      />
+    )
+
+    const table = screen.getByRole('table', { name: 'Orders placed by you and your strategies' })
+    const [first, second] = within(table).getAllByRole('row').slice(1)
+    expect(first).toHaveTextContent('Inverse: Flash Move')
+    expect(second).toHaveTextContent('Main')
   })
 })
