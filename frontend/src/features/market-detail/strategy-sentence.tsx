@@ -86,7 +86,8 @@ export function StrategySentence({ busy = false, headingRef, onBuild }: Strategy
           Build this strategy
         </button>
         <span className="max-w-content-copy text-label text-muted-foreground">
-          Claude writes it. The compiler checks it before any money moves.
+          An LLM writes it. A compiler checks it before any money moves. It runs in its own account,
+          holding only the budget you give it.
         </span>
       </div>
     </div>

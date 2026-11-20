@@ -56,4 +56,15 @@ describe('StrategySentence', () => {
 
     expect(screen.getByRole('button', { name: 'Build this strategy' })).toBeDisabled()
   })
+
+  it('says who writes the strategy, what checks it and where its money sits, without naming a model', () => {
+    render(<StrategySentence onBuild={vi.fn()} />)
+
+    expect(
+      screen.getByText(
+        'An LLM writes it. A compiler checks it before any money moves. It runs in its own account, holding only the budget you give it.'
+      )
+    ).toBeVisible()
+    expect(screen.queryByText(/Claude/)).toBeNull()
+  })
 })

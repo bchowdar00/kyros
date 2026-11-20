@@ -2,36 +2,43 @@
   color-scheme: light;
 
   /*
-   * Raw palette, light. Blue, black and white: blue is the one accent, Up is blue, Down is
-   * ink, and there is no second hue. The dark palette below swaps these values only.
+   * Raw palette, light. Violet, ink and white: violet is the one accent, Up is violet, Down
+   * is ink, and there is no second hue. The dark palette below swaps these values only. The
+   * site opens dark (`DEFAULT_THEME`); this palette is what the Light switch shows.
    */
   --background: #ffffff;
-  --foreground: #0d0e13;
-  --muted-foreground: #4a4e60;
-  --surface-subtle: #f7f8fa;
-  --surface: #f2f3f7;
-  --surface-raised: #e8eaf1;
-  --border: #0d0e13;
-  --border-subtle: #dcdfe9;
-  --highlight: #b9bece;
+  --foreground: #0e0b1a;
+  --muted-foreground: #4f4a66;
+  --surface-subtle: #f8f7fc;
+  --surface: #f3f1fa;
+  --surface-raised: #e9e5f5;
+  --border: #0e0b1a;
+  --border-subtle: #dedaee;
+  --highlight: #bcb6d6;
 
   /* Blue as a fill (white text sits on it) and blue as text or a line on the background. */
-  --action: #2b4bff;
+  --action: #5b3df5;
   --on-action: #ffffff;
-  --action-muted: #e7ebff;
-  --positive: #2b4bff;
-  --positive-muted: #e7ebff;
-  --negative: #0d0e13;
-  --negative-muted: #f2f3f7;
-  --warning: #0d0e13;
-  --market-away: #0d0e13;
-  --market-home: #2b4bff;
-  --asset-btc: #2b4bff;
-  --asset-eth: #4a4e60;
-  --focus-ring: #2b4bff;
+  --action-muted: #ece8ff;
+  --positive: #5b3df5;
+  --positive-muted: #ece8ff;
+  --negative: #0e0b1a;
+  --negative-muted: #f3f1fa;
+  --warning: #0e0b1a;
+  --market-away: #0e0b1a;
+  --market-home: #5b3df5;
+  --asset-btc: #5b3df5;
+  --asset-eth: #4f4a66;
+  --focus-ring: #5b3df5;
   --trade-widget-shadow: 0 0 0 transparent;
   --chat-fade: #ffffff;
   --composer-sheen: transparent;
+  /* The light behind the page and on what can be traded; the light palette has none. */
+  --page-glow: none;
+  --glow-edge: 0 0 0 transparent;
+  --glow-action: 0 0 0 transparent;
+  --glow-inner-up: 0 0 0 transparent;
+  --glow-inner-down: 0 0 0 transparent;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -79,55 +86,81 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --background: #090a0f;
-    --foreground: #f4f5f9;
-    --muted-foreground: #a5a9bb;
-    --surface-subtle: #0f1118;
-    --surface: #14161f;
-    --surface-raised: #1c1f2b;
-    --border: #f4f5f9;
-    --border-subtle: #262936;
-    --highlight: #3a3e50;
-    --action: #3d5bff;
-    --action-muted: #161c40;
-    --positive: #8194ff;
-    --positive-muted: #161c40;
-    --negative: #f4f5f9;
-    --negative-muted: #14161f;
-    --warning: #f4f5f9;
-    --market-away: #f4f5f9;
-    --market-home: #8194ff;
-    --asset-btc: #8194ff;
-    --asset-eth: #a5a9bb;
-    --focus-ring: #8194ff;
-    --chat-fade: #090a0f;
+    --background: #07060d;
+    --foreground: #f5f3ff;
+    --muted-foreground: #a9a3c7;
+    --surface-subtle: #0c0a16;
+    --surface: #110e1f;
+    --surface-raised: #1a1530;
+    --border: #f5f3ff;
+    --border-subtle: #241f3d;
+    --highlight: #3b3360;
+    --action: #6d4bff;
+    --action-muted: #1d1447;
+    --positive: #a78bff;
+    --positive-muted: #1d1447;
+    --negative: #f5f3ff;
+    --negative-muted: #110e1f;
+    --warning: #f5f3ff;
+    --market-away: #f5f3ff;
+    --market-home: #a78bff;
+    --asset-btc: #a78bff;
+    --asset-eth: #a9a3c7;
+    --focus-ring: #a78bff;
+    /* A violet horizon above the page and a fainter bloom low on the right. */
+    --page-glow:
+      radial-gradient(
+        85% 70% at 50% -8%,
+        rgb(109 75 255 / 0.5),
+        rgb(76 46 214 / 0.16) 45%,
+        transparent 72%
+      ),
+      radial-gradient(60% 40% at 88% 108%, rgb(167 139 255 / 0.14), transparent 70%);
+    --glow-edge: 0 8px 32px -12px rgb(109 75 255 / 0.55);
+    --glow-action: 0 6px 24px -8px rgb(109 75 255 / 0.7);
+    --glow-inner-up: inset 0 -22px 26px -18px rgb(167 139 255 / 0.5);
+    --glow-inner-down: inset 0 -22px 26px -18px rgb(245 243 255 / 0.16);
+    --chat-fade: #07060d;
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #090a0f;
-  --foreground: #f4f5f9;
-  --muted-foreground: #a5a9bb;
-  --surface-subtle: #0f1118;
-  --surface: #14161f;
-  --surface-raised: #1c1f2b;
-  --border: #f4f5f9;
-  --border-subtle: #262936;
-  --highlight: #3a3e50;
-  --action: #3d5bff;
-  --action-muted: #161c40;
-  --positive: #8194ff;
-  --positive-muted: #161c40;
-  --negative: #f4f5f9;
-  --negative-muted: #14161f;
-  --warning: #f4f5f9;
-  --market-away: #f4f5f9;
-  --market-home: #8194ff;
-  --asset-btc: #8194ff;
-  --asset-eth: #a5a9bb;
-  --focus-ring: #8194ff;
-  --chat-fade: #090a0f;
+  --background: #07060d;
+  --foreground: #f5f3ff;
+  --muted-foreground: #a9a3c7;
+  --surface-subtle: #0c0a16;
+  --surface: #110e1f;
+  --surface-raised: #1a1530;
+  --border: #f5f3ff;
+  --border-subtle: #241f3d;
+  --highlight: #3b3360;
+  --action: #6d4bff;
+  --action-muted: #1d1447;
+  --positive: #a78bff;
+  --positive-muted: #1d1447;
+  --negative: #f5f3ff;
+  --negative-muted: #110e1f;
+  --warning: #f5f3ff;
+  --market-away: #f5f3ff;
+  --market-home: #a78bff;
+  --asset-btc: #a78bff;
+  --asset-eth: #a9a3c7;
+  --focus-ring: #a78bff;
+  /* A violet horizon above the page and a fainter bloom low on the right. */
+  --page-glow:
+    radial-gradient(
+      85% 70% at 50% -8%,
+      rgb(109 75 255 / 0.5),
+      rgb(76 46 214 / 0.16) 45%,
+      transparent 72%
+    ),
+    radial-gradient(60% 40% at 88% 108%, rgb(167 139 255 / 0.14), transparent 70%);
+  --glow-edge: 0 8px 32px -12px rgb(109 75 255 / 0.55);
+  --glow-action: 0 6px 24px -8px rgb(109 75 255 / 0.7);
+  --glow-inner-up: inset 0 -22px 26px -18px rgb(167 139 255 / 0.5);
+  --glow-inner-down: inset 0 -22px 26px -18px rgb(245 243 255 / 0.16);
+  --chat-fade: #07060d;
 }
 
 @theme inline {
@@ -177,6 +210,10 @@
   --background-image-composer-surface: linear-gradient(var(--background), var(--background));
   --shadow-strategy-logic: inset 0 0 0 transparent;
   --shadow-trade-widget: var(--trade-widget-shadow);
+  --shadow-glow-edge: var(--glow-edge);
+  --shadow-glow-action: var(--glow-action);
+  --shadow-glow-inner-up: var(--glow-inner-up);
+  --shadow-glow-inner-down: var(--glow-inner-down);
   --spacing-trade-amount: 4.5rem;
   --text-trade-amount: 1.625rem;
   --text-trade-amount--line-height: 2rem;
@@ -286,6 +323,16 @@
 
   --animate-chart-pulse: chart-pulse 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
   --animate-chart-fade-in: chart-fade-in 360ms ease-out both;
+  /*
+   * Motion. One curve (a fast start that lands softly) and three lengths. `rise` brings a
+   * card up into place, `tick` lights a number that has just changed, `glow-in` raises the
+   * light behind the page once. All three end at the element's resting look, so with motion
+   * reduced (globals.css) nothing is ever left hidden.
+   */
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  --animate-rise: rise 420ms var(--ease-out-soft) both;
+  --animate-tick: tick 900ms var(--ease-out-soft) both;
+  --animate-glow-in: glow-in 1400ms var(--ease-out-soft) both;
   /* A slow, one-second shine sweep, followed by a quiet pause. */
   --animate-payout-shine: payout-shine 4s linear infinite;
 
@@ -308,6 +355,36 @@
     100% {
       opacity: 0;
       transform: scale(3.4);
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.625rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes tick {
+    from {
+      background-color: var(--action);
+      color: var(--on-action);
+      box-shadow: var(--glow-action);
+    }
+  }
+
+  @keyframes glow-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 

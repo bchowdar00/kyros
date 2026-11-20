@@ -6,7 +6,9 @@ import {
   pinnedSignalCards,
   signalDisplayName,
   signalFieldCards,
+  stripSignalCards,
   venueOf,
+  withTraces,
 } from './signal-cards'
 
 function signal(overrides: Partial<RustSignal> & Pick<RustSignal, 'signal_id'>): RustSignal {
@@ -163,6 +165,47 @@ describe('pinnedSignalCards', () => {
   })
 })
 
+describe('stripSignalCards', () => {
+  it('lists the pinned readings first, then every other ready headline reading once', () => {
+    const all = signalFieldCards(catalogue).map(card => card.pin)
+    const pinned = all.at(-1)
+    if (pinned === undefined || all.length < 2) throw new Error('the fixture needs two readings')
+
+    const strip = stripSignalCards(catalogue, [pinned, 'gone.v1:x'])
+
+    expect(strip.map(card => card.id)).toEqual([pinned, ...all.filter(pin => pin !== pinned)])
+    expect(strip[0]).toEqual(pinnedSignalCards(catalogue, [pinned])[0])
+  })
+
+  it('is every ready headline reading in registry order when nothing is pinned', () => {
+    expect(stripSignalCards(catalogue, []).map(card => card.id)).toEqual(
+      signalFieldCards(catalogue).map(card => card.pin)
+    )
+  })
+})
+
+describe('stripSignalCards before a game has a play', () => {
+  it('leaves out a reading with nothing in it, and keeps a pinned one', () => {
+    const pbp = signal({
+      signal_id: 'nba.live.pbp.v1',
+      name: 'Live play',
+      scope: { kind: 'underlying', underlying: 'nba' },
+      fields: [
+        { name: 'play', label: 'Play', type: 'string', headline: true, value: 'Other' },
+        { name: 'team', label: 'Team', type: 'string', headline: true, value: '' },
+      ],
+    })
+    const pregame: RustSignalCatalogue = { series: 'nba-h2h', underlying: 'nba', signals: [pbp] }
+
+    expect(stripSignalCards(pregame, []).map(card => card.id)).toEqual(['nba.live.pbp.v1:play'])
+    // What a visitor pinned stays where they put it, even while it is empty.
+    expect(stripSignalCards(pregame, ['nba.live.pbp.v1:team']).map(card => card.id)).toEqual([
+      'nba.live.pbp.v1:team',
+      'nba.live.pbp.v1:play',
+    ])
+  })
+})
+
 describe('signalDisplayName', () => {
   const named: RustSignalCatalogue = {
     series: 'btc-5m',
@@ -206,5 +249,20 @@ describe('groupCardsByVenue', () => {
       'btc.coinbase.rsi.v1:rsi_14',
       'btc.coinbase.rsi.v1:bar_count',
     ])
+  })
+})
+
+describe('withTraces', () => {
+  it('gives each strip card the recent samples of its own reading, and leaves the rest bare', () => {
+    const [volume, price] = stripSignalCards(catalogue, [])
+    if (volume === undefined || price === undefined) throw new Error('fixture has two cards')
+    const samples = [
+      { time: 1, value: 1 },
+      { time: 2, value: 2 },
+    ]
+
+    const traced = withTraces([volume, price], { [volume.id]: samples })
+
+    expect(traced).toEqual([{ ...volume, trace: samples }, price])
   })
 })

@@ -1,13 +1,14 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { exchangeMarketKey } from '@kyros/domain'
 import { formatExchangeDollars } from '@kyros/money'
 
 import { useIdentityStore } from '@/features/identity/identity-store'
 
 import { useGeminiSeries } from '../gemini/use-gemini-series.query'
+import { TradeMarksProvider } from '../chart-extras'
 import { MarketDetailScreen } from '../market-detail-screen'
 import type { MarketDetail, MyStrategy } from '../types'
 import { STRATEGY_RANK_INTERVAL_MS, accountRows, rankedRows, strategyRank } from './accounts.mapper'
@@ -21,6 +22,7 @@ import {
 import { deployUnavailable, type StrategyDeploy } from './deploy'
 import { ExchangeOpenOrders } from './open-orders'
 import { ExchangeTradeHistory } from './trade-history'
+import { toTradeMarks } from './trade-marks'
 import { createRustExchangeStore } from './rust-exchange-store'
 
 export interface RustExchangeConfigProps {
@@ -122,6 +124,11 @@ function ConnectedMarketScreen({ address, market, config }: ScreenProps & { addr
     market.strategyCardNames
   )
   const rank = useStrategyRank(rows)
+  // Every order of this account and its strategies on this series, for the chart.
+  const tradeMarks = useMemo(
+    () => toTradeMarks(account.trades, market.header.outcomes, market.strategyCardNames ?? []),
+    [account.trades, market.header.outcomes, market.strategyCardNames]
+  )
   const liveMarket = {
     ...market,
     header: { ...market.header, outcomes: exchangeOutcomes(market.header.outcomes, feed) },
@@ -170,36 +177,39 @@ function ConnectedMarketScreen({ address, market, config }: ScreenProps & { addr
   }
 
   return (
-    <MarketDetailScreen
-      {...screen}
-      market={liveMarket}
-      exchangeStatus={
-        <section
-          className="flex flex-col gap-xs border-t-2 border-foreground pt-md text-label text-muted-foreground"
-          aria-label="Exchange connection"
-        >
-          <strong className="text-foreground">{exchangeNotice}</strong>
-          <output>
-            Book: {feed.status} · Account: {account.status} · Round {feed.marketId ?? '—'}:{' '}
-            {feed.state ?? 'waiting'}
-          </output>
-          <div className="flex flex-wrap gap-lg">
-            <span>
-              Balance: {account.available === null ? '—' : formatExchangeDollars(account.available)}
-            </span>
-            <span>
-              Locked: {account.locked === null ? '—' : formatExchangeDollars(account.locked)}
-            </span>
-            <span>
-              Position:{' '}
-              {account.status !== 'live' || feed.marketId === null
-                ? '—'
-                : `${position?.yes ?? '0'} ${market.header.outcomes[0].label} / ${position?.no ?? '0'} ${market.header.outcomes[1].label}`}
-            </span>
-          </div>
-          {trading.reason && <p>{trading.reason}</p>}
-        </section>
-      }
-    />
+    <TradeMarksProvider value={tradeMarks}>
+      <MarketDetailScreen
+        {...screen}
+        market={liveMarket}
+        exchangeStatus={
+          <section
+            className="flex flex-col gap-xs border-t-2 border-foreground pt-md text-label text-muted-foreground"
+            aria-label="Exchange connection"
+          >
+            <strong className="text-foreground">{exchangeNotice}</strong>
+            <output>
+              Book: {feed.status} · Account: {account.status} · Round {feed.marketId ?? '—'}:{' '}
+              {feed.state ?? 'waiting'}
+            </output>
+            <div className="flex flex-wrap gap-lg">
+              <span>
+                Balance:{' '}
+                {account.available === null ? '—' : formatExchangeDollars(account.available)}
+              </span>
+              <span>
+                Locked: {account.locked === null ? '—' : formatExchangeDollars(account.locked)}
+              </span>
+              <span>
+                Position:{' '}
+                {account.status !== 'live' || feed.marketId === null
+                  ? '—'
+                  : `${position?.yes ?? '0'} ${market.header.outcomes[0].label} / ${position?.no ?? '0'} ${market.header.outcomes[1].label}`}
+              </span>
+            </div>
+            {trading.reason && <p>{trading.reason}</p>}
+          </section>
+        }
+      />
+    </TradeMarksProvider>
   )
 }

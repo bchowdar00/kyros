@@ -11,8 +11,10 @@ import type { ChartFeed, ChartPoint } from './lib/types'
 import { type ChartKind, type LineSeries, MarketChart } from './market-chart'
 import { PriceChartTypeToggle, type PriceChartToggleKind } from './price-chart-type-toggle'
 import { RecentMarketResults, type RecentMarketResult } from './recent-market-results'
+import { type TradeMark, TradeMarks, valueOnLine } from './trade-marks'
 import { useLiveChartWindow } from './use-live-chart-window'
 import { ValueFlag } from './value-flag'
+import { type VenueLine, VenueLines } from './venue-lines'
 import { type ChartWindow, resolveDefaultChartWindow } from './chart-window'
 
 const DEFAULT_SPAN = 5 * 60 * SECOND
@@ -27,6 +29,9 @@ const FLAG_FORMAT = {
   minimumFractionDigits: 2,
   style: 'currency',
 } as const
+
+/** On the market's own line an order sits at the price paid for the side it bought. */
+const pricePaid = (mark: TradeMark) => mark.percent
 
 export interface PriceMarketCardProps {
   /** Symbol and line colour of the asset being charted. */
@@ -61,6 +66,10 @@ export interface PriceMarketCardProps {
   timeZone: string
   /** Rendered above the chart; omit where the page already has the market's name. */
   title?: string | undefined
+  /** Orders placed on this market, drawn where they were placed. */
+  tradeMarks?: readonly TradeMark[] | undefined
+  /** Other venues' prices for YES, in percent; drawn on the market's line only. */
+  venueLines?: readonly VenueLine[] | undefined
   /** Candidate data ranges; the card uses its primary range without exposing a chooser. */
   windows: readonly ChartWindow[]
 }
@@ -81,6 +90,8 @@ export function PriceMarketCard({
   targetPrice,
   timeZone,
   title,
+  tradeMarks = [],
+  venueLines = [],
   windows,
 }: PriceMarketCardProps) {
   const [kind, setKind] = useState<ChartKind>(fixedKind ?? 'price')
@@ -174,6 +185,12 @@ export function PriceMarketCard({
           valueFormat={kind === 'probability' ? undefined : valueFormat}
         >
           {round ? <TimeMarker label="Open" time={round.opensAt} /> : null}
+          {kind === 'probability' ? <VenueLines lines={venueLines} /> : null}
+          {/* On the price line an order sits where the price was when it was placed. */}
+          <TradeMarks
+            marks={tradeMarks}
+            valueOf={kind === 'probability' ? pricePaid : mark => valueOnLine(points, mark.time)}
+          />
         </MarketChart>
       </div>
 

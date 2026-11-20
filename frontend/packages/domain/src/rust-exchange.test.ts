@@ -335,6 +335,27 @@ describe('rust exchange wire', () => {
         ],
       }).success
     ).toBe(true)
+    // A newer exchange also says when the order was placed; an older one does not.
+    const placed = RustUserTradesSchema.parse({
+      trades: [
+        {
+          series: 'btc-5m',
+          order_id: 9,
+          ts: 10,
+          at_ms: 1_795_171_800_000,
+          side: 'yes',
+          qty_requested: 5,
+          filled_qty: 5,
+          source: 'strategy',
+          order_type: 'limit',
+          status: 'filled',
+          market_id: 3,
+          realized_pnl_tenths: 0,
+          settled: false,
+        },
+      ],
+    })
+    expect(placed.trades[0]?.at_ms).toBe(1_795_171_800_000)
   })
 
   it('parses the accounts frame with its open orders and merged trade log', () => {

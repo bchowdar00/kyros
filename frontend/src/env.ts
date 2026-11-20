@@ -73,8 +73,10 @@ export const env = createEnv({
      * stats. Unset in development means the static fixtures render instead.
      */
     EXCHANGE_API_URL: z.optional(z.url()),
+    /** Gemini's public REST origin, read for the Markets page's list of every market. */
+    GEMINI_API_URL: z._default(z.url(), 'https://api.gemini.com'),
     /**
-     * The `StrategyRecord` contract on Arc Testnet whose transactions the Records page is
+     * The `StrategyRecord` contract on Arc Testnet whose transactions the leaderboard is
      * built from. Defaults to the deployed one (README).
      */
     RECORD_CONTRACT_ADDRESS: z._default(

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { APP_NAV_FIXTURE } from '@/components/app-nav/app-nav.fixture'
 import { LiveAppNav } from '@/components/app-nav/live-app-nav'
 import { MobileComingSoon } from '@/components/mobile-coming-soon/mobile-coming-soon'
-import { THEME_COOKIE, parseTheme } from '@/components/theme-toggle/theme'
+import { THEME_COOKIE, themeFor } from '@/components/theme-toggle/theme'
 import { env } from '@/env'
 import { IdentityGate } from '@/features/identity/identity-gate'
 import { loadSiteMode } from '@/server/mode.server'
@@ -24,10 +24,10 @@ interface AppShellProps {
  */
 export async function AppShell({ children }: AppShellProps) {
   const mode = await loadSiteMode()
-  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value)
+  const theme = themeFor((await cookies()).get(THEME_COOKIE)?.value)
 
   return (
-    <div className="bg-background text-foreground">
+    <div className="text-foreground">
       <div className="lg:hidden">
         <MobileComingSoon />
       </div>

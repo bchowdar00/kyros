@@ -3,7 +3,7 @@ import { cookies, headers } from 'next/headers'
 import Script from 'next/script'
 import { connection } from 'next/server'
 
-import { THEME_COOKIE, parseTheme } from '@/components/theme-toggle/theme'
+import { THEME_COOKIE, themeFor } from '@/components/theme-toggle/theme'
 import { env } from '@/env'
 
 import { bodyFont, displayFont } from './fonts'
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
   // Mirrors --background, light and dark, in packages/ui/src/styles/tokens.css.
   themeColor: [
     { color: '#ffffff', media: '(prefers-color-scheme: light)' },
-    { color: '#090a0f', media: '(prefers-color-scheme: dark)' },
+    { color: '#07060d', media: '(prefers-color-scheme: dark)' },
   ],
   // Lets fixed bars and sheets extend under the notch and use env(safe-area-inset-*).
   viewportFit: 'cover',
@@ -33,15 +33,12 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
   // Every route renders per request so the CSP nonce minted in proxy.ts reaches the markup.
   await connection()
   const nonce = (await headers()).get('x-nonce')
-  // The visitor's palette choice, applied before any script runs so nothing flashes.
-  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value)
+  // The visitor's palette choice, else the dark default, applied before any script runs so
+  // nothing flashes.
+  const theme = themeFor((await cookies()).get(THEME_COOKIE)?.value)
 
   return (
-    <html
-      className={`${bodyFont.variable} ${displayFont.variable}`}
-      {...(theme === undefined ? {} : { 'data-theme': theme })}
-      lang="en"
-    >
+    <html className={`${bodyFont.variable} ${displayFont.variable}`} data-theme={theme} lang="en">
       <body>
         {children}
         {env.NODE_ENV === 'development' && nonce !== null && nonce.length > 0 ? (

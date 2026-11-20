@@ -49,6 +49,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "server-only": "catalog:",
+    "three": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"
   },
@@ -66,6 +67,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@types/three": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "jsdom": "catalog:",
     "knip": "catalog:",

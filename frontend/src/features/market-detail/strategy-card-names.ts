@@ -33,11 +33,20 @@ export function cardSideTitle(title: string, inverse: boolean): string {
   return inverse ? `Inverse: ${title}` : title
 }
 
+/** The public card a running strategy was run from, and which side of it; none for one a visitor wrote. */
+export function cardOf(
+  strategyName: string,
+  cards: readonly StrategyCardName[]
+): { inverse: boolean; title: string } | undefined {
+  for (const card of cards) {
+    if (card.primaryName === strategyName) return { inverse: false, title: card.title }
+    if (card.inverseName === strategyName) return { inverse: true, title: card.title }
+  }
+  return undefined
+}
+
 /** The name a running strategy is shown under: its card's, or its own when it has no card. */
 export function cardNameOf(strategyName: string, cards: readonly StrategyCardName[]): string {
-  for (const card of cards) {
-    if (card.primaryName === strategyName) return cardSideTitle(card.title, false)
-    if (card.inverseName === strategyName) return cardSideTitle(card.title, true)
-  }
-  return strategyName
+  const card = cardOf(strategyName, cards)
+  return card === undefined ? strategyName : cardSideTitle(card.title, card.inverse)
 }

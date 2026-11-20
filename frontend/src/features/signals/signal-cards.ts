@@ -1,4 +1,5 @@
 import type { RustSignal, RustSignalCatalogue } from '@kyros/domain'
+import type { ChartPoint } from '@kyros/ui/charts/lib/types'
 
 import { type PinKey, pinKey } from './signal-catalogue'
 import { formatSignalValue, isNumericField } from './signal-value-format'
@@ -142,6 +143,48 @@ export function pinnedSignalCards(
     }
   }
   return cards
+}
+
+/**
+ * The strip above the chart: the pinned readings first, in pin order, then every other ready
+ * headline reading in registry order, each once. Pinning chooses what leads; only a reading
+ * with nothing in it is left out, and Browse All still lists it.
+ */
+export function stripSignalCards(
+  catalogue: RustSignalCatalogue,
+  pins: readonly PinKey[]
+): MarketSignal[] {
+  const cards = pinnedSignalCards(catalogue, pins)
+  const shown = new Set(cards.map(card => card.id))
+  for (const signal of catalogue.signals) {
+    if (signal.quality.state !== 'ready') continue
+    for (const field of signal.fields) {
+      const pin = pinKey(signal.signal_id, field.name)
+      if (field.value === undefined || !field.headline || shown.has(pin)) continue
+      const value = formatSignalValue(signal, field)
+      // A reading with nothing in it (no play yet, no team) would be a blank card.
+      if (value.trim() === '') continue
+      shown.add(pin)
+      cards.push({
+        id: pin,
+        context: pinnedCardContext(signal),
+        label: pinnedCardLabel(signal, field.label),
+        value,
+      })
+    }
+  }
+  return cards
+}
+
+/** Each strip card with the recent samples of its own reading, where there are any. */
+export function withTraces(
+  cards: readonly MarketSignal[],
+  history: Readonly<Record<string, readonly ChartPoint[]>>
+): MarketSignal[] {
+  return cards.map(card => {
+    const trace = history[card.id]
+    return trace === undefined ? card : { ...card, trace }
+  })
 }
 
 export interface SignalFieldCardsOptions {

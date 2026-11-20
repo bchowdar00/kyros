@@ -28,4 +28,14 @@ describe('MarketDetailLayout', () => {
 
     expect(screen.queryByRole('region', { name: /placeholder$/i })).not.toBeInTheDocument()
   })
+
+  it('puts the signals strip above the chart, where it is seen before any scrolling', () => {
+    render(<MarketDetailScreen market={MARKET_DETAIL_FIXTURES['btc-above-118k-0903']} />)
+
+    const signals = document.querySelector('#signals')
+    const chart = document.querySelector('[data-slot="market-chart-block"]')
+    if (signals === null || chart === null) throw new Error('expected the signals and the chart')
+
+    expect(signals.compareDocumentPosition(chart) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+  })
 })

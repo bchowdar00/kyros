@@ -14,6 +14,31 @@
     caret-color: var(--action);
   }
 
+  /*
+   * The light behind the page: a violet horizon fixed to the window, so content scrolls
+   * over it. It sits under everything and takes no clicks. The light palette has none.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--page-glow);
+    animation: var(--animate-glow-in);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   /* The parts the browser draws carry the palette too. */
   ::selection {
     background: var(--action);

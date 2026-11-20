@@ -6,9 +6,13 @@ import { ProbabilityMarketCard } from '@kyros/ui/charts/probability-market-card'
 import { env } from '@/env'
 import { useBookStream } from '@/features/exchange-streams/use-book-stream'
 
+import { useTradeMarks, useVenueLines } from './chart-extras'
 import type { MarketProbabilityChartData, MarketSide } from './types'
 
 export type MarketProbabilityCardProps = MarketProbabilityChartData
+
+/** A game runs for hours; the other venues' lines are held on the page this long. */
+const VENUE_HISTORY_MS = 3 * 60 * 60_000
 
 const seriesColors: Record<MarketSide, string> = {
   away: 'var(--market-away)',
@@ -33,6 +37,8 @@ export function MarketProbabilityCard({
   const book = useBookStream(env.NEXT_PUBLIC_API_URL, seriesSlug)
   const streaming = seriesSlug !== undefined && env.NEXT_PUBLIC_API_URL !== undefined
   const primaryPoints = streaming ? book.midPoints : primary.points
+  const tradeMarks = useTradeMarks()
+  const venueLines = useVenueLines(env.NEXT_PUBLIC_API_URL, seriesSlug, VENUE_HISTORY_MS)
 
   return (
     <ProbabilityMarketCard
@@ -49,6 +55,8 @@ export function MarketProbabilityCard({
       range={range}
       live={live}
       timeZone={browserTimeZone}
+      tradeMarks={tradeMarks}
+      venueLines={venueLines}
     />
   )
 }

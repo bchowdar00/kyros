@@ -1,7 +1,7 @@
 'use client'
 
 import { NanoChevronIcon } from '@kyros/ui/icons/nano-chevron-icon'
-import { useId, useState } from 'react'
+import { useId, useState, useSyncExternalStore } from 'react'
 
 import { PublicStrategyCard, type PublicStrategyAction } from './public-strategy-card'
 import type { PublicStrategy, PublicStrategySortId, PublicStrategySortOption } from './types'
@@ -16,6 +16,16 @@ export interface PublicStrategiesListProps {
   sortLabel?: string
   sortOptions?: readonly PublicStrategySortOption[]
   strategies: readonly PublicStrategy[]
+}
+
+/** The address bar does not change under this list, so there is nothing to subscribe to. */
+function subscribeToNothing(): () => void {
+  return () => undefined
+}
+
+/** The title of the card a visitor chose to copy on the leaderboard (`?copy=`), if any. */
+function copiedTitle(): string | null {
+  return new URLSearchParams(window.location.search).get('copy')
 }
 
 function sortStrategies(
@@ -44,7 +54,17 @@ export function PublicStrategiesList({
 }: PublicStrategiesListProps) {
   const headingId = useId()
   const [sortId, setSortId] = useState<PublicStrategySortId>(defaultSortId)
-  const sortedStrategies = sortStrategies(strategies, sortId)
+  // Read after hydration: the server renders the list in its usual order.
+  const copied = useSyncExternalStore(subscribeToNothing, copiedTitle, () => null)
+  const sorted = sortStrategies(strategies, sortId)
+  // A card copied from the leaderboard leads, whatever the sort.
+  const sortedStrategies =
+    copied === null
+      ? sorted
+      : sorted.toSorted(
+          (first, second) => Number(second.title === copied) - Number(first.title === copied)
+        )
+  const copiedHere = copied !== null && strategies.some(strategy => strategy.title === copied)
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-lg">
@@ -82,6 +102,11 @@ export function PublicStrategiesList({
           {availability === 'unavailable'
             ? 'No public strategies to display.'
             : 'No public strategies yet.'}
+        </output>
+      ) : null}
+      {copiedHere ? (
+        <output className="w-fit rounded-sm border border-positive px-md py-sm text-label font-medium text-foreground shadow-glow-edge">
+          Copied from the leaderboard. Run it with your own budget.
         </output>
       ) : null}
       <div className="flex flex-col border-t border-border-subtle pt-xl">

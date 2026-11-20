@@ -49,7 +49,7 @@ export function MarketHeaderMotion({
     <>
       <motion.header
         aria-label="Market header"
-        className="sticky top-app-nav z-20 bg-background"
+        className="sticky top-app-nav z-20 bg-background/70 backdrop-blur-md"
         style={{ paddingBlock }}
       >
         <div className="relative flex min-h-touch items-start justify-between gap-sm">

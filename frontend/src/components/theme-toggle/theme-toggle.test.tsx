@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { expectNoA11yViolations } from '@kyros/testing/a11y'
 
-import { THEME_COOKIE, parseTheme } from './theme'
+import { THEME_COOKIE, parseTheme, themeFor } from './theme'
 import { ThemeToggle } from './theme-toggle'
 
 function systemPrefersDark(dark: boolean) {
@@ -61,5 +61,11 @@ describe('parseTheme', () => {
     expect(parseTheme('light')).toBe('light')
     expect(parseTheme('sepia')).toBeUndefined()
     expect(parseTheme(undefined)).toBeUndefined()
+  })
+
+  it('opens the site dark until the visitor chooses, and keeps a choice once made', () => {
+    expect(themeFor(undefined)).toBe('dark')
+    expect(themeFor('nonsense')).toBe('dark')
+    expect(themeFor('light')).toBe('light')
   })
 })

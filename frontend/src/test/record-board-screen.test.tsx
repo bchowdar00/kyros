@@ -14,6 +14,7 @@ const TX_B = `0x${'bb'.repeat(32)}`
 const board: RecordBoardView = {
   asOf: '2026-11-20T08:30:00.000Z',
   contract: '0xc910cfe6b537feee16b60a9964c55fc66580586a',
+  recent: [],
   rows: [
     {
       budgetCents: 4000,
@@ -51,7 +52,7 @@ describe('RecordBoardScreen', () => {
   it('lists the strategies in the order given, with what each sealed', async () => {
     const { container } = render(<RecordBoardScreen explorerUrl={EXPLORER} view={board} />)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Records' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Leaderboard' })).toBeInTheDocument()
     expect(screen.getByText('2 strategies · 13 rounds sealed · 7 won')).toBeInTheDocument()
 
     const [, first, second] = screen.getAllByRole('row')
@@ -60,7 +61,7 @@ describe('RecordBoardScreen', () => {
     expect(within(first).getByRole('rowheader')).toHaveTextContent('Quote With the Lean')
     expect(within(first).getByRole('rowheader')).toHaveTextContent('BTC 5m · $40.00 budget')
     expect(within(first).getByText('12')).toBeInTheDocument()
-    expect(within(first).getByText('7')).toBeInTheDocument()
+    expect(within(first).getByText('7 of 12')).toBeInTheDocument()
     expect(within(first).getByText('+$12.50')).toBeInTheDocument()
     expect(within(first).getByText('Nov 20, 08:25 UTC')).toBeInTheDocument()
 
@@ -156,5 +157,39 @@ describe('RecordBoardScreen', () => {
 
     expect(screen.getByRole('rowheader')).toHaveTextContent('Quote With the Lean')
     expect(screen.getByText('Time not given')).toBeInTheDocument()
+  })
+
+  it('is the leaderboard: best sealed result first, with how often each strategy won', () => {
+    render(<RecordBoardScreen explorerUrl={EXPLORER} view={board} />)
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Leaderboard' })).toBeVisible()
+    const rows = screen.getAllByRole('row').slice(1)
+    // Seven of twelve rounds won.
+    expect(within(rows[0] as HTMLElement).getByText('58%')).toBeVisible()
+    expect(within(rows[1] as HTMLElement).getByText('0%')).toBeVisible()
+  })
+
+  it('offers to copy a strategy that runs from a public card, and no other', () => {
+    if (board.status !== 'ok') throw new Error('fixture is a board')
+    const [first, second] = board.rows
+    if (first === undefined || second === undefined) throw new Error('fixture has two rows')
+    const view: RecordBoardView = {
+      ...board,
+      rows: [
+        {
+          ...first,
+          copy: { inverse: false, title: 'Inside the Spread' },
+          name: 'Inside the Spread',
+        },
+        second,
+      ],
+    }
+    render(<RecordBoardScreen explorerUrl={EXPLORER} view={view} />)
+
+    const copy = screen.getByRole('link', { name: 'Copy: Inside the Spread' })
+    const target = new URL(copy.getAttribute('href') ?? '', 'https://kyros.test')
+    expect(target.pathname).toBe('/market/btc-5m')
+    expect(target.searchParams.get('copy')).toBe('Inside the Spread')
+    expect(screen.getAllByRole('link', { name: /^Copy/ })).toHaveLength(1)
   })
 })

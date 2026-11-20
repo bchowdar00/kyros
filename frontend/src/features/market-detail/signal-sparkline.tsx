@@ -8,6 +8,8 @@ export interface SignalSparklineProps {
   points: readonly ChartPoint[]
   /** Height and width; the row's small slot by default. */
   className?: string
+  /** The colour token the trace is drawn in; the quiet text colour by default. */
+  colorVar?: `--color-${string}`
 }
 
 /** Fewer samples than this, or a flat line, says nothing worth drawing. */
@@ -29,6 +31,7 @@ const DOT_RADIUS = 1.5
 export function SignalSparkline({
   points,
   className = 'block h-2xl w-full',
+  colorVar = '--color-muted-foreground',
 }: SignalSparklineProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -51,7 +54,7 @@ export function SignalSparkline({
     const last = points.at(-1)
     if (last === undefined) return
 
-    const color = getComputedStyle(canvas).getPropertyValue('--color-muted-foreground').trim()
+    const color = getComputedStyle(canvas).getPropertyValue(colorVar).trim()
     const inset = INSET * pixelRatio
     const plotWidth = width - inset * 2
     const plotHeight = height - inset * 2
@@ -87,7 +90,7 @@ export function SignalSparkline({
     context.beginPath()
     context.arc(x(last), y(last), DOT_RADIUS * pixelRatio, 0, Math.PI * 2)
     context.fill()
-  }, [points])
+  }, [points, colorVar])
 
   return <canvas aria-hidden="true" className={className} ref={canvasRef} />
 }

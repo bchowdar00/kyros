@@ -168,6 +168,56 @@ describe('buildRecordBoard', () => {
     expect(board.totals).toEqual({ rounds: 3, strategies: 1, wonRounds: 1 })
   })
 
+  it('lists the newest sealed rounds of any strategy, newest first, each round once', () => {
+    const board = buildRecordBoard([
+      sealed(A, 7, 120, '2026-11-20T08:10:00.000000Z'),
+      sealed(B, 3, -40, '2026-11-20T08:30:00.000000Z'),
+      opened(A, 4000),
+      sealed(A, 9, 0, '2026-11-20T08:20:00.000000Z'),
+      // The explorer may list a log twice.
+      sealed(B, 3, -40, '2026-11-20T08:30:00.000000Z'),
+    ])
+
+    expect(board.recent).toEqual([
+      {
+        at: '2026-11-20T08:30:00.000000Z',
+        deploymentId: B,
+        pnlCents: -40,
+        roundId: 3,
+        transactionHash: `0x${'3'.padStart(64, '0')}`,
+        won: false,
+      },
+      {
+        at: '2026-11-20T08:20:00.000000Z',
+        deploymentId: A,
+        pnlCents: 0,
+        roundId: 9,
+        transactionHash: `0x${'9'.padStart(64, '0')}`,
+        won: false,
+      },
+      {
+        at: '2026-11-20T08:10:00.000000Z',
+        deploymentId: A,
+        pnlCents: 120,
+        roundId: 7,
+        transactionHash: `0x${'7'.padStart(64, '0')}`,
+        won: true,
+      },
+    ])
+  })
+
+  it('keeps only the twelve newest sealed rounds in that list', () => {
+    const events = Array.from({ length: 15 }, (_, index) =>
+      sealed(A, index + 1, 10, `2026-11-20T08:${String(index + 10)}:00.000000Z`)
+    )
+
+    const { recent } = buildRecordBoard(events)
+
+    expect(recent).toHaveLength(12)
+    expect(recent[0]?.roundId).toBe(15)
+    expect(recent.at(-1)?.roundId).toBe(4)
+  })
+
   it('ranks by result, then by rounds sealed, then by id', () => {
     const board = buildRecordBoard([
       sealed(C, 1, 10),

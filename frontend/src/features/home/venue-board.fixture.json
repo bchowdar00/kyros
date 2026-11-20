@@ -1,0 +1,105 @@
+{
+  "cursor": "",
+  "events": [
+    {
+      "event_ticker": "KXNFLGAME-26NOV22ARIKC",
+      "title": "Arizona vs Kansas City",
+      "sub_title": "ARI vs KC (Nov 22)",
+      "markets": [
+        {
+          "ticker": "KXNFLGAME-26NOV22ARIKC-KC",
+          "status": "active",
+          "market_type": "binary",
+          "yes_sub_title": "Kansas City",
+          "yes_bid_dollars": "0.9100",
+          "yes_ask_dollars": "0.9200",
+          "volume_24h_fp": "13344.55"
+        },
+        {
+          "ticker": "KXNFLGAME-26NOV22ARIKC-ARI",
+          "status": "active",
+          "market_type": "binary",
+          "yes_sub_title": "Arizona",
+          "yes_bid_dollars": "0.0800",
+          "yes_ask_dollars": "0.0900",
+          "volume_24h_fp": "42137.29"
+        }
+      ]
+    },
+    {
+      "event_ticker": "KXNFLGAME-26NOV22BALCAR",
+      "title": "Baltimore vs Carolina",
+      "sub_title": "BAL vs CAR (Nov 22)",
+      "markets": [
+        {
+          "ticker": "KXNFLGAME-26NOV22BALCAR-CAR",
+          "status": "active",
+          "market_type": "binary",
+          "yes_sub_title": "Carolina",
+          "yes_bid_dollars": "0.5800",
+          "yes_ask_dollars": "0.5900",
+          "volume_24h_fp": "19398.13"
+        },
+        {
+          "ticker": "KXNFLGAME-26NOV22BALCAR-BAL",
+          "status": "active",
+          "market_type": "binary",
+          "yes_sub_title": "Baltimore",
+          "yes_bid_dollars": "0.4100",
+          "yes_ask_dollars": "0.4200",
+          "volume_24h_fp": "11627.45"
+        }
+      ]
+    },
+    {
+      "event_ticker": "KXEPLGAME-26NOV21MCIFUL",
+      "title": "Manchester City vs Fulham",
+      "sub_title": "MCI vs FUL (Nov 21)",
+      "markets": [
+        {
+          "ticker": "KXEPLGAME-26NOV21MCIFUL-MCI",
+          "status": "active",
+          "market_type": "binary",
+          "yes_sub_title": "Manchester City",
+          "yes_bid_dollars": "0.7000",
+          "yes_ask_dollars": "0.7100",
+          "volume_24h_fp": "59546.21"
+        },
+        {
+          "ticker": "KXEPLGAME-26NOV21MCIFUL-FUL",
+          "status": "closed",
+          "market_type": "binary",
+          "yes_sub_title": "Fulham",
+          "yes_bid_dollars": "0.1200",
+          "yes_ask_dollars": "0.1300",
+          "volume_24h_fp": "5448.82"
+        },
+        {
+          "ticker": "KXEPLGAME-26NOV21MCIFUL-TIE",
+          "status": "active",
+          "market_type": "binary",
+          "yes_sub_title": "Tie",
+          "yes_bid_dollars": "0.1700",
+          "yes_ask_dollars": "0.1800",
+          "volume_24h_fp": "1548.06"
+        }
+      ]
+    },
+    {
+      "event_ticker": "KXNFLGAME-26NOV22MIABUF",
+      "title": "Miami vs Buffalo",
+      "sub_title": "MIA vs BUF (Nov 22)",
+      "markets": [
+        {
+          "ticker": "KXNFLGAME-26NOV22MIABUF-BUF",
+          "status": "active",
+          "market_type": "binary",
+          "yes_sub_title": "Buffalo",
+          "yes_bid_dollars": "0.9100",
+          "yes_ask_dollars": "0.9200",
+          "volume_24h_fp": "30352.12"
+        }
+      ]
+    }
+  ]
+}

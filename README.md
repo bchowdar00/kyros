@@ -10,12 +10,13 @@ Say what you would do in a market, in one sentence. Kyros turns it into a strate
 
 1. Open it. There is no sign-up and no wallet. You get a paper account with $1,000 of pretend money.
 2. Open **BTC Up or Down 5m**. It is Gemini's own five-minute Bitcoin contract: the same strike, the same close, and Gemini's order book, live. The contract's symbol links to it on Gemini.
-3. Or open the **NBA game**. When Gemini lists a game, Kyros follows its moneyline: the home team's contract is the book, the score and the last play come from the public scoreboard, and Polymarket's price for the same game is one of the live signals a strategy can read (open **Signals** to see it).
-4. Build a strategy by clicking the words of a sentence ("Buy Up when BTC is 10 basis points above the strike with two minutes left"), or write your own. Claude writes the strategy; a compiler checks it before any money moves.
-5. Give it a budget and deploy it. It runs in its own account. You can also run a ready-made strategy, or its inverse: seven for Bitcoin, six for the game.
+3. Or open the **NBA game**. When Gemini lists a game, Kyros follows its moneyline: the home team's contract is the book, the score and the last play come from the public scoreboard, and what Polymarket and Kalshi each pay for the same game are live signals a strategy can read (open **Signals** to see them). The two venues' prices are also drawn on the game's chart as thin dotted lines beside Gemini's.
+4. Build a strategy by clicking the words of a sentence ("Buy Up when BTC is 10 basis points above the strike with two minutes left"), or write your own. An LLM writes the strategy; a compiler checks it before any money moves.
+5. Give it a budget and deploy it. It runs in its own account. You can also run a ready-made strategy, or its inverse: seven for Bitcoin, seven for the game. Each order your strategies or you fill is marked on the market's chart where it was placed: a triangle pointing up for the first outcome, down for the second.
 6. When a round your strategy traded in closes, the result is sealed on Arc. The row shows "Record sealed", a link to the transaction, and the journal the hash was taken from.
 7. Pause, resume or stop a strategy from its row in **My Accounts**. Stopping cancels its orders and closes its position at the market when that is possible; otherwise the position settles with the round. Its money then returns to your paper balance.
-8. Open **Records**: every strategy that has sealed a round, ranked by its sealed result, each line linking to its transaction on Arc.
+8. Open **Leaderboard**: every strategy that has sealed a round, ranked by its sealed result with how often it won, each line linking to its transaction on Arc. A strategy that runs from a public card has a **Copy** button that opens its market with that card first. The home page shows the top three and the newest sealed rounds from the same read.
+9. Scroll the home page. **Game replays** plays finished NBA games back play by play, score and price moving, so there is always a game to watch; each has its own page. **Everything on Gemini** lists every market Gemini's public API has, by category: up or down rounds, games, and questions on politics, weather, the economy and more. **More games, priced on Kalshi** adds games in leagues Gemini does not list. Only the cards marked Trade on Kyros can be traded here; the rest are shown.
 
 ## What is real and what is pretend
 
@@ -24,7 +25,9 @@ Say what you would do in a market, in one sentence. Kyros turns it into a strate
 | Markets, strikes, closing times, results | Gemini's. A round here is one Gemini contract and covers exactly its window. |
 | The order book | Gemini's, mirrored live. If a side is empty on Gemini, the page says so. |
 | The game's score and plays | ESPN's public scoreboard. If the feed drops, the page says "Score feed disconnected". |
-| The other venue's price | Polymarket's, for the same game, read from its public API. A signal only: Kyros sends nothing to Polymarket. |
+| The other venues' prices | Polymarket's and Kalshi's, for the same game, each read from its public API every three seconds. Signals only: Kyros sends nothing to either. |
+| Game replays | Finished NBA games from the last few days: every play's score and clock from ESPN's public record, the home team's price each minute from Kalshi's public API, played back on a loop with the breaks shortened. Labelled Replay everywhere; nothing in one can be traded. Rebuild the files with `frontend/scripts/build_replays.py`. |
+| Markets shown but not traded | The rest of Gemini's list, at the price last read, and games in leagues Gemini does not list, at Kalshi's price. The page drops a league from the second group as soon as Gemini's own list carries it. |
 | The money | Pretend. Paper mode is the only mode on the public site. The badge in the masthead says which mode a server is in. |
 | Fills | Simulated. A pretend order fills against Gemini's mirrored book, at the price and size resting there; a resting one also fills when Gemini trades through its price, or against another visitor's pretend order on the same book. No liquidity is invented. |
 | Other traders, crowd counts, leaderboards | None. The site shows no invented number. |
@@ -35,7 +38,7 @@ The public site places no order on Gemini. A server you run yourself, with your 
 ## How it works
 
 ```
- your sentence ──► Claude writes a strategy ──► compiler checks it ──► deployment
+ your sentence ──► an LLM writes a strategy ──► compiler checks it ──► deployment
                                                 (a small, closed language;      │
                                                  a failed check moves no money) │
                                                                                 ▼
@@ -53,9 +56,9 @@ The public site places no order on Gemini. A server you run yourself, with your 
 - **The game.** The third series, `nba-h2h`, is one NBA game at a time from Gemini's moneyline list. The round opens when the game is chosen, so it trades before tipoff, and it settles on Gemini's own result for the contract; if Gemini has published none ten minutes after the scoreboard's final, it settles on the final score. Yes is "home wins". When Gemini lists no game, the page says it is waiting.
 - **The book mirror.** One account per market copies Gemini's live book into the engine. The same displayed contracts are never taken twice. Pretend orders from different visitors share that book, so they can also fill each other.
 - **Strategies.** A strategy is a document in a small language: triggers over signals, orders with limits, and what to do when an order fills or is refused. The compiler checks it against a registry of the signals and instruments that exist. Nothing else can run.
-- **The writer.** Claude turns a sentence into that document. Daily caps, counted on the server, limit how many strategies one visitor, one account and the whole site can have written.
+- **The writer.** An LLM turns a sentence into that document. Daily caps, counted on the server, limit how many strategies one visitor, one account and the whole site can have written.
 - **The runtime.** A deployment wakes only when one of its triggers fires. Its orders go through one four-call interface (place, cancel, cancel and replace, read the account), and each is checked against the deployment's budget before it is sent.
-- **Signals.** For Bitcoin: Gemini's settlement index, spot from Coinbase and Kraken, Polymarket's Bitcoin markets, the round's distance from its strike, and book and flow figures. For the game: each play, the score margin, a win probability worked out from the score, the clock and the pregame line, and Polymarket's price for the same game. A strategy can trade the gap between the two venues, or between the model and the crowd.
+- **Signals.** For Bitcoin: Gemini's settlement index, spot from Coinbase and Kraken, Polymarket's Bitcoin markets, the round's distance from its strike, and book and flow figures. For the game: each play, the score margin, a win probability worked out from the score, the clock and the pregame line, and Polymarket's and Kalshi's prices for the same game. A strategy can trade the gap between Gemini and either venue, or between the model and the crowd.
 
 ## How Kyros uses Arc
 
@@ -66,9 +69,11 @@ A shared strategy is only worth copying if its history is honest. Screenshots ar
 
 Anyone can fetch a deployment's record (`/api/records/{id}`) and each round's journal (`/api/records/{id}/{round}/journal`) from the server, hash the journal, and compare it with the chain. A sealed round cannot be sealed again, and a deployment cannot be reopened with a different program.
 
-The site's **Records** page is built from the chain, not from the server. It reads the contract's `Opened` and `Sealed` events through the Arc explorer, adds them up per strategy and ranks them; the server only supplies a strategy's name and market while it still holds that strategy. Restart the server and the rounds, results and ranking are unchanged. Code: `frontend/src/features/records/`.
+The site's **Leaderboard** page is built from the chain, not from the server. It reads the contract's `Opened` and `Sealed` events through the Arc explorer, adds them up per strategy and ranks them; the server only supplies a strategy's name and market while it still holds that strategy. Restart the server and the rounds, results and ranking are unchanged. Code: `frontend/src/features/records/`.
 
 The contract has no owner, no upgrade path and no payable function. It stores no market price of any kind: no strike, no spot, no fill price. Fees are paid in USDC, Arc's gas token, by a recorder service that runs beside the server; a visitor never sees a wallet or a fee.
+
+A second contract, `StrategyWallets` (`chain/contracts/StrategyWallets.sol`, 16 tests), is written and tested but not deployed, and the site does not use it yet. It gives each visitor one wallet and each strategy a sub-wallet under it: starting a strategy moves its budget into the sub-wallet, each settled round is applied to it, and stopping the strategy closes it and returns what is left. Like the record, it counts pretend-money cents and holds no token.
 
 Source: `chain/contracts/StrategyRecord.sol`. Tests: `chain/test/` and `chain/recorder/test/`.
 
@@ -96,7 +101,7 @@ cd server
 SIGNALS_ENABLED=0 cargo run
 ```
 
-That is the light way to run it: markets, the live book, paper trading, and the two ready-made Bitcoin strategies that read only the book and the strike. The other five read outside price feeds, which are off here, so their cards stay hidden. The game's six strategies need no feed switch: when Gemini lists a game, the score and Polymarket's price are read directly. To turn the feeds on, run the server like this instead, and give it room: with these settings the feed recorders wrote 0.41 GiB a minute and peaked at 2.7 GiB on disk in a 16-minute run.
+That is the light way to run it: markets, the live book, paper trading, and the two ready-made Bitcoin strategies that read only the book and the strike. The other five read outside price feeds, which are off here, so their cards stay hidden. The game's seven strategies need no feed switch: when Gemini lists a game, the score and Polymarket's and Kalshi's prices are read directly. To turn the feeds on, run the server like this instead, and give it room: with these settings the feed recorders wrote 0.41 GiB a minute and peaked at 2.7 GiB on disk in a 16-minute run.
 
 ```bash
 SIGNALS_ENABLED_VENUES=coinbase,kraken,polymarket SIGNALS_ROTATE_SECONDS=180 SIGNALS_KEEP_GENERATIONS=2 cargo run
@@ -117,10 +122,10 @@ Open http://localhost:3000. Two things need more:
 ## Tests
 
 ```bash
-cd server && cargo test --workspace     # 2,351 tests pass
-cd frontend && pnpm exec vitest run     # the app: 746 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
-cd frontend && pnpm --filter "./packages/**" test   # the libraries: 24, 32, 76 and 30 pass
-cd chain && npm install && npm test     # 10 contract tests, 33 recorder tests
+cd server && cargo test --workspace     # 2,367 tests pass
+cd frontend && pnpm exec vitest run     # the app: 956 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
+cd frontend && pnpm --filter "./packages/**" test   # the libraries: 24, 32, 88 and 30 pass
+cd chain && npm install && npm test     # 26 contract tests, 33 recorder tests
 ```
 
 One long run on 2026-11-18, Bitcoin only: 162 minutes, 42 deployments of the 13 ready-made strategies, 998 paper fills, and the result of every one of 44 rounds matched Gemini's. In that run the deployments shared one pretend book, so some of those fills were against each other. The game market has had no run of that kind.

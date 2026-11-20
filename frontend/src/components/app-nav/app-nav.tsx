@@ -40,7 +40,7 @@ export function AppNav({
   theme,
 }: AppNavProps) {
   return (
-    <header className="sticky top-0 z-50 h-app-nav shrink-0 border-b-2 border-foreground bg-background">
+    <header className="sticky top-0 z-50 h-app-nav shrink-0 border-b border-border-subtle bg-background/70 backdrop-blur-md">
       <nav aria-label="Primary" className="flex h-full items-center gap-2xl px-4xl">
         <Link
           aria-label="Kyros, home"

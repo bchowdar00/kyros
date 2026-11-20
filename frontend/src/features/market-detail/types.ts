@@ -94,6 +94,8 @@ export interface MarketSignal {
   context?: string
   label: string
   side?: MarketSide
+  /** The reading's recent samples in time order, when it is a number that is being followed. */
+  trace?: readonly ChartPoint[] | undefined
   value: string
 }
 

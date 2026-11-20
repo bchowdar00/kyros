@@ -54,6 +54,92 @@ describe('PriceMarketCard', () => {
     expect(label('no')).toBe('55%')
   })
 
+  it('marks an order on the price line where the price was, and on the market line at the price paid', async () => {
+    giveChartsASize()
+    const user = userEvent.setup()
+    const start = Date.now() - 40_000
+    render(
+      <PriceMarketCard
+        asset={{ color: 'var(--asset-btc)', symbol: 'BTC' }}
+        feed={{ state: 'live' }}
+        points={[
+          { time: start, value: 118_000 },
+          { time: start + 40_000, value: 118_120 },
+        ]}
+        priceBand={300}
+        probabilityPoints={[
+          { time: start, value: 50 },
+          { time: start + 40_000, value: 45 },
+        ]}
+        targetLabel="Price to beat"
+        targetPrice={118_000}
+        timeZone="UTC"
+        tradeMarks={[
+          {
+            id: '7',
+            label: 'Bought 10 Up at 52¢',
+            percent: 52,
+            side: 'first',
+            time: start + 20_000,
+          },
+        ]}
+        windows={[{ candleInterval: 5_000, durationMs: 60_000 }]}
+      />
+    )
+
+    const onPrice = screen.getByRole('img', { name: 'Bought 10 Up at 52¢' })
+    expect(onPrice).toHaveAttribute('data-trade-mark', 'first')
+
+    await act(async () => {
+      await user.click(screen.getByRole('radio', { name: 'Market probability chart' }))
+    })
+    expect(screen.getByRole('img', { name: 'Bought 10 Up at 52¢' })).toBeInTheDocument()
+  })
+
+  it("draws another venue's price on the market line only, never on the asset's price", async () => {
+    giveChartsASize()
+    const user = userEvent.setup()
+    const start = Date.now() - 40_000
+    const { container } = render(
+      <PriceMarketCard
+        asset={{ color: 'var(--asset-btc)', symbol: 'BTC' }}
+        feed={{ state: 'live' }}
+        points={[
+          { time: start, value: 118_000 },
+          { time: start + 40_000, value: 118_120 },
+        ]}
+        priceBand={300}
+        probabilityPoints={[
+          { time: start, value: 50 },
+          { time: start + 40_000, value: 45 },
+        ]}
+        targetLabel="Price to beat"
+        targetPrice={118_000}
+        timeZone="UTC"
+        venueLines={[
+          {
+            id: 'polymarket',
+            label: 'Polymarket',
+            points: [
+              { time: start, value: 51 },
+              { time: start + 40_000, value: 47 },
+            ],
+          },
+        ]}
+        windows={[{ candleInterval: 5_000, durationMs: 60_000 }]}
+      />
+    )
+
+    expect(container.querySelector('[data-venue-line]')).toBeNull()
+
+    await act(async () => {
+      await user.click(screen.getByRole('radio', { name: 'Market probability chart' }))
+    })
+    expect(container.querySelector('[data-venue-line="polymarket"] text')?.textContent).toBe(
+      'Polymarket 47%'
+    )
+  })
+
   it('renders the chart from an application-owned live feed without market summary UI', async () => {
     // A live window runs on the wall clock, so the samples hang off it.
     const start = Date.now() - 60_000

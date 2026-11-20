@@ -165,8 +165,28 @@ describe('the record board loader', () => {
 
     if (board.status !== 'ok') throw new Error('expected a board')
     expect(board.rows[0]).toMatchObject({ name: 'Inside the Spread', series: 'btc-5m' })
+    // A strategy run from a public card can be copied: the card and which side of it.
+    expect(board.rows[0]?.copy).toEqual({ inverse: false, title: 'Inside the Spread' })
+    expect(board.rows[1]?.copy).toBeUndefined()
     // One read of the cards for the one market on the board.
     expect(asked).toEqual(['btc-5m'])
+  })
+
+  it('lists the newest sealed rounds under the name and market of the strategy that sealed them', async () => {
+    mockTwoPagesOfLogs()
+    mockExchange()
+
+    const board = await loader()()
+
+    if (board.status !== 'ok') throw new Error('expected a board')
+    expect(board.recent.map(seal => [seal.roundId, seal.name, seal.series, seal.pnlCents])).toEqual(
+      [
+        [9, 'Quote With the Lean', 'btc-5m', -50],
+        // The exchange no longer holds this one, so it has an id and no name.
+        [8, undefined, undefined, 10],
+        [7, 'Quote With the Lean', 'btc-5m', 120],
+      ]
+    )
   })
 
   it('does not borrow the name of a newer deployment in the same account', async () => {

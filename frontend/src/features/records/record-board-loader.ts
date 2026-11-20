@@ -2,18 +2,30 @@ import { RustRecordViewSchema } from '@kyros/domain'
 import * as z from 'zod/mini'
 
 import {
-  cardNameOf,
+  cardOf,
+  cardSideTitle,
   type StrategyCardName,
   toStrategyCardNames,
 } from '@/features/market-detail/strategy-card-names'
 import { decodeRecordLog, ExplorerLogSchema, type RecordEvent } from './arc-logs'
-import { buildRecordBoard, type RecordBoard, type RecordBoardRow } from './board'
+import { buildRecordBoard, type RecentSeal, type RecordBoard, type RecordBoardRow } from './board'
 
 /** A board row with what the exchange adds while it still holds the deployment. */
 export type NamedRecordBoardRow = RecordBoardRow & {
+  /**
+   * The public card this strategy runs from and which side of it, so anyone can run the same
+   * one; absent for a strategy a visitor wrote, which only its writer holds.
+   */
+  copy?: { inverse: boolean; title: string } | undefined
   /** The strategy's name; unknown once the exchange no longer holds the deployment. */
   name: string | undefined
   /** The market series it trades (`btc-5m`); unknown for the same reason. */
+  series: string | undefined
+}
+
+/** A sealed round with the name and market of the strategy that sealed it, when known. */
+export type NamedRecentSeal = RecentSeal & {
+  name: string | undefined
   series: string | undefined
 }
 
@@ -23,6 +35,8 @@ export type RecordBoardView =
       /** When the logs were read, ISO 8601. */
       asOf: string
       contract: string
+      /** The newest sealed rounds of any strategy, newest first. */
+      recent: NamedRecentSeal[]
       rows: NamedRecordBoardRow[]
       totals: RecordBoard['totals']
       /** True when the contract has more logs than were read, so older rounds are missing. */
@@ -179,11 +193,13 @@ async function withCardTitles(
     )
   )
 
-  return rows.map(row =>
-    row.name === undefined || row.series === undefined
+  return rows.map(row => {
+    if (row.name === undefined || row.series === undefined) return row
+    const card = cardOf(row.name, cards.get(row.series) ?? [])
+    return card === undefined
       ? row
-      : { ...row, name: cardNameOf(row.name, cards.get(row.series) ?? []) }
-  )
+      : { ...row, copy: card, name: cardSideTitle(card.title, card.inverse) }
+  })
 }
 
 /**
@@ -220,10 +236,16 @@ export function createRecordBoardLoader(
         })
       )
       const rows = await withCardTitles(exchangeUrl, described, deadline)
+      const byId = new Map(rows.map(row => [row.deploymentId, row]))
+      const recent = board.recent.map((seal): NamedRecentSeal => {
+        const row = byId.get(seal.deploymentId)
+        return { ...seal, name: row?.name, series: row?.series }
+      })
 
       return {
         asOf: new Date(readAt).toISOString(),
         contract: options.contract,
+        recent,
         rows,
         status: 'ok',
         totals: board.totals,

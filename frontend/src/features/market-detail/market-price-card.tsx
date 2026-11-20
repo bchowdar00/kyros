@@ -7,6 +7,7 @@ import { PriceMarketCard } from '@kyros/ui/charts/price-market-card'
 
 import { env } from '@/env'
 
+import { useTradeMarks, useVenueLines } from './chart-extras'
 import { mergePriceHistory } from './price-history.mapper'
 
 import type { MarketPriceChartData } from './types'
@@ -40,6 +41,8 @@ export function MarketPriceCard({
   const chartPoints = mergePriceHistory(points, stream.points)
   const strike = stream.round?.strike ?? targetPrice
   const closesAt = stream.round?.closesAt ?? range.end
+  const tradeMarks = useTradeMarks()
+  const venueLines = useVenueLines(env.NEXT_PUBLIC_API_URL, priceSymbol)
 
   return (
     <div className="flex flex-col gap-lg">
@@ -62,6 +65,8 @@ export function MarketPriceCard({
         targetLabel={targetLabel}
         targetPrice={strike}
         timeZone={browserTimeZone}
+        tradeMarks={tradeMarks}
+        venueLines={venueLines}
         windows={windows}
       />
     </div>

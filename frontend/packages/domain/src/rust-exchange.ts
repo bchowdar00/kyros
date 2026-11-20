@@ -250,7 +250,10 @@ const RustUserOrderStatusSchema = z.enum([
 export const RustUserTradeRowSchema = z.object({
   series: RustSeriesSlugSchema,
   order_id: z.int(),
+  /** The engine's sequence number for the order: it orders rows, it is not a time. */
   ts: unixMs,
+  /** When the order was placed, unix ms; absent from a server older than the field. */
+  at_ms: z.optional(unixMs),
   /** `yes` bought YES; `no` sold YES or bought NO. */
   side: z.enum(['yes', 'no']),
   qty_requested: z.int(),

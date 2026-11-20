@@ -7,9 +7,14 @@ import { TimeMarker } from './chart-overlays'
 import { formatValue } from './lib/format'
 import type { ChartPoint, TimeRange } from './lib/types'
 import { type ChartHover, type LineSeries, MarketChart } from './market-chart'
+import { type TradeMark, TradeMarks } from './trade-marks'
 import { useTweenedNumber } from './use-tweened-number'
+import { type VenueLine, VenueLines } from './venue-lines'
 
 const PERCENT = { style: 'percent' } as const
+
+/** Both lines are prices, so an order sits at the price paid for the side it bought. */
+const pricePaid = (mark: TradeMark) => mark.percent
 
 export interface ProbabilityOutcome {
   color: string
@@ -35,6 +40,10 @@ export interface ProbabilityMarketCardProps {
   timeZone: string
   /** Rendered above the readout; omit where the page already has the market's name. */
   title?: string | undefined
+  /** Orders placed on this market, drawn where they were placed. */
+  tradeMarks?: readonly TradeMark[] | undefined
+  /** Other venues' prices for the first outcome, in percent, as quiet lines. */
+  venueLines?: readonly VenueLine[] | undefined
 }
 
 /**
@@ -51,6 +60,8 @@ export function ProbabilityMarketCard({
   live = false,
   timeZone,
   title,
+  tradeMarks = [],
+  venueLines = [],
 }: ProbabilityMarketCardProps) {
   const [primary, complement] = outcomes
   const [hover, setHover] = useState<ChartHover | null>(null)
@@ -129,6 +140,8 @@ export function ProbabilityMarketCard({
           {markers.map(marker => (
             <TimeMarker key={marker.time} label={marker.label} time={marker.time} />
           ))}
+          <VenueLines lines={venueLines} />
+          <TradeMarks marks={tradeMarks} valueOf={pricePaid} />
         </MarketChart>
       </div>
     </section>

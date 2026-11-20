@@ -5,7 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 
 import { type CalmSignals, getSignalsStream } from '@/features/exchange-streams/signals-stream'
 import { useSignalsStream } from '@/features/exchange-streams/use-signals-stream'
-import { pinnedSignalCards, signalFieldCards } from '@/features/signals/signal-cards'
+import { signalFieldCards, stripSignalCards, withTraces } from '@/features/signals/signal-cards'
 import { applyFrames, type PinKey } from '@/features/signals/signal-catalogue'
 import { SignalDetailDialog } from './signal-detail-dialog'
 import { SignalsBrowser } from './signals-browser'
@@ -43,10 +43,9 @@ function ConnectedSignalsSection({ apiUrl, series, fallback }: LiveSignalsSectio
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [detail, browsing])
-  // The socket is shared with every chat widget on the page; this section asks for the
-  // pinned signals, or everything while Browse All is open.
-  const pinnedIds = [...new Set(pins.map(pin => pin.slice(0, pin.indexOf(':'))))]
-  const { frames } = useSignalsStream(apiUrl, series, browsing ? 'series' : pinnedIds)
+  // The socket is shared with every chat widget on the page. The strip shows every signal of
+  // the series, so this section asks for all of them.
+  const { frames } = useSignalsStream(apiUrl, series, 'series')
   const stream = getSignalsStream(apiUrl, series)
   // The panel reads the once-a-second snapshot so its rows settle; the strip stays live.
   const calm = useSyncExternalStore(stream.subscribeCalm, stream.getCalmSnapshot, () => CALM_EMPTY)
@@ -64,9 +63,10 @@ function ConnectedSignalsSection({ apiUrl, series, fallback }: LiveSignalsSectio
     <>
       <SignalsSection
         browseLabel={fallback.browseLabel}
-        items={pinnedSignalCards(live, pins)}
+        // The once-a-second history, so a card's trace settles the way the panel's rows do.
+        items={withTraces(stripSignalCards(live, pins), calm.history)}
         onBrowse={() => setBrowsing(true)}
-        // A live strip card's id is the pin it was built from (`pinnedSignalCards`).
+        // A live strip card's id is the pin it was built from (`stripSignalCards`).
         onOpen={(id, trigger) => setDetail({ pin: id as PinKey, trigger })}
         title={fallback.title}
         total={signalFieldCards(live).length}

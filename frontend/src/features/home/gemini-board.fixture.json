@@ -1,0 +1,504 @@
+{
+  "crypto": [
+    {
+      "ticker": "BTC05M2611200820",
+      "title": "BTC price today at 3:20am EST",
+      "template": "crypto-up-down",
+      "series": "BTC05M",
+      "startTime": "2026-11-20T08:15:00.000Z",
+      "expiryDate": "2026-11-20T08:20:00.000Z",
+      "subcategory": {
+        "name": "Bitcoin"
+      },
+      "participants": [],
+      "contracts": [
+        {
+          "label": "Up",
+          "abbreviatedName": "Up",
+          "prices": {
+            "buy": {
+              "yes": "0.56",
+              "no": "0.5"
+            }
+          },
+          "strike": {
+            "value": "61806.17"
+          }
+        }
+      ]
+    },
+    {
+      "ticker": "BTC05M2611200825",
+      "title": "BTC price today at 3:25am EST",
+      "template": "crypto-up-down",
+      "series": "BTC05M",
+      "startTime": "2026-11-20T08:20:00.000Z",
+      "expiryDate": "2026-11-20T08:25:00.000Z",
+      "subcategory": {
+        "name": "Bitcoin"
+      },
+      "participants": [],
+      "contracts": [
+        {
+          "label": "Up",
+          "abbreviatedName": "Up",
+          "prices": {
+            "buy": {
+              "yes": "0.99",
+              "no": "0.99"
+            }
+          },
+          "strike": {
+            "value": null
+          }
+        }
+      ]
+    },
+    {
+      "ticker": "BTC05M2611200830",
+      "title": "BTC price today at 3:30am EST",
+      "template": "crypto-up-down",
+      "series": "BTC05M",
+      "startTime": "2026-11-20T08:25:00.000Z",
+      "expiryDate": "2026-11-20T08:30:00.000Z",
+      "subcategory": {
+        "name": "Bitcoin"
+      },
+      "participants": [],
+      "contracts": [
+        {
+          "label": "Up",
+          "abbreviatedName": "Up",
+          "prices": {
+            "buy": {
+              "yes": "0.99",
+              "no": "0.99"
+            }
+          },
+          "strike": {
+            "value": null
+          }
+        }
+      ]
+    },
+    {
+      "ticker": "ETH15M2611200830",
+      "title": "ETH price today at 3:30am EST",
+      "template": "crypto-up-down",
+      "series": "ETH15M",
+      "startTime": "2026-11-20T08:15:00.000Z",
+      "expiryDate": "2026-11-20T08:30:00.000Z",
+      "subcategory": {
+        "name": "Ether"
+      },
+      "participants": [],
+      "contracts": [
+        {
+          "label": "Up",
+          "abbreviatedName": "Up",
+          "prices": {
+            "buy": {
+              "yes": "0.47",
+              "no": "0.6"
+            }
+          },
+          "strike": {
+            "value": "1752.97"
+          }
+        }
+      ]
+    },
+    {
+      "ticker": "BTC2611200900",
+      "title": "BTC price today at 4am EST",
+      "template": "prices-ladder",
+      "series": "BTC1H",
+      "startTime": "2026-11-20T08:00:00.000Z",
+      "expiryDate": "2026-11-20T09:00:00.000Z",
+      "subcategory": {
+        "name": "Bitcoin"
+      },
+      "participants": [],
+      "contracts": [
+        {
+          "label": "$61,500 or above",
+          "abbreviatedName": ">$61,500",
+          "prices": {
+            "buy": {
+              "yes": "0.93",
+              "no": "0.13"
+            }
+          },
+          "strike": {
+            "value": "61500"
+          }
+        },
+        {
+          "label": "$61,600 or above",
+          "abbreviatedName": ">$61,600",
+          "prices": {
+            "buy": {
+              "yes": "0.85",
+              "no": "0.21"
+            }
+          },
+          "strike": {
+            "value": "61600"
+          }
+        },
+        {
+          "label": "$61,700 or above",
+          "abbreviatedName": ">$61,700",
+          "prices": {
+            "buy": {
+              "yes": "0.72",
+              "no": "0.34"
+            }
+          },
+          "strike": {
+            "value": "61700"
+          }
+        },
+        {
+          "label": "$61,800 or above",
+          "abbreviatedName": ">$61,800",
+          "prices": {
+            "buy": {
+              "yes": "0.56",
+              "no": "0.49"
+            },
+            "lastTradePrice": "0.47"
+          },
+          "strike": {
+            "value": "61800"
+          }
+        },
+        {
+          "label": "$61,900 or above",
+          "abbreviatedName": ">$61,900",
+          "prices": {
+            "buy": {
+              "yes": "0.4",
+              "no": "0.66"
+            }
+          },
+          "strike": {
+            "value": "61900"
+          }
+        },
+        {
+          "label": "$62,000 or above",
+          "abbreviatedName": ">$62,000",
+          "prices": {
+            "buy": {
+              "yes": "0.26",
+              "no": "0.8"
+            }
+          },
+          "strike": {
+            "value": "62000"
+          }
+        },
+        {
+          "label": "$62,100 or above",
+          "abbreviatedName": ">$62,100",
+          "prices": {
+            "buy": {
+              "yes": "0.15",
+              "no": "0.91"
+            }
+          },
+          "strike": {
+            "value": "62100"
+          }
+        },
+        {
+          "label": "$62,200 or above",
+          "abbreviatedName": ">$62,200",
+          "prices": {
+            "buy": {
+              "yes": "0.09",
+              "no": "0.98"
+            }
+          },
+          "strike": {
+            "value": "62200"
+          }
+        },
+        {
+          "label": "$62,300 or above",
+          "abbreviatedName": ">$62,300",
+          "prices": {
+            "buy": {
+              "yes": "0.06",
+              "no": "0.99"
+            }
+          },
+          "strike": {
+            "value": "62300"
+          }
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "ticker": "BESTAI26",
+      "title": "Best AI at the end of 2026?",
+      "type": "categorical",
+      "category": "Tech",
+      "status": "active",
+      "expiryDate": "2027-01-01T04:59:00.000Z",
+      "volume24h": "517",
+      "contracts": [
+        {
+          "label": "Gemini",
+          "status": "active",
+          "marketState": "open",
+          "prices": { "buy": { "yes": "0.87", "no": "0.17" } }
+        },
+        {
+          "label": "Claude",
+          "status": "active",
+          "marketState": "open",
+          "prices": { "buy": { "yes": "0.11", "no": "0.92" } }
+        },
+        {
+          "label": "ChatGPT",
+          "status": "active",
+          "marketState": "open",
+          "prices": { "buy": { "yes": "0.05", "no": "0.99" } }
+        },
+        {
+          "label": "Qwen",
+          "status": "active",
+          "marketState": "open",
+          "prices": { "buy": { "yes": "0.03", "no": "0.99" } }
+        },
+        {
+          "label": "LLaMA",
+          "status": "active",
+          "marketState": "open",
+          "prices": { "buy": { "yes": "0.02", "no": "0.98" } }
+        },
+        {
+          "label": "Grok",
+          "status": "active",
+          "marketState": "open",
+          "prices": { "buy": { "yes": "0.01", "no": "0.99" } }
+        },
+        {
+          "label": "Ernie",
+          "status": "active",
+          "marketState": "open",
+          "prices": { "buy": { "yes": "0.01", "no": "0.99" } }
+        }
+      ]
+    },
+    {
+      "ticker": "SAVEACT",
+      "title": "Will the SAVE Act become law?",
+      "type": "binary",
+      "category": "Politics",
+      "status": "active",
+      "expiryDate": "2027-01-04T23:59:00.000Z",
+      "volume24h": "0",
+      "contracts": [
+        {
+          "label": "SAVE Act becomes law?",
+          "status": "active",
+          "marketState": "open",
+          "prices": { "buy": { "yes": "0.02", "no": "0.99" } }
+        }
+      ]
+    }
+  ],
+  "games": [
+    {
+      "ticker": "NBA-2611210030-TOR-DET-M",
+      "title": "Toronto vs Detroit",
+      "template": "sports-game",
+      "startTime": "2026-11-21T00:30:00.000Z",
+      "expiryDate": "2026-11-22T12:30:00.000Z",
+      "subcategory": {
+        "name": "Pro Basketball"
+      },
+      "participants": [
+        {
+          "abbreviation": "DET",
+          "side": "home"
+        },
+        {
+          "abbreviation": "TOR",
+          "side": "away"
+        }
+      ],
+      "contracts": [
+        {
+          "label": "Detroit",
+          "abbreviatedName": "DET",
+          "prices": {
+            "buy": {
+              "yes": "0.73",
+              "no": "0.28"
+            },
+            "lastTradePrice": "0.73"
+          }
+        },
+        {
+          "label": "Toronto",
+          "abbreviatedName": "TOR",
+          "prices": {
+            "buy": {
+              "yes": "0.27",
+              "no": "0.74"
+            },
+            "lastTradePrice": "0.27"
+          }
+        }
+      ]
+    },
+    {
+      "ticker": "LALIGA-2611202000-ESY-ATH-M",
+      "title": "Espanyol vs Athletic",
+      "template": "sports-game",
+      "startTime": "2026-11-20T20:00:00.000Z",
+      "expiryDate": "2026-11-22T08:00:00.000Z",
+      "subcategory": {
+        "name": "La Liga"
+      },
+      "participants": [
+        {
+          "abbreviation": "ATH",
+          "side": "home"
+        },
+        {
+          "abbreviation": "ESY",
+          "side": "away"
+        }
+      ],
+      "contracts": [
+        {
+          "label": "Athletic",
+          "abbreviatedName": "ATH",
+          "prices": {
+            "buy": {
+              "yes": "0.66",
+              "no": "0.35"
+            },
+            "lastTradePrice": "0.67"
+          }
+        },
+        {
+          "label": "Tie",
+          "abbreviatedName": "D",
+          "prices": {
+            "buy": {
+              "yes": "0.21",
+              "no": "0.8"
+            }
+          }
+        },
+        {
+          "label": "Espanyol",
+          "abbreviatedName": "ESY",
+          "prices": {
+            "buy": {
+              "yes": "0.14",
+              "no": "0.87"
+            },
+            "lastTradePrice": "0.15"
+          }
+        }
+      ]
+    },
+    {
+      "ticker": "NCAAM-2611150000-ULL-UNCW-M",
+      "title": "Louisiana vs UNC Wilmington",
+      "template": "sports-game",
+      "startTime": "2026-11-15T00:00:00.000Z",
+      "expiryDate": "2026-11-30T05:00:00.000Z",
+      "subcategory": {
+        "name": "College Basketball"
+      },
+      "participants": [
+        {
+          "abbreviation": "UNCW",
+          "side": "home"
+        },
+        {
+          "abbreviation": "ULL",
+          "side": "away"
+        }
+      ],
+      "contracts": [
+        {
+          "label": "Louisiana",
+          "abbreviatedName": "ULL",
+          "prices": {
+            "buy": {
+              "yes": "0.99",
+              "no": "0.01"
+            },
+            "lastTradePrice": "0.99"
+          }
+        },
+        {
+          "label": "UNC Wilmington",
+          "abbreviatedName": "UNCW",
+          "prices": {
+            "buy": {
+              "yes": "0.69",
+              "no": "0.36"
+            },
+            "lastTradePrice": "0.64"
+          }
+        }
+      ]
+    },
+    {
+      "ticker": "NBA-2611210000-CHA-ATL-M",
+      "title": "Charlotte vs Atlanta",
+      "template": "sports-game",
+      "startTime": "2026-11-21T00:00:00.000Z",
+      "expiryDate": "2026-11-22T12:00:00.000Z",
+      "subcategory": {
+        "name": "Pro Basketball"
+      },
+      "participants": [
+        {
+          "abbreviation": "ATL",
+          "side": "home"
+        },
+        {
+          "abbreviation": "CHA",
+          "side": "away"
+        }
+      ],
+      "contracts": [
+        {
+          "label": "Atlanta",
+          "abbreviatedName": "ATL",
+          "prices": {
+            "buy": {
+              "yes": "0.68",
+              "no": "0.33"
+            },
+            "lastTradePrice": "0.67"
+          }
+        },
+        {
+          "label": "Charlotte",
+          "abbreviatedName": "CHA",
+          "prices": {
+            "buy": {
+              "yes": "0.33",
+              "no": "0.68"
+            },
+            "lastTradePrice": "0.37"
+          }
+        }
+      ]
+    }
+  ]
+}

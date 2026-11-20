@@ -83,7 +83,7 @@ export function MarketCard({
       {...props}
       aria-label={props['aria-label'] ?? title}
       className={cn({
-        'flex w-full max-w-market-card min-w-0 flex-col gap-2xl rounded-md border-2 border-foreground bg-background p-xl': true,
+        'flex w-full max-w-market-card min-w-0 flex-col gap-2xl rounded-md border border-highlight bg-background/70 p-xl shadow-glow-edge transition-[border-color,box-shadow] duration-200 ease-out-soft hover:border-positive': true,
         [className ?? '']: className !== undefined,
       })}
       data-slot="market-card"

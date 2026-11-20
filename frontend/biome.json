@@ -14,6 +14,8 @@
       "!**/*.d.ts",
       "!**/*.md",
       "!pnpm-lock.yaml",
+      "!public/replays",
+      "!src/features/replay/replay-index.json",
       "!**/.agents/skills/**"
     ]
   },

@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { expectNoA11yViolations } from '@kyros/testing/a11y'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { HomeScreen } from '@/features/home/home-screen'
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 
 describe('home page', () => {
   it('does not render the prototype fixture markets', async () => {

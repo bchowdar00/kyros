@@ -1,7 +1,9 @@
 import { cents, createMoneyFormatter } from '@kyros/money'
 import { cn } from '@kyros/ui/lib/cn'
+import Link from 'next/link'
 
 import type { NamedRecordBoardRow, RecordBoardView } from './record-board-loader'
+import { atUtc, seriesLabel, shortHex, strategyName, under, winRate } from './record-format'
 
 export interface RecordBoardScreenProps {
   /** Block explorer origin the transaction and contract links go to. */
@@ -11,54 +13,19 @@ export interface RecordBoardScreenProps {
 
 const money = createMoneyFormatter('en-US')
 
-const utcTime = new Intl.DateTimeFormat('en-US', {
-  day: 'numeric',
-  hour: '2-digit',
-  hourCycle: 'h23',
-  minute: '2-digit',
-  month: 'short',
-  timeZone: 'UTC',
-})
-
-const seriesLabels: Record<string, string> = {
-  'btc-15m': 'BTC 15m',
-  'btc-5m': 'BTC 5m',
-  'nba-h2h': 'NBA game',
-}
-
 const focusRingClasses =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
 const linkClasses = `rounded-xs text-foreground underline underline-offset-2 transition-colors hover:text-muted-foreground ${focusRingClasses}`
 const headClasses = 'px-md py-md text-label font-semibold text-muted-foreground'
 const numberClasses = 'px-md py-lg text-right align-middle font-mono text-body text-foreground'
 
-/** `0x1234…abcd`: enough of an id or address to match it on the explorer. */
-function short(hex: string): string {
-  return `${hex.slice(0, 6)}…${hex.slice(-4)}`
-}
-
-/** A block time as `Nov 20, 08:25 UTC`. The explorer's stamps are UTC and are shown as UTC. */
-function atUtc(iso: string): string {
-  const at = new Date(iso)
-  // Formatting an unreadable time throws; one odd stamp must not take the page down.
-  return Number.isNaN(at.getTime()) ? 'Time not given' : `${utcTime.format(at)} UTC`
-}
-
-function under(base: string, path: string): string {
-  return new URL(path, base.endsWith('/') ? base : `${base}/`).href
-}
-
 function plural(count: number, one: string, many: string): string {
   return `${money.count(count)} ${count === 1 ? one : many}`
 }
 
-function rowName(row: NamedRecordBoardRow): string {
-  return row.name ?? `Strategy ${short(row.deploymentId)}`
-}
-
 function rowDetail(row: NamedRecordBoardRow): string {
   const parts: string[] = []
-  if (row.series !== undefined) parts.push(seriesLabels[row.series] ?? row.series)
+  if (row.series !== undefined) parts.push(seriesLabel(row.series))
   if (row.budgetCents !== undefined) parts.push(`${money.usd(cents(row.budgetCents))} budget`)
   return parts.join(' · ')
 }
@@ -72,12 +39,18 @@ function BoardRow({
   rank: number
   row: NamedRecordBoardRow
 }) {
-  const name = rowName(row)
+  const name = strategyName(row)
   const detail = rowDetail(row)
 
   return (
     <tr className="border-b border-border-subtle last:border-b-0">
-      <td className="py-lg pl-xl pr-md align-middle font-mono text-body text-muted-foreground">
+      <td
+        className={cn(
+          'py-lg pl-xl pr-md align-middle font-mono text-body',
+          // The first three places carry the accent; the rest are quiet.
+          rank <= 3 ? 'font-semibold text-positive' : 'text-muted-foreground'
+        )}
+      >
         {rank}
       </td>
       <th className="px-md py-lg text-left align-middle font-regular" scope="row">
@@ -87,7 +60,12 @@ function BoardRow({
         )}
       </th>
       <td className={numberClasses}>{money.count(row.rounds)}</td>
-      <td className={numberClasses}>{money.count(row.wonRounds)}</td>
+      <td className={numberClasses}>
+        {winRate(row)}
+        <span className="block text-caption text-muted-foreground">
+          {money.count(row.wonRounds)} of {money.count(row.rounds)}
+        </span>
+      </td>
       <td
         className={cn(
           numberClasses,
@@ -98,7 +76,7 @@ function BoardRow({
       >
         {money.usd(cents(row.pnlCents), { signDisplay: 'exceptZero' })}
       </td>
-      <td className="py-lg pl-md pr-xl text-right align-middle text-caption text-muted-foreground">
+      <td className="px-md py-lg text-right align-middle text-caption text-muted-foreground">
         <span className="block font-mono">{atUtc(row.lastSealedAt)}</span>
         <a
           className={linkClasses}
@@ -108,6 +86,20 @@ function BoardRow({
         >
           View on Arc<span className="sr-only">: the newest sealed round of {name}</span>
         </a>
+      </td>
+      <td className="py-lg pl-md pr-xl text-right align-middle">
+        {row.copy === undefined || row.series === undefined ? null : (
+          <Link
+            className={cn(
+              'inline-flex h-2xl items-center rounded-sm border-[1.5px] border-action px-md text-label font-semibold text-foreground transition-[background-color,box-shadow] duration-150 ease-out-soft hover:bg-action hover:text-on-action hover:shadow-glow-action',
+              focusRingClasses
+            )}
+            // The strategy's market, with its card brought to the top there.
+            href={{ pathname: `/market/${row.series}`, query: { copy: row.copy.title } }}
+          >
+            Copy<span className="sr-only">: {name}</span>
+          </Link>
+        )}
       </td>
     </tr>
   )
@@ -121,13 +113,14 @@ export function RecordBoardScreen({ explorerUrl, view }: RecordBoardScreenProps)
   return (
     <main className="mx-auto w-full max-w-[90rem] px-4xl py-4xl">
       <h1 className="mb-md font-display text-display-lg font-bold tracking-display text-foreground">
-        Records
+        Leaderboard
       </h1>
       <p className="mb-xl max-w-prose text-body text-muted-foreground">
-        Every round a strategy trades is sealed on Arc once Gemini&apos;s result is in. This page is
-        added up from those transactions, not from our server&apos;s memory: each line links to the
-        chain, and the server supplies only a strategy&apos;s name and market. Results are in
-        pretend money.
+        Every strategy that has sealed a round, best result first. Each round is sealed on Arc once
+        Gemini&apos;s result is in, and this page is added up from those transactions, not from our
+        server&apos;s memory: each line links to the chain, and the server supplies only a
+        strategy&apos;s name and market. A strategy run from a public card can be copied. Results
+        are in pretend money.
       </p>
 
       {view.status === 'unavailable' ? (
@@ -163,13 +156,16 @@ export function RecordBoardScreen({ explorerUrl, view }: RecordBoardScreenProps)
                         Rounds sealed
                       </th>
                       <th className={cn(headClasses, 'text-right')} scope="col">
-                        Won
+                        Win rate
                       </th>
                       <th className={cn(headClasses, 'text-right')} scope="col">
                         Result
                       </th>
-                      <th className={cn(headClasses, 'pr-xl text-right')} scope="col">
+                      <th className={cn(headClasses, 'text-right')} scope="col">
                         Newest round
+                      </th>
+                      <th className={cn(headClasses, 'pr-xl text-right')} scope="col">
+                        <span className="sr-only">Copy</span>
                       </th>
                     </tr>
                   </thead>
@@ -195,7 +191,7 @@ export function RecordBoardScreen({ explorerUrl, view }: RecordBoardScreenProps)
               rel="noopener noreferrer"
               target="_blank"
             >
-              {short(view.contract)}
+              {shortHex(view.contract)}
             </a>
             .
             {view.truncated

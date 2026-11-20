@@ -75,27 +75,30 @@ export function MarketDetailScreen({
               className="flex flex-col gap-5xl pb-5xl"
               key={market.liveEvent?.seriesId ?? market.slug}
             >
-              <div className="flex flex-col gap-lg pt-xl">
-                {market.priceChart ? (
-                  <MarketPriceCard {...market.priceChart} />
-                ) : market.probabilityChart ? (
-                  <MarketProbabilityCard {...market.probabilityChart} />
+              <div className="flex flex-col gap-2xl pt-xl">
+                {/* The signals lead the page: what a strategy can read sits above what it trades. */}
+                {market.signals && signalsApi ? (
+                  <LiveSignalsSection
+                    apiUrl={signalsApi.apiUrl}
+                    fallback={market.signals}
+                    key={`signals:${signalsApi.series}`}
+                    series={signalsApi.series}
+                  />
+                ) : market.signals ? (
+                  <SignalsSection {...market.signals} key={`signals:${marketKey}`} />
                 ) : null}
+
+                <div className="flex flex-col gap-lg" data-slot="market-chart-block">
+                  {market.priceChart ? (
+                    <MarketPriceCard {...market.priceChart} />
+                  ) : market.probabilityChart ? (
+                    <MarketProbabilityCard {...market.probabilityChart} />
+                  ) : null}
+                </div>
               </div>
 
               {commentary ? (
                 <p className="text-body font-regular text-foreground">{commentary}</p>
-              ) : null}
-
-              {market.signals && signalsApi ? (
-                <LiveSignalsSection
-                  apiUrl={signalsApi.apiUrl}
-                  fallback={market.signals}
-                  key={`signals:${signalsApi.series}`}
-                  series={signalsApi.series}
-                />
-              ) : market.signals ? (
-                <SignalsSection {...market.signals} key={`signals:${marketKey}`} />
               ) : null}
 
               {market.myStrategies ? (
