@@ -3,8 +3,8 @@ import { ReplayCard } from './replay-card'
 
 const sectionTitle = 'font-display text-heading-md font-bold tracking-heading text-foreground'
 
-/** How many replays the home page shows. */
-const SHOWN = 4
+/** How many games the home page shows: two rows at its widest. */
+const SHOWN = 8
 
 /**
  * The home page's band of replaying games: the closest finished games, played
@@ -17,11 +17,10 @@ export function ReplaysSection({ games }: { games: readonly ReplayIndexEntry[] }
     <section aria-labelledby="replays-title" className="flex flex-col gap-lg">
       <header className="flex flex-col gap-xs">
         <h2 className={sectionTitle} id="replays-title">
-          Game replays
+          NBA games
         </h2>
         <p className="max-w-prose text-caption text-muted-foreground">
-          Finished NBA games played back play by play, with the breaks shortened. Scores from ESPN,
-          prices from Kalshi.
+          Play by play, with the score and the price.
         </p>
       </header>
       <ul className="grid gap-md sm:grid-cols-2 lg:grid-cols-4">

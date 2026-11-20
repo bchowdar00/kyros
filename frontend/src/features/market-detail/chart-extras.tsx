@@ -35,9 +35,15 @@ export function useTradeMarks(): readonly TradeMark[] {
  * lines drawn from them. It follows the socket's once-a-second snapshot and never asks the
  * socket for a longer window, because every signal tile on the page draws from that window.
  */
-function createHeldLines(stream: SignalsStream, series: string, keepMs: number) {
-  let held: SignalHistory = {}
-  let lines: readonly VenueLine[] = NO_LINES
+function createHeldLines(
+  stream: SignalsStream,
+  series: string,
+  keepMs: number,
+  past: SignalHistory | undefined
+) {
+  // Readings from before the page opened, when the server read them, start each line.
+  let held: SignalHistory = past === undefined ? {} : extendVenueHistory({}, past, series, keepMs)
+  let lines: readonly VenueLine[] = past === undefined ? NO_LINES : venueLinesFor(series, held)
   const take = () => {
     const next = extendVenueHistory(held, stream.getCalmSnapshot().history, series, keepMs)
     if (next === held) return false
@@ -60,12 +66,14 @@ function createHeldLines(stream: SignalsStream, series: string, keepMs: number) 
  * Other venues' prices for a series, as lines for its chart, read from the
  * page's shared signals socket at its once-a-second pace. Nothing without a
  * server, or for a series no other venue prices. `keepMs` is how far back a
- * line reaches, for a chart that spans more than the socket's own minute.
+ * line reaches, for a chart that spans more than the socket's own minute; `past` is what
+ * the server read of the time before the page opened.
  */
 export function useVenueLines(
   apiUrl: string | undefined,
   series: string | undefined,
-  keepMs: number = HISTORY_WINDOW_MS
+  keepMs: number = HISTORY_WINDOW_MS,
+  past?: SignalHistory
 ): readonly VenueLine[] {
   const ids = series === undefined ? '' : venueSignalIds(series).join(',')
   const stream =
@@ -88,8 +96,8 @@ export function useVenueLines(
     () =>
       stream === undefined || series === undefined
         ? undefined
-        : createHeldLines(stream, series, keepMs),
-    [stream, series, keepMs]
+        : createHeldLines(stream, series, keepMs, past),
+    [stream, series, keepMs, past]
   )
 
   return useSyncExternalStore(

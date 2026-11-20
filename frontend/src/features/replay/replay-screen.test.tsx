@@ -70,9 +70,7 @@ describe('ReplayScreen', () => {
     expect(plays[0]).toHaveTextContent('GS +3 · Q2 8:20 · 3–2')
     expect(plays[1]).toHaveTextContent('MEM +2 · Q1 11:35 · 0–2')
 
-    expect(
-      screen.getByText(/Finished NBA games played back play by play, with the breaks shortened\./)
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Play by play, with the score and the price\./)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to markets' })).toHaveAttribute('href', '/')
 
     await expectNoA11yViolations(container)
@@ -86,7 +84,7 @@ describe('ReplayScreen', () => {
 
     render(<ReplayScreen entry={entry} index={0} />)
 
-    expect(await screen.findByText('Replay unavailable')).toBeInTheDocument()
+    expect(await screen.findByText('Game unavailable')).toBeInTheDocument()
   })
 
   it('says up front that it already happened and cannot be traded', () => {
@@ -105,7 +103,7 @@ describe('ReplayScreen', () => {
 
     render(<ReplayScreen entry={spoiler} index={0} />)
 
-    expect(screen.getByText('Loading replay')).toBeInTheDocument()
+    expect(screen.getByText('Loading game')).toBeInTheDocument()
     expect(screen.queryByText('105')).toBeNull()
     expect(screen.queryByText('103')).toBeNull()
     expect(screen.queryByText(/Q1 12:00/)).toBeNull()

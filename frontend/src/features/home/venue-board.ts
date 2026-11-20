@@ -28,8 +28,17 @@ export interface VenueOutcome {
   label: string
   percent: number
 }
+/** A past price of a game's first side: when it closed and the fraction of a dollar. */
+export interface VenueReading {
+  time: number
+  value: number
+}
 export interface VenueGame {
   id: string
+  /** The market of the side named first; its price history draws the card's line. */
+  market?: string | undefined
+  /** That market's recent prices, oldest first; absent when none was read. */
+  spark?: readonly VenueReading[] | undefined
   title: string
   when: string | undefined
   outcomes: VenueOutcome[]
@@ -77,6 +86,8 @@ type VenueEvent = z.infer<typeof EventSchema>
 interface RankedOutcome {
   label: string
   percent: number
+  /** The market the outcome's price is read from. */
+  ticker: string
   volume: number
   /** True when the bid and the ask sit too far apart for their middle to be a price. */
   wide: boolean
@@ -111,6 +122,7 @@ function outcomeOf(market: z.infer<typeof MarketSchema>): RankedOutcome | undefi
   return {
     label: market.yes_sub_title,
     percent: toPercent((bid + ask) / 2),
+    ticker: market.ticker,
     volume: toNumber(market.volume_24h_fp) ?? 0,
     wide: Math.round((ask - bid) * PERCENT) > WIDEST_BOOK_CENTS,
   }
@@ -139,6 +151,7 @@ function gameOf(event: VenueEvent): VenueGame | undefined {
 
   return {
     id: event.event_ticker,
+    market: outcomes[0]?.ticker,
     outcomes: outcomes.map(outcome => ({ label: outcome.label, percent: outcome.percent })),
     title: event.title,
     volume24h: outcomes.reduce((sum, outcome) => sum + outcome.volume, 0),
@@ -165,6 +178,35 @@ export function toVenueGames(body: unknown): VenueGame[] {
   return games
     .toSorted((a, b) => b.volume24h - a.volume24h || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     .slice(0, PER_LEAGUE)
+}
+
+/** Fewer readings than this, or a flat run, is not a line worth a card's space. */
+const FEWEST_FOR_A_LINE = 3
+
+/**
+ * Whether a game's price history shows a price that moved. Decided here, on the server's
+ * side of the page, because the section that asks is rendered there.
+ */
+export function sparkMoved(spark: readonly VenueReading[] | undefined): boolean {
+  if (spark === undefined || spark.length < FEWEST_FOR_A_LINE) return false
+  const first = spark[0]?.value
+  return spark.some(reading => reading.value !== first)
+}
+
+/** The board with each game given its first side's price history, where one was read. */
+export function withSparks(
+  board: VenueBoard,
+  sparks: Readonly<Record<string, readonly VenueReading[]>>
+): VenueBoard {
+  return {
+    leagues: board.leagues.map(league => ({
+      ...league,
+      games: league.games.map(game => {
+        const spark = game.market === undefined ? undefined : sparks[game.market]
+        return spark === undefined ? game : { ...game, spark }
+      }),
+    })),
+  }
 }
 
 /**

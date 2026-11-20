@@ -10,8 +10,7 @@ import { priceLine, type ReplayIndexEntry, replayDay } from './replay'
 import { useReplay } from './use-replay'
 
 const panel = 'rounded-md border border-border-subtle bg-background/70'
-const sources =
-  'Finished NBA games played back play by play, with the breaks shortened. Scores from ESPN, prices from Kalshi.'
+const sources = 'Play by play, with the score and the price.'
 
 /** A score that rolls to its new value; read aloud as a plain number. */
 function Score({ value }: { value: number }) {
@@ -39,7 +38,7 @@ export function ReplayScreen({ entry, index }: { entry: ReplayIndexEntry; index:
   return (
     <main className="mx-auto flex max-w-screen-md flex-col gap-2xl px-lg py-2xl">
       <header className="flex flex-col gap-sm">
-        <span className="text-label text-muted-foreground">Replay · {replayDay(entry.date)}</span>
+        <span className="text-label text-muted-foreground">NBA · {replayDay(entry.date)}</span>
         <h1 className="font-display text-display-md font-bold tracking-display text-foreground">
           {entry.away.name} at {entry.home.name}
         </h1>
@@ -64,8 +63,8 @@ export function ReplayScreen({ entry, index }: { entry: ReplayIndexEntry; index:
           {/* Until the game has loaded there is no score to show, least of all the final one. */}
           {state === undefined
             ? failed
-              ? 'Replay unavailable'
-              : 'Loading replay'
+              ? 'Game unavailable'
+              : 'Loading game'
             : position.ended
               ? 'Final'
               : `Q${state.period} ${state.clock}`}

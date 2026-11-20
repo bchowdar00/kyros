@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { extendVenueHistory, venueLinesFor, venuePins, venueSignalIds } from './venue-lines'
+import {
+  extendVenueHistory,
+  venueLinesFor,
+  venuePins,
+  venueSignalIds,
+  withVenuePast,
+} from './venue-lines'
 
 const T = Date.UTC(2026, 10, 20, 11, 0)
 
@@ -120,6 +126,38 @@ describe('venueLinesFor', () => {
     expect(extendVenueHistory(once, { [pin]: [{ time: T, value: 0.6 }] }, 'nba-h2h', 90_000)).toBe(
       once
     )
+  })
+
+  it("opens a chart with a venue's past prices and stretches its window back to them", () => {
+    const chart = { live: true, range: { end: T + 3 * 3_600_000, start: T } }
+    const past = [
+      { time: T - 7_200_000, value: 0.7 },
+      { time: T - 3_600_000, value: 0.72 },
+    ]
+
+    const opened = withVenuePast(chart, 'nba-h2h', 'kalshi', past)
+
+    expect(opened.range).toEqual({ end: T + 3 * 3_600_000, start: T - 7_200_000 })
+    expect(opened.venueHistory).toEqual({ 'nba.live.kalshi.v1:home_prob': past })
+    expect(opened.live).toBe(true)
+    // The page then draws the line from the past and goes on from the live readings.
+    const held = extendVenueHistory({}, opened.venueHistory ?? {}, 'nba-h2h', 15 * 3_600_000)
+    expect(venueLinesFor('nba-h2h', held).map(line => line.id)).toEqual(['kalshi'])
+  })
+
+  it('leaves a chart as it is when there is no past to draw or no such venue', () => {
+    const chart = { range: { end: T + 1, start: T } }
+
+    expect(withVenuePast(chart, 'nba-h2h', 'kalshi', [{ time: T - 60_000, value: 0.7 }])).toBe(
+      chart
+    )
+    expect(withVenuePast(chart, 'nba-h2h', 'kalshi', undefined)).toBe(chart)
+    expect(
+      withVenuePast(chart, 'btc-5m', 'kalshi', [
+        { time: T - 2, value: 0.7 },
+        { time: T - 1, value: 0.7 },
+      ])
+    ).toBe(chart)
   })
 
   it('knows no venue for a series it has no line for', () => {

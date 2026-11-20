@@ -13,10 +13,29 @@ import { getMarketDetailFixture } from '@/features/market-detail/market-detail.f
 import { toStrategyCardNames } from '@/features/market-detail/strategy-card-names'
 import { toPublicStrategies } from '@/features/market-detail/strategy-template.mapper'
 import type { MarketDetail } from '@/features/market-detail/types'
+import { withVenuePast } from '@/features/market-detail/venue-lines'
+import { withinMs } from '@/lib/within-ms'
 import { fixturesEnabled } from '@/server/fixtures.server'
+import { loadKalshiGameHistory } from '@/server/kalshi-history.server'
 import { loadLiveSeriesEventBySlug } from '@/server/silk-road.server'
 
 const RECENT_ROUNDS = 15
+/** How long a game's page waits for Kalshi's past prices; it is complete without them. */
+const VENUE_PAST_WAIT_MS = 1500
+
+/** A game's chart opened with Kalshi's prices from before the page was asked for. */
+async function withVenuePastOf(market: MarketDetail): Promise<MarketDetail> {
+  const { probabilityChart, scoreboard } = market
+  if (probabilityChart === undefined || scoreboard === undefined) return market
+  const past = await withinMs(
+    loadKalshiGameHistory(scoreboard).catch(() => undefined),
+    VENUE_PAST_WAIT_MS
+  )
+  return {
+    ...market,
+    probabilityChart: withVenuePast(probabilityChart, market.slug, 'kalshi', past),
+  }
+}
 
 function exchangeClient(baseUrl: string) {
   return createRustExchangeClient({
@@ -80,7 +99,12 @@ export const loadMarketDetail = cache(async (slug: string): Promise<MarketDetail
 
   // History comes with the `/ws/price` snapshot in the browser; nothing to preload here.
   // The Gemini block seeds the browser's poll of where the book comes from.
-  return market === undefined
-    ? undefined
-    : withExchangeExtras(live.gemini === undefined ? market : { ...market, gemini: live.gemini })
+  if (market === undefined) return undefined
+  const [extras, opened] = await Promise.all([
+    withExchangeExtras(live.gemini === undefined ? market : { ...market, gemini: live.gemini }),
+    withVenuePastOf(market),
+  ])
+  return opened.probabilityChart === undefined
+    ? extras
+    : { ...extras, probabilityChart: opened.probabilityChart }
 })

@@ -79,7 +79,7 @@ describe('GeminiBoardSection', () => {
   it('lists every market with each side and its price, and says which ones Kyros trades', async () => {
     const { container } = render(<GeminiBoardSection board={board} />)
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Everything on Gemini' })).toBeVisible()
+    expect(screen.getByRole('heading', { level: 2, name: 'All markets' })).toBeVisible()
     const cards = screen.getAllByRole('article')
     expect(cards).toHaveLength(5)
 
@@ -87,19 +87,21 @@ describe('GeminiBoardSection', () => {
     expect(within(btc).getByText('Up')).toBeVisible()
     expect(within(btc).getByText('56¢')).toBeVisible()
     expect(within(btc).getByText('50¢')).toBeVisible()
-    expect(within(btc).getByRole('link', { name: /Trade on Kyros/ })).toHaveAttribute(
+    expect(within(btc).getByRole('link', { name: /^Trade/ })).toHaveAttribute(
       'href',
       '/market/btc-5m'
     )
 
     const eth = screen.getByRole('article', { name: 'ETH Up or Down 15m' })
     expect(within(eth).queryByRole('link')).toBeNull()
-    expect(within(eth).getByText('Shown from Gemini')).toBeVisible()
+    // A market Kyros does not run carries no link and no note about it.
+    expect(within(eth).queryByRole('link')).toBeNull()
+    expect(screen.queryByText(/view only|not traded/i)).toBeNull()
     // No price is better than an invented one.
     expect(within(eth).queryByText(/¢/)).toBeNull()
 
     const tor = screen.getByRole('article', { name: 'Toronto vs Detroit' })
-    expect(within(tor).getByRole('link', { name: /Trade on Kyros/ })).toHaveAttribute(
+    expect(within(tor).getByRole('link', { name: /^Trade/ })).toHaveAttribute(
       'href',
       '/market/nba-h2h'
     )
@@ -173,7 +175,9 @@ describe('GeminiBoardSection', () => {
   it('says when the list was read', () => {
     render(<GeminiBoardSection board={board} />)
 
-    expect(screen.getByText(/Read from Gemini's public list at 09:41 UTC/)).toBeVisible()
+    expect(
+      screen.getByText(/Prices from Gemini and Kalshi, scores from ESPN\. Last read at 09:41 UTC\./)
+    ).toBeVisible()
   })
 
   it('renders a question card with its top outcomes, the rest counted, and its close date', async () => {
@@ -194,7 +198,7 @@ describe('GeminiBoardSection', () => {
       expect(within(card).getByText(label)).toBeVisible()
       expect(within(card).getByText(price)).toBeVisible()
     }
-    expect(within(card).getByText('+2 more · Shown from Gemini')).toBeVisible()
+    expect(within(card).getByText('+2 more')).toBeVisible()
 
     const when = card.querySelector('time')
     expect(when).toHaveAttribute('dateTime', '2027-01-04T23:59:00.000Z')
@@ -218,7 +222,7 @@ describe('GeminiBoardSection', () => {
     render(<GeminiBoardSection board={{ ...board, games: [], questions: [noClose], upDown: [] }} />)
 
     const card = screen.getByRole('article', { name: 'Best AI at the end of 2026?' })
-    expect(within(card).getByText('Shown from Gemini')).toBeVisible()
+    expect(within(card).queryByText(/more/)).toBeNull()
     expect(within(card).queryByText(/more ·/)).toBeNull()
     expect(card.querySelector('time')).toBeNull()
   })

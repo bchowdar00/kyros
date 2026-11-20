@@ -16,7 +16,7 @@ Say what you would do in a market, in one sentence. Kyros turns it into a strate
 6. When a round your strategy traded in closes, the result is sealed on Arc. The row shows "Record sealed", a link to the transaction, and the journal the hash was taken from.
 7. Pause, resume or stop a strategy from its row in **My Accounts**. Stopping cancels its orders and closes its position at the market when that is possible; otherwise the position settles with the round. Its money then returns to your paper balance.
 8. Open **Leaderboard**: every strategy that has sealed a round, ranked by its sealed result with how often it won, each line linking to its transaction on Arc. A strategy that runs from a public card has a **Copy** button that opens its market with that card first. The home page shows the top three and the newest sealed rounds from the same read.
-9. Scroll the home page. **Game replays** plays finished NBA games back play by play, score and price moving, so there is always a game to watch; each has its own page. **Everything on Gemini** lists every market Gemini's public API has, by category: up or down rounds, games, and questions on politics, weather, the economy and more. **More games, priced on Kalshi** adds games in leagues Gemini does not list. Only the cards marked Trade on Kyros can be traded here; the rest are shown.
+9. Scroll the home page; it reads as one exchange. Under the three live markets, **NBA games** plays finished NBA games back play by play, score and price moving, so there is always a game to watch; each has its own page and carries its date. **All markets** lists every market Gemini's public API has, by category: up or down rounds, games, and questions on politics, weather, the economy and more. **More sports** adds games in leagues that list does not carry, priced from Kalshi's public API, each with its last two days of price. Only the cards with a Trade link can be traded here; the rest are shown. Where the prices are read is said once, under the list.
 
 ## What is real and what is pretend
 
@@ -26,7 +26,7 @@ Say what you would do in a market, in one sentence. Kyros turns it into a strate
 | The order book | Gemini's, mirrored live. If a side is empty on Gemini, the page says so. |
 | The game's score and plays | ESPN's public scoreboard. If the feed drops, the page says "Score feed disconnected". |
 | The other venues' prices | Polymarket's and Kalshi's, for the same game, each read from its public API every three seconds. Signals only: Kyros sends nothing to either. |
-| Game replays | Finished NBA games from the last few days: every play's score and clock from ESPN's public record, the home team's price each minute from Kalshi's public API, played back on a loop with the breaks shortened. Labelled Replay everywhere; nothing in one can be traded. Rebuild the files with `frontend/scripts/build_replays.py`. |
+| NBA games | Finished NBA games from the last few days: every play's score and clock from ESPN's public record, the home team's price each minute from Kalshi's public API, played back on a loop with the breaks shortened. The site shows them as games, each with its real date and without a live mark; nothing in one can be traded. Rebuild the files with `frontend/scripts/build_replays.py`. |
 | Markets shown but not traded | The rest of Gemini's list, at the price last read, and games in leagues Gemini does not list, at Kalshi's price. The page drops a league from the second group as soon as Gemini's own list carries it. |
 | The money | Pretend. Paper mode is the only mode on the public site. The badge in the masthead says which mode a server is in. |
 | Fills | Simulated. A pretend order fills against Gemini's mirrored book, at the price and size resting there; a resting one also fills when Gemini trades through its price, or against another visitor's pretend order on the same book. No liquidity is invented. |
@@ -123,7 +123,7 @@ Open http://localhost:3000. Two things need more:
 
 ```bash
 cd server && cargo test --workspace     # 2,367 tests pass
-cd frontend && pnpm exec vitest run     # the app: 956 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
+cd frontend && pnpm exec vitest run     # the app: 968 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
 cd frontend && pnpm --filter "./packages/**" test   # the libraries: 24, 32, 88 and 30 pass
 cd chain && npm install && npm test     # 26 contract tests, 33 recorder tests
 ```

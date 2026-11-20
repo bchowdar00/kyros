@@ -4,6 +4,8 @@ import type { ChartPoint, TimeRange } from '@kyros/ui/charts/lib/types'
 import type { ChartWindow } from '@kyros/ui/charts/chart-window'
 import type { RecentMarketResult } from '@kyros/ui/charts/recent-market-results'
 
+import type { SignalHistory } from '@/features/signals/signal-history'
+
 import type { StrategyCardName } from './strategy-card-names'
 
 export type MarketSide = 'away' | 'home'
@@ -62,6 +64,8 @@ export interface MarketProbabilityChartData {
   /** The exchange series slug the `/ws/book` midpoint streams from; absent for static fixtures. */
   seriesSlug?: string
   timeZone: string
+  /** Other venues' earlier prices, the start of their lines; absent when none was read. */
+  venueHistory?: SignalHistory
 }
 
 export interface MarketPriceChartData {

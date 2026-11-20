@@ -153,28 +153,27 @@ function MarketCard({ card }: { card: BoardCard }) {
           </li>
         ))}
       </ul>
-      <footer className="text-caption text-muted-foreground">
-        {tradeSlug === undefined ? (
-          <>
-            {card.kind === 'question' && card.more > 0 ? `+${card.more} more · ` : ''}Shown from
-            Gemini
-          </>
-        ) : (
+      {tradeSlug === undefined ? (
+        card.kind === 'question' && card.more > 0 ? (
+          <footer className="text-caption text-muted-foreground">{`+${card.more} more`}</footer>
+        ) : null
+      ) : (
+        <footer className="text-caption text-muted-foreground">
           <Link
             className="rounded-xs font-medium text-foreground underline underline-offset-2 transition-colors hover:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             href={`/market/${tradeSlug}`}
           >
-            Trade on Kyros<span className="sr-only">{`: ${card.title}`}</span>
+            Trade<span className="sr-only">{`: ${card.title}`}</span>
           </Link>
-        )}
-      </footer>
+        </footer>
+      )}
     </article>
   )
 }
 
 /**
  * Every up/down series and every game on Gemini, at the price last read, with a filter per
- * kind of market. The ones Kyros trades link to their market; the rest are shown, not traded.
+ * kind of market. The ones Kyros trades link to their market; the rest carry no link.
  */
 export function GeminiBoardSection({ board }: { board: GeminiBoard }) {
   const [filter, setFilter] = useState(ALL)
@@ -202,12 +201,11 @@ export function GeminiBoardSection({ board }: { board: GeminiBoard }) {
           className="font-display text-display-sm font-bold tracking-heading text-foreground"
           id="gemini-board-title"
         >
-          Everything on Gemini
+          All markets
         </h2>
         <p className="max-w-prose text-body text-muted-foreground">
-          Every market Gemini lists, at the price last read: up or down rounds, games, and questions
-          on politics, weather, the economy and more. The ones marked Trade on Kyros run here today;
-          the rest are shown, not traded.
+          Up or down rounds, games, and questions on politics, weather, the economy and more, at the
+          price last read.
         </p>
       </header>
 
@@ -250,7 +248,8 @@ export function GeminiBoardSection({ board }: { board: GeminiBoard }) {
       )}
 
       <p className="text-caption text-muted-foreground">
-        Read from Gemini&apos;s public list at {readAt.format(new Date(board.asOf))} UTC.
+        Prices from Gemini and Kalshi, scores from ESPN. Last read at{' '}
+        {readAt.format(new Date(board.asOf))} UTC.
       </p>
     </section>
   )

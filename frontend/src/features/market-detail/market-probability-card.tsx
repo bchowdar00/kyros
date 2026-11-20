@@ -11,8 +11,11 @@ import type { MarketProbabilityChartData, MarketSide } from './types'
 
 export type MarketProbabilityCardProps = MarketProbabilityChartData
 
-/** A game runs for hours; the other venues' lines are held on the page this long. */
-const VENUE_HISTORY_MS = 3 * 60 * 60_000
+/**
+ * A game runs for about three hours and its chart opens with the twelve before it; the
+ * other venues' lines are held on the page that long.
+ */
+const VENUE_HISTORY_MS = 15 * 60 * 60_000
 
 const seriesColors: Record<MarketSide, string> = {
   away: 'var(--market-away)',
@@ -31,6 +34,7 @@ export function MarketProbabilityCard({
   series,
   seriesSlug,
   timeZone,
+  venueHistory,
 }: MarketProbabilityCardProps) {
   const browserTimeZone = useBrowserTimeZone(timeZone)
   const [primary, complement] = series
@@ -38,7 +42,12 @@ export function MarketProbabilityCard({
   const streaming = seriesSlug !== undefined && env.NEXT_PUBLIC_API_URL !== undefined
   const primaryPoints = streaming ? book.midPoints : primary.points
   const tradeMarks = useTradeMarks()
-  const venueLines = useVenueLines(env.NEXT_PUBLIC_API_URL, seriesSlug, VENUE_HISTORY_MS)
+  const venueLines = useVenueLines(
+    env.NEXT_PUBLIC_API_URL,
+    seriesSlug,
+    VENUE_HISTORY_MS,
+    venueHistory
+  )
 
   return (
     <ProbabilityMarketCard

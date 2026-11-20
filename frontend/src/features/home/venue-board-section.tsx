@@ -1,9 +1,11 @@
-import type { VenueBoard } from './venue-board'
+import { SignalSparkline } from '@/features/market-detail/signal-sparkline'
+
+import { sparkMoved, type VenueBoard } from './venue-board'
 
 /**
- * The games Gemini does not list, with Kalshi's prices, grouped by league. To watch only: no
- * links, no buttons, no trade. The cards reuse the Gemini board's look so the two read as one
- * board.
+ * Games in the leagues the main board does not carry, grouped by league. To watch only: no
+ * links, no buttons, no trade. The cards reuse the main board's look and name no venue, so
+ * the page reads as one exchange; where the prices are read is said once, under the board.
  */
 export function VenueBoardSection({ board }: { board: VenueBoard }) {
   return (
@@ -13,12 +15,8 @@ export function VenueBoardSection({ board }: { board: VenueBoard }) {
           className="font-display text-display-sm font-bold tracking-heading text-foreground"
           id="venue-board-title"
         >
-          More games, priced on Kalshi
+          More sports
         </h2>
-        <p className="max-w-prose text-body text-muted-foreground">
-          Gemini does not list these yet. The prices are Kalshi&apos;s, shown here to watch, not to
-          trade.
-        </p>
       </header>
 
       {board.leagues.map(league => (
@@ -32,12 +30,15 @@ export function VenueBoardSection({ board }: { board: VenueBoard }) {
                   className="flex h-full flex-col gap-md rounded-md border border-border-subtle bg-background/70 p-lg"
                 >
                   <header className="flex items-center justify-between gap-md text-caption text-muted-foreground">
-                    <span className="truncate">Kalshi</span>
+                    <span className="truncate">{league.label}</span>
                     {game.when === undefined ? null : <span>{game.when}</span>}
                   </header>
                   <h4 className="font-display text-heading-sm font-bold text-foreground">
                     {game.title}
                   </h4>
+                  {game.spark !== undefined && sparkMoved(game.spark) ? (
+                    <SignalSparkline points={game.spark} />
+                  ) : null}
                   <ul className="flex flex-1 flex-col gap-xs">
                     {game.outcomes.map(outcome => (
                       <li

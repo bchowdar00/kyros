@@ -5,7 +5,7 @@ import { ReplayIndexSchema } from '@/features/replay/replay'
 import indexData from '@/features/replay/replay-index.json'
 import { ReplayScreen } from '@/features/replay/replay-screen'
 
-type ReplayPageProps = PageProps<'/replay/[id]'>
+type ReplayPageProps = PageProps<'/game/[id]'>
 
 const index = ReplayIndexSchema.parse(indexData)
 
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: ReplayPageProps): Promise<Met
   const { id } = await params
   const found = findReplay(id)
   if (!found) return {}
-  return { title: `${found.entry.away.code} at ${found.entry.home.code} replay` }
+  return { title: `${found.entry.away.code} at ${found.entry.home.code}` }
 }
 
 export default async function ReplayPage({ params }: ReplayPageProps) {

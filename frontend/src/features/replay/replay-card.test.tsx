@@ -57,8 +57,8 @@ describe('ReplayCard', () => {
     expect(screen.getByText('+6.0')).toBeInTheDocument()
 
     expect(
-      screen.getByRole('link', { name: 'Golden State Warriors at Memphis Grizzlies replay' })
-    ).toHaveAttribute('href', '/replay/g1')
+      screen.getByRole('link', { name: 'Golden State Warriors at Memphis Grizzlies' })
+    ).toHaveAttribute('href', '/game/g1')
   })
 
   it('reads Final once the game has ended', async () => {
@@ -77,8 +77,8 @@ describe('ReplayCard', () => {
     )
     render(<ReplayCard entry={entry} index={0} />)
 
-    expect(await screen.findByText('Replay unavailable')).toBeInTheDocument()
-    expect(screen.queryByText('Loading replay')).toBeNull()
+    expect(await screen.findByText('Game unavailable')).toBeInTheDocument()
+    expect(screen.queryByText('Loading game')).toBeNull()
   })
 
   it('shows the teams and a loading note before the game has loaded', () => {
@@ -86,7 +86,7 @@ describe('ReplayCard', () => {
     stubFetch(false)
     render(<ReplayCard entry={entry} index={0} />)
 
-    expect(screen.getByText('Loading replay')).toBeInTheDocument()
+    expect(screen.getByText('Loading game')).toBeInTheDocument()
     expect(screen.getByText('GS')).toBeInTheDocument()
     expect(screen.getByText('MEM')).toBeInTheDocument()
   })

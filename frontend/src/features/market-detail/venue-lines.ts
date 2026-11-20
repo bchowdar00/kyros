@@ -110,3 +110,30 @@ export function venueLinesFor(series: string, history: SignalHistory): VenueLine
   }
   return lines
 }
+
+/** A line needs two readings; fewer is a dot. */
+const FEWEST_READINGS = 2
+
+/**
+ * A chart opened with one venue's earlier prices: its window reaches back to the first of
+ * them, and they are handed on as the start of that venue's line. The chart is left as it
+ * is when there is no past worth a line or the series has no such venue.
+ */
+export function withVenuePast<
+  Chart extends { range: { end: number; start: number }; venueHistory?: SignalHistory },
+>(
+  chart: Chart,
+  series: string,
+  venueId: string,
+  past: readonly { time: number; value: number }[] | undefined
+): Chart & { venueHistory?: SignalHistory } {
+  const venue = venuePins(series).find(each => each.id === venueId)
+  const first = past?.[0]
+  if (venue === undefined || past === undefined || first === undefined) return chart
+  if (past.length < FEWEST_READINGS) return chart
+  return {
+    ...chart,
+    range: { ...chart.range, start: Math.min(chart.range.start, first.time) },
+    venueHistory: { ...chart.venueHistory, [venue.pin]: past },
+  }
+}

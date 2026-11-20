@@ -246,18 +246,51 @@ describe('the home page as a product front', () => {
 
     const { rerender } = render(<HomeScreen board={board} cards={[]} venues={venues} />)
 
-    const section = screen.getByRole('region', { name: 'More games, priced on Kalshi' })
+    const section = screen.getByRole('region', { name: 'More sports' })
     expect(within(section).getByRole('heading', { level: 3, name: 'UFC' })).toBeVisible()
     expect(within(section).queryByRole('heading', { level: 3, name: 'Serie A' })).toBeNull()
 
     // Without Gemini's own list of games there is nothing to check "not on Gemini" against.
     rerender(<HomeScreen board={{ ...board, games: [] }} cards={[]} venues={venues} />)
-    expect(screen.queryByRole('region', { name: 'More games, priced on Kalshi' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'More sports' })).toBeNull()
     rerender(<HomeScreen cards={[]} venues={venues} />)
-    expect(screen.queryByRole('region', { name: 'More games, priced on Kalshi' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'More sports' })).toBeNull()
   })
 
-  it('shows the game replays under the markets, and no such band when there are none', () => {
+  it('puts the games and everything Gemini lists straight under the markets Kyros trades', () => {
+    const question = {
+      category: 'Politics',
+      id: 'SAVEACT',
+      kind: 'question' as const,
+      more: 0,
+      outcomes: [{ cents: 31, label: 'Yes' }],
+      title: 'Will the SAVE Act become law?',
+    }
+    const board = { asOf: '2026-11-20T11:00:00.000Z', games: [], questions: [question], upDown: [] }
+    const entry = {
+      away: { code: 'GS', name: 'Golden State Warriors' },
+      date: '2026-11-19',
+      durationMs: 60_000,
+      final: { away: 101, home: 110 },
+      home: { code: 'MEM', name: 'Memphis Grizzlies' },
+      id: '401910019',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('offline')))
+    )
+
+    render(<HomeScreen board={board} cards={[]} replays={[entry]} />)
+
+    const titles = screen.getAllByRole('heading', { level: 2 }).map(title => title.textContent)
+    const at = (name: string) => titles.findIndex(title => title.includes(name))
+    expect(at('NBA games')).toBe(at('Markets') + 1)
+    expect(at('All markets')).toBe(at('Markets') + 2)
+    expect(at('All markets')).toBeLessThan(at('How it works'))
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the played games under the markets as games, and no such band when there are none', () => {
     const entry = {
       away: { code: 'GS', name: 'Golden State Warriors' },
       date: '2026-11-19',
@@ -272,12 +305,14 @@ describe('the home page as a product front', () => {
     )
 
     const { rerender } = render(<HomeScreen cards={[]} replays={[entry]} />)
-    const band = screen.getByRole('region', { name: 'Game replays' })
-    expect(within(band).getByText(/Replay · Nov 19/)).toBeVisible()
-    expect(within(band).getByRole('link')).toHaveAttribute('href', '/replay/401910019')
+    const band = screen.getByRole('region', { name: 'NBA games' })
+    expect(within(band).getByText(/NBA · Nov 19/)).toBeVisible()
+    expect(within(band).getByRole('link')).toHaveAttribute('href', '/game/401910019')
 
     rerender(<HomeScreen cards={[]} />)
-    expect(screen.queryByRole('region', { name: 'Game replays' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'NBA games' })).toBeNull()
+    // Nothing on the page calls a game a replay.
+    expect(screen.queryByText(/replay/i)).toBeNull()
     vi.unstubAllGlobals()
   })
 })

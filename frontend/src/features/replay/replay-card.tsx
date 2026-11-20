@@ -44,14 +44,14 @@ export function ReplayCard({ entry, index }: { entry: ReplayIndexEntry; index: n
     >
       <Link
         className={cn('absolute inset-0 rounded-md', focusRing)}
-        href={{ pathname: `/replay/${entry.id}` }}
+        href={{ pathname: `/game/${entry.id}` }}
       >
         <span className="sr-only">
-          {entry.away.name} at {entry.home.name} replay
+          {entry.away.name} at {entry.home.name}
         </span>
       </Link>
 
-      <span className="text-label text-muted-foreground">Replay · {replayDay(entry.date)}</span>
+      <span className="text-label text-muted-foreground">NBA · {replayDay(entry.date)}</span>
 
       {state === undefined ? (
         <>
@@ -60,7 +60,7 @@ export function ReplayCard({ entry, index }: { entry: ReplayIndexEntry; index: n
             <span>{entry.home.code}</span>
           </div>
           <span className="text-caption text-muted-foreground">
-            {failed ? 'Replay unavailable' : 'Loading replay'}
+            {failed ? 'Game unavailable' : 'Loading game'}
           </span>
         </>
       ) : (

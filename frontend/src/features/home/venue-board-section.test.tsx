@@ -41,17 +41,32 @@ const board: VenueBoard = {
 }
 
 describe('VenueBoardSection', () => {
-  it('shows the heading and the watch-only caption', () => {
+  it('draws a price line on a game whose price has moved, and none on one without a history', () => {
+    const [nfl, epl] = board.leagues
+    if (nfl === undefined || epl === undefined) throw new Error('missing league')
+    const [game] = nfl.games
+    if (game === undefined) throw new Error('missing game')
+    const spark = [
+      { time: 1, value: 0.08 },
+      { time: 2, value: 0.09 },
+      { time: 3, value: 0.085 },
+    ]
+
+    render(
+      <VenueBoardSection board={{ leagues: [{ ...nfl, games: [{ ...game, spark }] }, epl] }} />
+    )
+
+    const moved = screen.getByRole('article', { name: 'Arizona vs Kansas City' })
+    const still = screen.getByRole('article', { name: 'Manchester City vs Fulham' })
+    expect(moved.querySelector('canvas')).not.toBeNull()
+    expect(still.querySelector('canvas')).toBeNull()
+  })
+
+  it('shows the heading and says nothing about what cannot be traded', () => {
     render(<VenueBoardSection board={board} />)
 
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'More games, priced on Kalshi' })
-    ).toBeVisible()
-    expect(
-      screen.getByText(
-        "Gemini does not list these yet. The prices are Kalshi's, shown here to watch, not to trade."
-      )
-    ).toBeVisible()
+    expect(screen.getByRole('heading', { level: 2, name: 'More sports' })).toBeVisible()
+    expect(screen.queryByText(/not to trade|to watch/i)).toBeNull()
   })
 
   it('lists each league with its games and every outcome and price', () => {
@@ -69,14 +84,15 @@ describe('VenueBoardSection', () => {
     expect(within(game).getByText('8.5%')).toBeVisible()
     expect(within(game).getByText('Kansas City')).toBeVisible()
     expect(within(game).getByText('91.5%')).toBeVisible()
-    expect(within(game).getByText('Kalshi')).toBeVisible()
+    // One exchange: the card is tagged with its league, never with where the price is read.
+    expect(screen.queryByText(/Kalshi|Gemini/)).toBeNull()
 
     const soccer = screen.getByRole('article', { name: 'Manchester City vs Fulham' })
     expect(within(soccer).getByText('Tie')).toBeVisible()
     expect(within(soccer).getByText('17.5%')).toBeVisible()
   })
 
-  it('renders no link or button: the games are to watch, not to trade', () => {
+  it('renders no link or button on a game nothing can be traded on', () => {
     render(<VenueBoardSection board={board} />)
 
     expect(screen.queryByRole('link')).toBeNull()

@@ -15,7 +15,7 @@ function entry(id: string, margin: number): ReplayIndexEntry {
   }
 }
 
-const games = ['a', 'b', 'c', 'd', 'e', 'f'].map((id, i) => entry(id, i + 1))
+const games = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'].map((id, i) => entry(id, i + 1))
 
 beforeEach(() => {
   // The cards fetch on mount; keep them in the loading state.
@@ -30,15 +30,13 @@ afterEach(() => {
 })
 
 describe('ReplaysSection', () => {
-  it('heads the section, explains the replays and shows at most four cards', () => {
+  it('heads the section as games and shows at most eight cards', () => {
     render(<ReplaysSection games={games} />)
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Game replays' })).toBeInTheDocument()
-    expect(
-      screen.getByText(/Finished NBA games played back play by play, with the breaks shortened\./)
-    ).toBeInTheDocument()
-    expect(screen.getByText(/Scores from ESPN, prices from Kalshi\./)).toBeInTheDocument()
-    expect(screen.getAllByRole('article')).toHaveLength(4)
+    expect(screen.getByRole('heading', { level: 2, name: 'NBA games' })).toBeInTheDocument()
+    expect(screen.getByText(/Play by play, with the score and the price\./)).toBeInTheDocument()
+    expect(screen.queryByText(/replay/i)).toBeNull()
+    expect(screen.getAllByRole('article')).toHaveLength(8)
   })
 
   it('renders nothing when there are no games', () => {

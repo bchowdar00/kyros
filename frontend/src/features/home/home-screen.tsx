@@ -73,6 +73,13 @@ export function HomeScreen({
         </div>
       )}
 
+      {board === undefined ||
+      board.upDown.length + board.games.length + board.questions.length === 0 ? null : (
+        <GeminiBoardSection board={board} />
+      )}
+
+      {elsewhere === undefined ? null : <VenueBoardSection board={elsewhere} />}
+
       <div className="mt-4xl">
         <HowItWorks />
       </div>
@@ -83,13 +90,6 @@ export function HomeScreen({
           {sealed ? <JustSealed explorerUrl={explorerUrl} recent={records.recent} /> : null}
         </div>
       ) : null}
-
-      {board === undefined ||
-      board.upDown.length + board.games.length + board.questions.length === 0 ? null : (
-        <GeminiBoardSection board={board} />
-      )}
-
-      {elsewhere === undefined ? null : <VenueBoardSection board={elsewhere} />}
     </main>
   )
 }

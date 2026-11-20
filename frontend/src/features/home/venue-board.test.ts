@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import fixture from './venue-board.fixture.json'
-import { PER_LEAGUE, toVenueGames, type VenueGame, withoutListed } from './venue-board'
+import {
+  PER_LEAGUE,
+  sparkMoved,
+  toVenueGames,
+  type VenueGame,
+  withoutListed,
+  withSparks,
+} from './venue-board'
 
 // The fixture is a trimmed real Kalshi `/events` body read on 2026-11-20: two NFL games, one
 // Premier League game (its Fulham market edited to `closed`), and a one-market event.
@@ -75,6 +82,8 @@ describe('toVenueGames', () => {
 
     expect(game).toEqual({
       id: 'KXNFLGAME-26NOV22ARIKC',
+      // The market of the side named first, whose price history draws the card's line.
+      market: 'KXNFLGAME-26NOV22ARIKC-ARI',
       title: 'Arizona vs Kansas City',
       when: 'Nov 22',
       outcomes: [
@@ -299,6 +308,44 @@ describe('toVenueGames', () => {
     expect(capped).toHaveLength(PER_LEAGUE)
     // Equal volume, so the ids break the tie in ascending order.
     expect(capped.map(game => game.id)).toEqual(['G0', 'G1', 'G2', 'G3', 'G4'])
+  })
+})
+
+describe('withSparks', () => {
+  it("gives each game the price history of its first side's market, and none where there is none", () => {
+    const game = {
+      id: 'G',
+      market: 'G-A',
+      outcomes: [],
+      title: 'A vs B',
+      volume24h: 0,
+      when: undefined,
+    }
+    const other = { ...game, id: 'H', market: 'H-A' }
+    const unpriced = { ...game, id: 'I', market: undefined }
+    const board = { leagues: [{ games: [game, other, unpriced], label: 'Serie A' }] }
+    const run = [
+      { time: 1, value: 0.4 },
+      { time: 2, value: 0.5 },
+    ]
+
+    const [first, second, third] = withSparks(board, { 'G-A': run }).leagues[0]?.games ?? []
+
+    expect(first?.spark).toEqual(run)
+    expect(second?.spark).toBeUndefined()
+    expect(third?.spark).toBeUndefined()
+  })
+})
+
+// One past price of a game's first side.
+const at = (value: number, time: number) => ({ time, value })
+
+describe('sparkMoved', () => {
+  it('is true only for three or more readings that are not all the same', () => {
+    expect(sparkMoved([at(0.4, 1), at(0.4, 2), at(0.41, 3)])).toBe(true)
+    expect(sparkMoved([at(0.4, 1), at(0.4, 2), at(0.4, 3)])).toBe(false)
+    expect(sparkMoved([at(0.4, 1), at(0.5, 2)])).toBe(false)
+    expect(sparkMoved(undefined)).toBe(false)
   })
 })
 
