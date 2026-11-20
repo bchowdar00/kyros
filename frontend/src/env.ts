@@ -73,6 +73,14 @@ export const env = createEnv({
      * stats. Unset in development means the static fixtures render instead.
      */
     EXCHANGE_API_URL: z.optional(z.url()),
+    /**
+     * The `StrategyRecord` contract on Arc Testnet whose transactions the Records page is
+     * built from. Defaults to the deployed one (README).
+     */
+    RECORD_CONTRACT_ADDRESS: z._default(
+      z.string().check(z.regex(/^0x[0-9a-fA-F]{40}$/)),
+      '0xc910cfe6b537feee16b60a9964c55fc66580586a'
+    ),
     /** Superseded by EXCHANGE_API_URL; kept so existing deployments do not fail validation. */
     SILKROAD_API_URL: z.optional(z.url()),
   },

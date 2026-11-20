@@ -14,6 +14,8 @@ Say what you would do in a market, in one sentence. Kyros turns it into a strate
 4. Build a strategy by clicking the words of a sentence ("Buy Up when BTC is 10 basis points above the strike with two minutes left"), or write your own. Claude writes the strategy; a compiler checks it before any money moves.
 5. Give it a budget and deploy it. It runs in its own account. You can also run a ready-made strategy, or its inverse: seven for Bitcoin, six for the game.
 6. When a round your strategy traded in closes, the result is sealed on Arc. The row shows "Record sealed", a link to the transaction, and the journal the hash was taken from.
+7. Pause, resume or stop a strategy from its row in **My Accounts**. Stopping cancels its orders and closes its position at the market when that is possible; otherwise the position settles with the round. Its money then returns to your paper balance.
+8. Open **Records**: every strategy that has sealed a round, ranked by its sealed result, each line linking to its transaction on Arc.
 
 ## What is real and what is pretend
 
@@ -63,6 +65,8 @@ A shared strategy is only worth copying if its history is honest. Screenshots ar
 - `seal(deploymentId, roundId, won, pnlCents, journalHash)`, once per settled round the strategy placed an order in: whether it won, its profit or loss in cents, and the hash of that round's journal.
 
 Anyone can fetch a deployment's record (`/api/records/{id}`) and each round's journal (`/api/records/{id}/{round}/journal`) from the server, hash the journal, and compare it with the chain. A sealed round cannot be sealed again, and a deployment cannot be reopened with a different program.
+
+The site's **Records** page is built from the chain, not from the server. It reads the contract's `Opened` and `Sealed` events through the Arc explorer, adds them up per strategy and ranks them; the server only supplies a strategy's name and market while it still holds that strategy. Restart the server and the rounds, results and ranking are unchanged. Code: `frontend/src/features/records/`.
 
 The contract has no owner, no upgrade path and no payable function. It stores no market price of any kind: no strike, no spot, no fill price. Fees are paid in USDC, Arc's gas token, by a recorder service that runs beside the server; a visitor never sees a wallet or a fee.
 
@@ -114,8 +118,8 @@ Open http://localhost:3000. Two things need more:
 
 ```bash
 cd server && cargo test --workspace     # 2,351 tests pass
-cd frontend && pnpm exec vitest run     # the app: 682 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
-cd frontend && pnpm --filter "./packages/**" test   # the libraries: 24, 32, 76 and 28 pass
+cd frontend && pnpm exec vitest run     # the app: 734 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
+cd frontend && pnpm --filter "./packages/**" test   # the libraries: 24, 32, 76 and 30 pass
 cd chain && npm install && npm test     # 10 contract tests, 33 recorder tests
 ```
 

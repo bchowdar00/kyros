@@ -28,11 +28,18 @@ describe('AppNav', () => {
     render(<AppNav {...APP_NAV_FIXTURE} />)
 
     const navigation = screen.getByRole('navigation', { name: 'Primary' })
+    // Markets stays; /chat is a design gallery, so no Chat destination is offered.
+    expect(within(navigation).getByRole('link', { name: 'Markets' })).toHaveAttribute('href', '/')
+    expect(within(navigation).getByRole('link', { name: 'Records' })).toHaveAttribute(
+      'href',
+      '/records'
+    )
+    expect(within(navigation).queryByRole('link', { name: 'Chat' })).toBeNull()
     expect(
       within(navigation)
         .getAllByRole('link')
         .map(link => link.getAttribute('href'))
-    ).toEqual(['/', '/', '/chat'])
+    ).toEqual(['/', '/', '/records'])
     expect(screen.queryByRole('searchbox')).toBeNull()
   })
 
