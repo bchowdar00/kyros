@@ -3,6 +3,7 @@
 import { env } from '@/env'
 import { useBookStream } from '@/features/exchange-streams/use-book-stream'
 import { usePriceStream } from '@/features/exchange-streams/use-price-stream'
+import { MarketCountdown } from '@/features/market-detail/market-countdown'
 
 import { HomeMarketCard } from './home-market-card'
 import type { HomeMarketCardModel } from './types'
@@ -20,6 +21,29 @@ export function LiveHomeMarketCard({ card }: { card: HomeMarketCardModel }) {
 }
 
 const FULL_PERCENT = 100
+/** A side of a binary market trades between one cent and ninety-nine. */
+const LOWEST_CENTS = 1
+
+/**
+ * The card's two outcomes with what each costs now. The book quotes the first side of the
+ * market (the home team, or Up) as a percentage of a dollar; the other side is what is left.
+ * With no midpoint (no book yet, or a round that has closed) the labels stand alone.
+ */
+function pricedOutcomes(
+  outcomes: HomeMarketCardModel['outcomes'],
+  mid: number | null
+): HomeMarketCardModel['outcomes'] {
+  if (mid === null) return outcomes
+  const quoted = Math.min(FULL_PERCENT - LOWEST_CENTS, Math.max(LOWEST_CENTS, Math.round(mid)))
+  const [first, second] = outcomes
+  const price = (side: HomeMarketCardModel['outcomes'][number]['side']) =>
+    side === 'home' ? quoted : FULL_PERCENT - quoted
+
+  return [
+    { ...first, priceCents: price(first.side) },
+    { ...second, priceCents: price(second.side) },
+  ]
+}
 
 /**
  * A live card with no price underneath it (a game) draws what the market thinks: the first
@@ -43,6 +67,7 @@ function LiveOutcomeCard({ card }: { card: HomeMarketCardModel }) {
     <HomeMarketCard
       card={{
         ...card,
+        outcomes: pricedOutcomes(card.outcomes, book.mid),
         series: [
           { ...quoted, points: book.midPoints },
           {
@@ -65,14 +90,27 @@ function LivePriceCard({ card }: { card: HomeMarketCardModel }) {
     streamed ? card.slug : undefined
   )
 
+  const book = useBookStream(
+    streamed ? env.NEXT_PUBLIC_API_URL : undefined,
+    streamed ? card.slug : undefined
+  )
+
   if (!streamed || card.priceChart === undefined || stream.points.length === 0) {
     return <HomeMarketCard card={card} />
   }
 
   return (
     <HomeMarketCard
+      status={
+        stream.round === undefined ? undefined : (
+          <>
+            <MarketCountdown endsAt={stream.round.closesAt} /> left
+          </>
+        )
+      }
       card={{
         ...card,
+        outcomes: pricedOutcomes(card.outcomes, book.mid),
         priceChart: {
           ...card.priceChart,
           points: stream.points,

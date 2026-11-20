@@ -118,7 +118,7 @@ Open http://localhost:3000. Two things need more:
 
 ```bash
 cd server && cargo test --workspace     # 2,351 tests pass
-cd frontend && pnpm exec vitest run     # the app: 734 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
+cd frontend && pnpm exec vitest run     # the app: 746 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
 cd frontend && pnpm --filter "./packages/**" test   # the libraries: 24, 32, 76 and 30 pass
 cd chain && npm install && npm test     # 10 contract tests, 33 recorder tests
 ```

@@ -9,7 +9,7 @@ export interface MarketCardProps extends ComponentPropsWithRef<'section'> {
   artwork?: MarketCardArtwork | undefined
   category: string
   chart: ReactNode
-  marketStatus?: string | undefined
+  marketStatus?: ReactNode | undefined
   outcomes: readonly [HomeMarketOutcome, HomeMarketOutcome]
   slug: string
   title: string
