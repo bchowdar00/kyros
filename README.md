@@ -2,7 +2,7 @@
 
 Say what you would do in a market, in one sentence. Kyros turns it into a strategy, checks it, and runs it with pretend money on Gemini's live prediction markets, Bitcoin every five minutes and one NBA game at a time, inside a budget you set. Each round it trades is sealed on Arc once the result is in, so a strategy's record cannot be edited or cherry-picked later.
 
-- **Live site:** https://kyros.happyocean-14c358ad.westus2.azurecontainerapps.io
+- **Live site:** https://kyros.happyocean-14c358ad.westus2.azurecontainerapps.io (built for a laptop or desktop; a phone gets a short notice asking to open it on one)
 - **Contract (Arc Testnet, chain id 5042002):** `StrategyRecord` at `0xc910cfe6b537feee16b60a9964c55fc66580586a`, https://explorer.testnet.arc.io/address/0xc910cfe6b537feee16b60a9964c55fc66580586a
 - **Entry:** UBC 2026 Hackathon. Track: Consumer Applications. Chain award: Best use of Arc. Bounty: Gemini Prediction Markets.
 
