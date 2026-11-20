@@ -28,7 +28,8 @@ interface IdentityState {
    */
   verify: (apiUrl: string) => Promise<void>
   /** Opens a paper account under a random guest name; a second call while one is in flight is a no-op. */
-  createGuest: (apiUrl: string) => Promise<void>
+  /** Opens a new paper account, under `name` when one is given and not blank. */
+  createGuest: (apiUrl: string, name?: string) => Promise<void>
   setBalance: (balanceTenths: number) => void
   logout: () => void
 }
@@ -61,6 +62,9 @@ function writeStored(identity: ExchangeIdentity | null): void {
     // Storage may be disabled; identity is then session-scoped.
   }
 }
+
+/** The longest name a visitor may give an account; longer is cut. */
+export const LONGEST_NAME = 24
 
 function guestUsername(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(GUEST_SUFFIX_LENGTH))
@@ -115,10 +119,11 @@ export const useIdentityStore = create<IdentityState>((set, get) => ({
     set({ identity: subject, verified: true, isVerifying: false })
   },
 
-  createGuest: async apiUrl => {
+  createGuest: async (apiUrl, name) => {
     if (get().isCreating) return
     set({ isCreating: true, error: null })
-    const created = await client(apiUrl).createAccount(guestUsername())
+    const chosen = (name ?? '').trim().slice(0, LONGEST_NAME)
+    const created = await client(apiUrl).createAccount(chosen === '' ? guestUsername() : chosen)
     if (!created.ok) {
       set({ isCreating: false, error: 'Could not reach the exchange.' })
       return

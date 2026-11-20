@@ -48,6 +48,24 @@ describe('identity store', () => {
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '')).toEqual(stored)
   })
 
+  it('opens the account under the name a visitor chose, trimmed, and a guest name when it is blank', async () => {
+    const asked: unknown[] = []
+    server.use(
+      http.post(`${apiUrl}/api/accounts`, async ({ request }) => {
+        const { username } = (await request.json()) as { username: string }
+        asked.push(username)
+        return HttpResponse.json({ ...stored, usdc_balance: 1_000_000, username }, { status: 201 })
+      })
+    )
+
+    await useIdentityStore.getState().createGuest(apiUrl, '  Night Owl  ')
+    expect(asked).toEqual(['Night Owl'])
+    expect(useIdentityStore.getState().identity?.username).toBe('Night Owl')
+
+    await useIdentityStore.getState().createGuest(apiUrl, '   ')
+    expect(asked[1]).toMatch(/^guest-[a-z0-9]{6}$/)
+  })
+
   it('sends one request when a guest is requested twice before the first answers', async () => {
     let posts = 0
     server.use(

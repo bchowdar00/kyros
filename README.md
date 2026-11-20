@@ -123,7 +123,7 @@ Open http://localhost:3000. Two things need more:
 
 ```bash
 cd server && cargo test --workspace     # 2,367 tests pass
-cd frontend && pnpm exec vitest run     # the app: 968 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
+cd frontend && pnpm exec vitest run     # the app: 971 pass, 1 known failure (a strategy-authoring test that expects no rate warning)
 cd frontend && pnpm --filter "./packages/**" test   # the libraries: 24, 32, 88 and 30 pass
 cd chain && npm install && npm test     # 26 contract tests, 33 recorder tests
 ```

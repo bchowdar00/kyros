@@ -2,6 +2,8 @@
 
 import { cents, createMoneyFormatter } from '@kyros/money'
 
+import { env } from '@/env'
+
 import { useIdentityStore } from '@/features/identity/identity-store'
 import { ProfileMenu } from '@/features/identity/profile-menu'
 
@@ -30,7 +32,7 @@ export function LiveAppNav(props: AppNavProps) {
       {...props}
       balance={balance}
       balanceLabel={balanceTenths === null ? 'Paper balance unknown' : `Paper balance: ${balance}`}
-      profileMenu={<ProfileMenu identity={identity} />}
+      profileMenu={<ProfileMenu apiUrl={env.NEXT_PUBLIC_API_URL} identity={identity} />}
     />
   )
 }

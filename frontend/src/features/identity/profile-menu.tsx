@@ -3,7 +3,7 @@
 import { Button } from '@kyros/ui/components/button'
 import { useId, useState } from 'react'
 
-import { type ExchangeIdentity, useIdentityStore } from './identity-store'
+import { type ExchangeIdentity, LONGEST_NAME, useIdentityStore } from './identity-store'
 
 const focusRingClasses =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'
@@ -16,10 +16,19 @@ function shortAddress(address: string): string {
  * The account avatar: its colour and emoji come from the exchange, not the user. The menu
  * is a native `popover`, so Escape and outside clicks dismiss it without any script.
  */
-export function ProfileMenu({ identity }: { identity: ExchangeIdentity }) {
+export function ProfileMenu({
+  apiUrl,
+  identity,
+}: {
+  /** The exchange a new account is opened on; without one the menu offers no name. */
+  apiUrl?: string | undefined
+  identity: ExchangeIdentity
+}) {
   const menuId = useId()
   const logout = useIdentityStore(state => state.logout)
+  const createGuest = useIdentityStore(state => state.createGuest)
   const [copied, setCopied] = useState(false)
+  const [name, setName] = useState('')
 
   const copyAddress = async () => {
     try {
@@ -75,6 +84,35 @@ export function ProfileMenu({ identity }: { identity: ExchangeIdentity }) {
           <span>{shortAddress(identity.address)}</span>
           <span className="text-caption">{copied ? 'Copied' : 'Copy'}</span>
         </button>
+        {apiUrl === undefined ? null : (
+          <form
+            className="flex flex-col gap-sm border-t border-border-subtle pt-md"
+            onSubmit={event => {
+              event.preventDefault()
+              const chosen = name.trim()
+              if (chosen === '') return
+              void createGuest(apiUrl, chosen)
+              setName('')
+            }}
+          >
+            <label className="flex flex-col gap-2xs text-caption text-muted-foreground">
+              Your name
+              <input
+                autoComplete="off"
+                className={`min-h-touch rounded-xs border border-border-subtle bg-background px-md text-label text-foreground ${focusRingClasses}`}
+                maxLength={LONGEST_NAME}
+                onChange={event => setName(event.target.value)}
+                value={name}
+              />
+            </label>
+            <Button className="min-h-touch w-full" type="submit" variant="secondary">
+              Use this name
+            </Button>
+            <p className="text-caption text-muted-foreground">
+              Starts a new paper account under this name.
+            </p>
+          </form>
+        )}
         <Button className="min-h-touch w-full" onClick={logout} variant="ghost">
           New paper account
         </Button>
