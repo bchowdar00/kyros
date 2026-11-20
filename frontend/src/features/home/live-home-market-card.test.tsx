@@ -5,6 +5,7 @@ import { FakeWebSocket } from '@/features/exchange-streams/fake-web-socket.fixtu
 import { toHomeMarketCard } from '@/features/market-detail/event-detail.mapper'
 import { toEventDetail, toSeriesRecord } from '@/features/market-detail/exchange-catalog.mapper'
 
+import { withCardPast } from './card-past'
 import { LiveHomeMarketCard } from './live-home-market-card'
 
 vi.mock('@/env', () => ({ env: { NEXT_PUBLIC_API_URL: 'http://localhost:8080' } }))
@@ -62,6 +63,31 @@ describe('a game card on the markets page', () => {
     // The book quotes the home team; the other side is what is left of a dollar.
     expect(screen.getByText('DEN 30¢')).toBeVisible()
     expect(screen.getByText('BOS 70¢')).toBeVisible()
+  })
+
+  it('keeps its line when the book has only printed one price, as before tipoff', () => {
+    const opened = withCardPast({ ...gameCard, slug: 'nba-home-card-quiet' }, [
+      { time: 1_795_060_000_000, value: 0.7 },
+      { time: 1_795_060_060_000, value: 0.72 },
+    ])
+    render(<LiveHomeMarketCard card={opened} />)
+    const book = FakeWebSocket.instances.find(instance => instance.url.includes('/ws/book'))
+
+    act(() => {
+      book?.emit({
+        type: 'snapshot',
+        series: 'nba-home-card-quiet',
+        market_id: 3,
+        mid: 705,
+        mid_history: [{ ts_ms: 1_795_060_480_000, mid: 705 }],
+        bids: [{ price: 700, qty: 5 }],
+        asks: [{ price: 710, qty: 5 }],
+      })
+    })
+
+    expect(screen.queryByText('Chart unavailable')).toBeNull()
+    expect(screen.getByRole('figure', { name: 'BOS at DEN trend' })).toBeVisible()
+    expect(screen.getByText('DEN 71¢')).toBeVisible()
   })
 })
 

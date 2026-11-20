@@ -5,12 +5,14 @@ import { useBookStream } from '@/features/exchange-streams/use-book-stream'
 import { usePriceStream } from '@/features/exchange-streams/use-price-stream'
 import { MarketCountdown } from '@/features/market-detail/market-countdown'
 
+import { joinCardLine } from './card-past'
 import { HomeMarketCard } from './home-market-card'
 import type { HomeMarketCardModel } from './types'
 
 /**
  * A live series card draws from the same stream as its market page (`/ws/price` for a strike
- * market, `/ws/book` for a game), so the sparkline is the exchange's, never a placeholder.
+ * market, `/ws/book` for a game), so the sparkline is real prices, never a placeholder. A
+ * game's line may open with the past the server read for it, and the book carries on from it.
  */
 export function LiveHomeMarketCard({ card }: { card: HomeMarketCardModel }) {
   return card.priceChart === undefined ? (
@@ -48,7 +50,8 @@ function pricedOutcomes(
 /**
  * A live card with no price underneath it (a game) draws what the market thinks: the first
  * outcome's price from `/ws/book`, a percentage, and its complement for the other outcome.
- * Until the book prints a midpoint the card stays as the server rendered it.
+ * Until the book prints a midpoint the card stays as the server rendered it; after that the
+ * book's points follow whatever past the server gave the lines.
  */
 function LiveOutcomeCard({ card }: { card: HomeMarketCardModel }) {
   const streamed = card.live && card.series !== undefined
@@ -69,13 +72,16 @@ function LiveOutcomeCard({ card }: { card: HomeMarketCardModel }) {
         ...card,
         outcomes: pricedOutcomes(card.outcomes, book.mid),
         series: [
-          { ...quoted, points: book.midPoints },
+          { ...quoted, points: joinCardLine(quoted.points, book.midPoints) },
           {
             ...other,
-            points: book.midPoints.map(point => ({
-              time: point.time,
-              value: FULL_PERCENT - point.value,
-            })),
+            points: joinCardLine(
+              other.points,
+              book.midPoints.map(point => ({
+                time: point.time,
+                value: FULL_PERCENT - point.value,
+              }))
+            ),
           },
         ],
       }}
