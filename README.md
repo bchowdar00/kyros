@@ -138,7 +138,7 @@ chain/      Solidity contract, Hardhat tests, and the recorder service.
 - The server keeps accounts in memory. A restart forgets them; the records already on Arc stay.
 - Gemini's five-minute books are thin: a side is sometimes empty, and then nothing fills. The site shows that as it is.
 - Arc Testnet, not mainnet.
-- The site is built for a desktop screen; a phone sees a "desktop for now" page.
+- The site is built for a desktop screen; below 1,024 pixels wide it shows a page that says what Kyros is and asks to be opened on a laptop.
 
 ## What next
 

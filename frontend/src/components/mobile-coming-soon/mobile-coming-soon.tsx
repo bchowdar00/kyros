@@ -10,10 +10,15 @@ export function MobileComingSoon() {
     <main className="flex min-h-dvh flex-col items-center justify-center gap-lg px-xl pb-safe-bottom text-center">
       <Wordmark aria-hidden="true" />
       <h1 className="font-display text-display-md font-bold tracking-display text-foreground">
-        Kyros is on desktop for now
+        Open Kyros on a laptop
       </h1>
       <p className="max-w-prose text-body text-muted-foreground">
-        The mobile app is coming soon. Until then, open Kyros on a bigger screen to trade.
+        Say a trading idea in one sentence. Kyros runs it with pretend money on Gemini&apos;s live
+        prediction markets, Bitcoin and NBA, and keeps a public record of every round it trades.
+      </p>
+      <p className="max-w-prose text-body text-muted-foreground">
+        The trading screen needs more room than this one has. Open this page on a laptop or desktop
+        to try it: no sign-up and nothing to install.
       </p>
     </main>
   )

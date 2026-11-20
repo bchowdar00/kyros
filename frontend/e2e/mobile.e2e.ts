@@ -4,13 +4,13 @@ import { expect, test } from '@playwright/test'
 // Below the `lg` breakpoint every app route renders the mobile-coming-soon screen
 // (AGENTS.md §0.2, desktop-first interim). The app shell must be gone from the
 // accessibility tree, not just visually hidden.
-test('a small viewport sees the coming-soon screen instead of the app', async ({ page }) => {
+test('a small viewport sees the open-on-a-laptop notice instead of the app', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
 
   const response = await page.goto('/')
 
   expect(response?.status()).toBe(200)
-  await expect(page.getByRole('heading', { name: 'Kyros is on desktop for now' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Open Kyros on a laptop' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: 'Primary' })).toBeHidden()
 
   const results = await new AxeBuilder({ page })
